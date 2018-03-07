@@ -1,0 +1,7 @@
+*.pyc
+*.pyo
+
+.*~
+.kateproject
+.kateproject.d/
+*.orig
