@@ -178,13 +178,13 @@ class FormListItem(ButtonBehavior, Label):
 
 
 class FormListScreen(Screen):
-    def build(self, type, forms_json):
-        for item in self.ids[type].children[:]:
-            self.ids[type].remove_widget(item)
+    def build(self, formtype, forms_json):
+        for item in self.ids[formtype].children[:]:
+            self.ids[formtype].remove_widget(item)
         for form in forms_json:
             item = FormListItem(json=form)
             item.bind(on_release=self.on_release)
-            self.ids[type].add_widget(item)
+            self.ids[formtype].add_widget(item)
 
     def on_release(self, item):
         self.manager.show_form(item.json)

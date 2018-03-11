@@ -75,7 +75,7 @@ class EventsScreen(Screen):
         if self.last_uik != event['uik'] or self.last_region != event['region_id']:
             self.ids['content'].add_widget(
                 EventLogItem(halign='center', text='[color=#444]\n{}\nУИК {}[/color]'.format(
-                    App.regions.get(event['region_id']), event['uik'])))
+                    App.regions.get(event['region_id'], {}).get('name'), event['uik'])))
             self.ids['content'].add_widget(
                 EventLogItem(text='[color=#444]{}[/color]'.format(t.strftime('%d.%m.%Y'))))
             self.last_uik = event['uik']

@@ -109,7 +109,7 @@ def load(filename):
         return json.load(f)
 
 
-def get_local_forms():
+def _get_local_forms():
     position = App.app_store.get(b'position')
     if not position or not position.get('region_id'):
         return []
@@ -124,7 +124,7 @@ def leave_position_screen():
         return
     App.app_store[b'position'] = data
     App.app_store.sync()
-    update_position(data)
+    _update_position(data)
 
     timestamp = datetime.utcnow().isoformat()
     net.queue_send_position(dict(data, timestamp=timestamp))
@@ -133,15 +133,17 @@ def leave_position_screen():
         App.get_queue.get_regional_forms(data.get('region_id'))
 
 
-def refresh_mo():
+def _refresh_mo():
     position = App.app_store.get(b'position', {})
-    if position.get('region_id') and position.get('uik'):
-        mo_json = load('mo_%s.json' % position.get('region_id'))
+    region_id = position.get('region_id')
+    if region_id and position.get('uik'):
+        mo_json = load('mo_%s.json' % region_id)
+        region_sos_phone = App.regions.get(region_id, {}).get('sos_phone')
         communication_screen = App.screens.get_screen('communication')
-        communication_screen.build(position['uik'], mo_json)
+        communication_screen.build(position['uik'], region_sos_phone, mo_json)
 
 
-def rebuild_forms(form_type):
+def _rebuild_forms(form_type):
     position = App.app_store.get(b'position', {})
     formlist_screen = App.screens.get_screen('formlist')
 
@@ -152,7 +154,7 @@ def rebuild_forms(form_type):
     elif form_type == 'regional_forms':
         forms_json = load('forms_regional_%s.json' % position.get('region_id'))
     elif form_type == 'local_forms':
-        forms_json = get_local_forms()
+        forms_json = _get_local_forms()
 
     formlist_screen.build(form_type, forms_json)
     for form in forms_json:
@@ -161,7 +163,7 @@ def rebuild_forms(form_type):
         App.inputs.sync()
 
 
-def update_position(data):
+def _update_position(data):
     if not data:
         return
     position_screen = App.screens.get_screen('position')
@@ -179,11 +181,11 @@ def update_position(data):
         if region_choice:
             position_screen.ids['region_choices'].choice = region_choice
             App.root.ids['side_panel'].ids['region'].text = region_choice.text
-        rebuild_forms('regional_forms')
+        _rebuild_forms('regional_forms')
         if data.get('uik'):
-            rebuild_forms('local_forms')
+            _rebuild_forms('local_forms')
             restore_inputs()
-            refresh_mo()
+            _refresh_mo()
 
 
 def screens_initialized():
@@ -191,15 +193,15 @@ def screens_initialized():
     # TODO: this probably takes a lot of startup time, move to thread?
     regions = load('regions.json')
     App.screens.get_screen('position').build_regions(regions)
-    App.regions = {x['id']: x['name'] for x in regions}
+    App.regions = {x['id']: x for x in regions}
 
-    rebuild_forms('general_forms')
-    rebuild_forms('federal_forms')
+    _rebuild_forms('general_forms')
+    _rebuild_forms('federal_forms')
 
     profile = App.app_store.get(b'profile', {})
     position = App.app_store.get(b'position', {})
     if position:
-        schedule(update_position, position)
+        schedule(_update_position, position)
         if position.get('region_id'):
             App.get_queue.get_regional_forms(position.get('region_id'))
 
@@ -238,26 +240,26 @@ def get_regions_success(result):
     with open(join(App.user_data_dir, 'regions.json'), 'w+') as f:
         f.write(json.dumps(result))
     App.screens.get_screen('position').build_regions(result)
-    App.regions = {x['id']: x['name'] for x in result}
+    App.regions = {x['id']: x for x in result}
 
 
 def get_forms_general_success(result):
     with open(join(App.user_data_dir, 'forms_general.json'), 'w+') as f:
         f.write(json.dumps(result))
-    rebuild_forms('general_forms')
+    _rebuild_forms('general_forms')
 
 
 def get_forms_federal_success(result):
     with open(join(App.user_data_dir, 'forms_federal.json'), 'w+') as f:
         f.write(json.dumps(result))
-    rebuild_forms('federal_forms')
+    _rebuild_forms('federal_forms')
 
 
 def get_forms_regional_success(result, region_id):
     filename = 'forms_regional_%s.json' % region_id
     with open(join(App.user_data_dir, filename), 'w+') as f:
         f.write(json.dumps(result))
-    rebuild_forms('regional_forms')
+    _rebuild_forms('regional_forms')
 
 
 def get_forms_local_success(result, region_id):
@@ -268,7 +270,7 @@ def get_forms_local_success(result, region_id):
     position = App.app_store.get(b'position')
     if position and position.get('uik') and position.get('region_id') and \
        position.get('region_id') == region_id:
-        rebuild_forms('local_forms')
+        _rebuild_forms('local_forms')
 
 
 def get_mo_list_success(result, region_id):
@@ -276,7 +278,7 @@ def get_mo_list_success(result, region_id):
     with open(join(App.user_data_dir, filename), 'w+') as f:
         f.write(json.dumps(result))
 
-    refresh_mo()
+    _refresh_mo()
 
 
 def get_changelog_success(result):

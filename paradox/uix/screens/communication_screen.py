@@ -113,13 +113,17 @@ class FormListItem(ButtonBehavior, Label):
 
 
 class CommunicationScreen(Screen):
-    def build(self, uik, mo_list):
-        self.ids['mo_channel'].text = 'Нет МО'
-        self.ids['sos_phone'].text = 'Нет МО'
+    def build(self, uik, region_sos_phone, mo_list):
+        self.ids['mo_channel'].text = 'Уведомления: нет'
+        self.ids['sos_phone'].text = region_sos_phone or 'Колл-центр: нет'
         for mo in mo_list:
             if int(uik) in mo['uiks']:
                 if mo.get('telegram_channel'):
                     self.ids['mo_channel'].text = 'Уведомления\n[color=#4AABFF][ref={telegram_channel}]{name}[/ref][/color]'.format(**mo)
+
+                #sos_phone = mo.get('sos_phone')
                 if mo.get('sos_phone'):
                     self.ids['sos_phone'].text = 'Колл-центр\n[color=#4AABFF][ref={sos_phone}]{sos_phone}[/ref][/color]'.format(**mo)
+
                 break
+
