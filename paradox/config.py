@@ -8,7 +8,7 @@ DEBUG = False
 
 SENTRY = True
 
-version = '1.4'
+version = '1.5'
 
 try:
     from .config_local import *
