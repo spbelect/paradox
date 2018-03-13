@@ -185,19 +185,21 @@ class PositionScreen(Screen):
         #choice = RegionChoice(short_text='Москва', text='Москва', value=msk['id'])
         #self.ids['region_choices'].add_widget(choice)
         
-        choice = RegionChoice(short_text='Санкт-Петербург', text='Санкт-Петербург', value=spb['id'])
+        choice = RegionChoice(
+            short_text='Санкт-Петербург', text='Санкт-Петербург', value=spb['id'])
         self.ids['region_choices'].add_widget(choice)
 
-        choice = RegionChoice(short_text='Ленинградская область', text='Ленинградская область', value=lo['id'])
+        choice = RegionChoice(
+            short_text='Ленинградская область', text='Ленинградская область', value=lo['id'])
         self.ids['region_choices'].add_widget(choice)
 
 
-        #for region in sorted(data, key=lambda x: x['name']):
-            #if region in [spb, msk]:
-                #continue
-            #name = region['name'].encode('utf8')
-            #choice = RegionChoice(short_text=name, text=name, value=region['id'])
-            #self.ids['region_choices'].add_widget(choice)
+        for region in sorted(data, key=lambda x: x['name']):
+            if region in [spb, lo]:
+                continue
+            name = region['name'].encode('utf8')
+            choice = RegionChoice(short_text=name, text=name, value=region['id'])
+            self.ids['region_choices'].add_widget(choice)
 
     def show_errors(self):
         errors = []

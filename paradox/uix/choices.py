@@ -171,7 +171,7 @@ class ChoicesModal(ModalView):
         #res = super(ChoicesModal, self).on_touch_up(touch)
         #sv = self.ids['scrollview']
         scrolled = not touch.ud.get('sv.can_defocus', True)
-        scrolled = False  # FIXME
+        #scrolled = False  # FIXME
         if 'button' in touch.profile and touch.button.startswith('scroll'):
             scrolled = True
         stopped = touch.ud.get('sv.stopped', False)
