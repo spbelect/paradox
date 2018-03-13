@@ -5,7 +5,7 @@ from kivy.lang import Builder
 from kivy.uix.boxlayout import BoxLayout
 from kivy.properties import ObjectProperty, StringProperty
 
-from ..utils import utc_to_local
+from ..utils import utc_to_local, strptime
 from ..scheduler import schedule
 from ..objects_manager import objects_manager
 from .button import Button
@@ -128,6 +128,13 @@ class MultiBoolInput(Input, VBox):
 
     def add_value(self, value):
         schedule('core.new_input_event', self.input_id, value)
+
+    def add_past_event(self, event):
+        ts = strptime(event['timestamp'], '%Y-%m-%dT%H:%M:%S.%f')
+        self.on_save_success(None, ts, event['value'])
+        loader = self._get_loader(event)
+        if loader:
+            loader.parent.remove_widget(loader)
 
     def on_save_success(self, eid, timestamp, value):
         #self.values.append((timestamp, value))

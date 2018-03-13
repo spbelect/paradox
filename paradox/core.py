@@ -228,10 +228,13 @@ def restore_inputs():
 
     position = App.app_store.get(b'position', {})
     for event in sorted(App.event_store.all(), key=lambda x: x['timestamp']):
+        #print event
         if event['uik'] == position.get('uik') and event['region_id'] == position.get('region_id'):
             timestamp = strptime(event['timestamp'], '%Y-%m-%dT%H:%M:%S.%f')
             if datetime.now() - timestamp < timedelta(days=1):
+                #print event['input_id']
                 input = Input.objects.get(input_id=event['input_id'])
+                #print input
                 if input:
                     input.add_past_event(event)
 
