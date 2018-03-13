@@ -75,8 +75,6 @@ class Screens(ScreenManager):
 
 
     def push_screen(self, name):
-        logging.error( 'AAAAAAAAAAAAAAAAAAAAAAAAA')
-        print 'BBBBBB'
         self.transition.direction = 'left'
         if self.current == 'userprofile' and name != 'userprofile':
             schedule('core.leave_userprofile_screen')
@@ -110,7 +108,7 @@ class Screens(ScreenManager):
         #return True
 
     def hook_keyboard(self, window, key, *args):
-        logging.error( "XXXXXXXXXXXXXXXXX %d" % key)
+        logging.info( "XXXXXXXXXXXXXXXXX key %d pressed" % key)
         if key in (1000, 27, 1073742095, 4):
             if App.root.state == 'open':
                 App.root.toggle_state()
