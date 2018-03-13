@@ -83,11 +83,13 @@ class FormScreen(Screen):
         #pass
 
     def load_inputs(self):
+        #print self.json['inputs']
         for n, input_data in enumerate(self.json['inputs']):
             #if not input_data.get('help_text'):
                 #input_data['help_text'] = txt
 
             schedule(self.add_input, input_data, timeout=0.0 + 0.04 * n)
+            #self.add_input(input_data)
 
         if self.json['form_type'] == 'GENERAL':
             self.remove_widget(self.ids['trailing_spacer'])

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# pip install https://github.com/kivy/kivy/archive/master.zip
 import os
 from os.path import dirname, join
 from subprocess import Popen, call
@@ -39,6 +40,9 @@ cmd = 'p4a apk {args} --package=org.spbelect.{name}_debug --name="{name}_debug"'
 
 
 #sh(cmd)
+
+
+
 jarsigner = '/usr/lib64/jvm/java-1.8.0-openjdk-1.8.0/bin/jarsigner'
 
 sh('p4a apk {args} --package=org.spbelect.{name} --name="{name}" --release '.format(**locals()))
@@ -50,7 +54,7 @@ sh('rm {dist}/bin/{name}-{version}-release-signed.apk'.format(**locals()))
 sh('/home/u1/Android/Sdk/build-tools/23.0.3/zipalign -v 4 {dist}/bin/{name}-{version}-release-unsigned.apk {dist}/bin/{name}-{version}-release-signed.apk'.format(**locals()))
 sh('cp {dist}/bin/{name}-{version}-release-signed.apk /home/u1/'.format(**locals()))
 
-#####sh('adb install -r paradox-{version}-debug.apk'.format(**locals()))
+######sh('adb install -r paradox-{version}-debug.apk'.format(**locals()))
 
 
-### adb logcat | grep -E "SDL|[pP]ython|linker|spbelect|dlopen"
+#### adb logcat | grep -E "SDL|[pP]ython|linker|spbelect|dlopen"

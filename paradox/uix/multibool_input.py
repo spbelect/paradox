@@ -116,6 +116,12 @@ class ValueLogItem(BoxLayout):
     input_id = StringProperty(None, allownone=True)
     timestamp = StringProperty(None, allownone=True)
 
+    def __init__(self, *args, **kwargs):
+        no_loader = kwargs.pop('no_loader', False)
+        super(ValueLogItem, self).__init__(*args, **kwargs)
+        if no_loader:
+            self.remove_widget(self.ids.get('loader'))
+
 
 class MoreButton(Button):
     pass
@@ -125,16 +131,26 @@ class MultiBoolInput(Input, VBox):
     def __init__(self, *args, **kwargs):
         super(MultiBoolInput, self).__init__(*args, **kwargs)
         #self.values = []
+        self.more_button = None
 
     def add_value(self, value):
         schedule('core.new_input_event', self.input_id, value)
 
     def add_past_event(self, event):
+        try:
+            self.remove_widget(self.ids['true_false_buttons'])
+        except:
+            pass
+        try:
+            self.remove_widget(self.more_button)
+        except:
+            pass
         ts = strptime(event['timestamp'], '%Y-%m-%dT%H:%M:%S.%f')
-        self.on_save_success(None, ts, event['value'])
-        loader = self._get_loader(event)
-        if loader:
-            loader.parent.remove_widget(loader)
+        text = '%s %s' % (utc_to_local(ts).strftime('%H:%M'), 'Да' if event['value'] else 'Нет')
+        self.add_widget(ValueLogItem(text=text, timestamp=ts.isoformat(), input_id=self.input_id, no_loader=True))
+        self.more_button = MoreButton()
+        self.more_button.bind(on_press=self.on_more)
+        self.add_widget(self.more_button)
 
     def on_save_success(self, eid, timestamp, value):
         #self.values.append((timestamp, value))
