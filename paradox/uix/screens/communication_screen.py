@@ -52,7 +52,7 @@ Builder.load_string('''
                     size_hint_x: None
 
                 Label:
-                    id: mo_channel
+                    id: tg_channel
                     text: 'Нет МО'
                     height: height1
                     size_hint_y: None
@@ -113,13 +113,20 @@ class FormListItem(ButtonBehavior, Label):
 
 
 class CommunicationScreen(Screen):
-    def build(self, uik, region_sos_phone, mo_list):
-        self.ids['mo_channel'].text = 'Уведомления: нет'
-        self.ids['sos_phone'].text = region_sos_phone or 'Колл-центр: нет'
+    def build(self, uik, region_sos_phone, region_tgchannel, mo_list):
+        if region_tgchannel:
+            self.ids['tg_channel'].text = 'Уведомления\n[color=#4AABFF][ref={tg}]{tg}[/ref][/color]'.format(tg=region_tgchannel)
+        else:
+            self.ids['tg_channel'].text = 'Уведомления: нет'
+        if region_sos_phone:
+            self.ids['sos_phone'].text = 'Колл-центр\n[color=#4AABFF][ref={sos}]{sos}[/ref][/color]'.format(sos=region_sos_phone)
+        else:
+            self.ids['sos_phone'].text = 'Колл-центр: нет'
+
         for mo in mo_list:
             if int(uik) in mo['uiks']:
                 if mo.get('telegram_channel'):
-                    self.ids['mo_channel'].text = 'Уведомления\n[color=#4AABFF][ref={telegram_channel}]{name}[/ref][/color]'.format(**mo)
+                    self.ids['tg_channel'].text = 'Уведомления\n[color=#4AABFF][ref={telegram_channel}]{name}[/ref][/color]'.format(**mo)
 
                 #sos_phone = mo.get('sos_phone')
                 if mo.get('sos_phone'):
