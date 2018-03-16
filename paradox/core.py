@@ -139,8 +139,9 @@ def _refresh_mo():
     if region_id and position.get('uik'):
         mo_json = load('mo_%s.json' % region_id)
         region_sos_phone = App.regions.get(region_id, {}).get('sos_phone')
+        region_tg_channel = App.regions.get(region_id, {}).get('tg_channel')
         communication_screen = App.screens.get_screen('communication')
-        communication_screen.build(position['uik'], region_sos_phone, mo_json)
+        communication_screen.build(position['uik'], region_sos_phone, region_tg_channel, mo_json)
 
 
 def _rebuild_forms(form_type):
