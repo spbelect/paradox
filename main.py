@@ -107,7 +107,8 @@ class ParadoxApp(App):
                 _traceback = _traceback.decode('utf-8')
 
             try:
-                app_id = App.app_store[b'app_id']
+                app_store = shelve.open(join(self.user_data_dir, 'app_store.db.shelve'))
+                app_id = app_store[b'app_id']
             except:
                 app_id = 'xz'
 
