@@ -7,7 +7,9 @@ import shelve
 import sys
 import traceback
 
+from datetime import datetime
 from glob import glob
+from hashlib import md5
 from os.path import join, exists
 from random import randint
 from shutil import copyfile
@@ -24,6 +26,7 @@ from kivy.app import App
 from kivy.clock import Clock
 from kivy.core.window import Window
 from kivy.resources import resource_add_path
+from requests import post
 from tinydb import TinyDB
 
 from paradox import config
@@ -48,53 +51,76 @@ class ParadoxApp(App):
         #})
 
     def build(self):
-        logging.info( 'AAAAAAAAAAAAAAAAAAAAAAAAA')
-        resource_add_path(join(bundle_dir, 'paradox/uix/'))
-        App.version = self.version = config.version
-        App.user_data_dir = self.user_data_dir
+        try:
+            logging.info( 'AAAAAAAAAAAAAAAAAAAAAAAAA')
+            resource_add_path(join(bundle_dir, 'paradox/uix/'))
+            App.version = self.version = config.version
+            App.user_data_dir = self.user_data_dir
 
-        if platform in ['linux', 'windows']:
-            Window.size = (420, 800)
+            if platform in ['linux', 'windows']:
+                Window.size = (420, 800)
 
-        Window.softinput_mode = 'below_target'
-        
-        #Window.softinput_mode = 'pan'
+            Window.softinput_mode = 'below_target'
 
-        for filename in glob('forms_*.json') + ['regions.json', 'mo_78.json']:
-            path = join(App.user_data_dir, filename)
-            if not exists(path):
-                print('copying %s to %s' % (filename, App.user_data_dir))
-                copyfile(filename, path)
+            #Window.softinput_mode = 'pan'
 
-        # https://github.com/kuri65536/python-for-android/issues/71
-        def chmod(*a, **kw):
-            pass
-        os.chmod = chmod
+            for filename in glob('forms_*.json') + ['regions.json', 'mo_78.json']:
+                path = join(App.user_data_dir, filename)
+                if not exists(path):
+                    print('copying %s to %s' % (filename, App.user_data_dir))
+                    copyfile(filename, path)
 
-        App.app_store = shelve.open(join(App.user_data_dir, 'app_store.db.shelve'))
-        App.inputs = shelve.open(join(App.user_data_dir, 'inputs.db.shelve'))
-        App.event_store = TinyDB(join(App.user_data_dir, 'events.json'))
-        App.regions = {}
+            # https://github.com/kuri65536/python-for-android/issues/71
+            def chmod(*a, **kw):
+                pass
+            os.chmod = chmod
 
-        if not App.app_store.get(b'app_id'):
-            App.app_store[b'app_id'] = randint(10 ** 19, 10 ** 20 - 1)
-            App.app_store.sync()
+            App.app_store = shelve.open(join(App.user_data_dir, 'app_store.db.shelve'))
+            App.inputs = shelve.open(join(App.user_data_dir, 'inputs.db.shelve'))
+            App.event_store = TinyDB(join(App.user_data_dir, 'events.json'))
+            App.regions = {}
 
-        position = App.app_store.get(b'position', {})
-        position.setdefault('region_id', '78')
-        App.app_store[b'position'] = position
+            if not App.app_store.get(b'app_id'):
+                App.app_store[b'app_id'] = randint(10 ** 19, 10 ** 20 - 1)
+                App.app_store.sync()
+
+            position = App.app_store.get(b'position', {})
+            position.setdefault('region_id', '78')
+            App.app_store[b'position'] = position
 
 
-        from paradox.net import SentrySendQueue, SendQueue, GetQueue
-        App.send_queue = SendQueue('primary', join(App.user_data_dir, 'send_queue.json'))
-        App.send_queue_backup = SendQueue('backup', join(App.user_data_dir, 'send_queue_bak.json'))
-        App.send_queue_sentry = SentrySendQueue(join(App.user_data_dir, 'send_queue_sentry.json'))
-        App.get_queue = GetQueue()
+            from paradox.net import SentrySendQueue, SendQueue, GetQueue
+            App.send_queue = SendQueue('primary', join(App.user_data_dir, 'send_queue.json'))
+            App.send_queue_backup = SendQueue('backup', join(App.user_data_dir, 'send_queue_bak.json'))
+            App.send_queue_sentry = SentrySendQueue(join(App.user_data_dir, 'send_queue_sentry.json'))
+            App.get_queue = GetQueue()
 
-        from paradox.uix.main_widget import MainWidget
-        App.root = MainWidget()
-        App.screens = App.root.ids['screens']
-        return App.root
+            from paradox.uix.main_widget import MainWidget
+            App.root = MainWidget()
+            App.screens = App.root.ids['screens']
+            return App.root
+        except Exception as e:
+            _traceback = traceback.format_exc()
+            if config.DEBUG:
+                print _traceback
+            if isinstance(_traceback, str):
+                _traceback = _traceback.decode('utf-8')
+
+            try:
+                app_id = App.app_store[b'app_id']
+            except:
+                app_id = 'xz'
+
+            post('https://spbelect2.herokuapp.com/errors/', json={
+                'app_id': app_id,
+                'hash': md5(_traceback).hexdigest(),
+                'timestamp': datetime.utcnow().isoformat(),
+                'traceback': _traceback
+            })
+            from kivy.uix.label import Label
+            self.label = Label()
+            self.label.text = u'Произошла ошибка. Разработчики были уведомлены об этом.'
+            return self.label
 
     def build_error_screen(self, msg):
         from paradox.uix.screens.error_screen import ErrorScreen
