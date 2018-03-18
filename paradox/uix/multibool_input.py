@@ -167,18 +167,27 @@ class MultiBoolInput(Input, VBox):
 
     def on_send_success(self, event):
         loader = self._get_loader(event)
-        if loader:
-            loader.parent.remove_widget(loader)
+        try:
+            if loader:
+                loader.parent.remove_widget(loader)
+        except:
+            pass
 
     def on_send_error(self, event, request, error_data):
-        loader = self._get_loader(event)
-        if loader:
-            loader.text = 'отправляется (err)'   # .encode('utf8')
+        try:
+            loader = self._get_loader(event)
+            if loader:
+                loader.text = 'отправляется (err)'   # .encode('utf8')
+        except:
+            pass
 
     def on_send_fatal_error(self, event, request, error_data):
-        loader = self._get_loader(event)
-        if loader:
-            loader.text = 'fatal err'
+        try:
+            loader = self._get_loader(event)
+            if loader:
+                loader.text = 'fatal err'
+        except:
+            pass
 
     def on_more(self, *args):
         self.remove_widget(self.more_button)

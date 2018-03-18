@@ -42,11 +42,13 @@ def on_g_success(request, result):
 def on_bak_success(request, result):
     global backup_server
     backup_server = result.strip()
+    #print 'bak', backup_server
 
 
 def on_sentry_success(request, result):
     global sentry_server
     sentry_server = result.strip()
+    #print 'sen', sentry_server
 
 
 def on_ch_success(request, result):
