@@ -245,6 +245,7 @@ def get_regions_success(result):
         f.write(json.dumps(result))
     App.screens.get_screen('position').build_regions(result)
     App.regions = {x['id']: x for x in result}
+    #print App.regions['78']
 
 
 def get_forms_general_success(result):
