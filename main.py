@@ -119,7 +119,13 @@ class ParadoxApp(App):
                 'traceback': _traceback
             })
             from kivy.uix.label import Label
+
+            if platform in ['linux', 'windows']:
+                Window.size = (420, 800)
+
             self.label = Label()
+            self.label.text_size = Window.width - 20, None
+            self.label.halign = 'center'
             self.label.text = u'Произошла ошибка. Разработчики были уведомлены об этом.'
             return self.label
 
