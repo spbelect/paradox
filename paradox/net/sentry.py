@@ -62,7 +62,7 @@ class SentrySendQueue(TinyDB):
             schedule(self.loop, timeout=5)
 
     def send_packet(self, packet):
-        packet['data']['app_id'] = App.app_store[b'app_id']
+        packet['data']['app_id'] = App.app_store['app_id']
         packet['data']['hash'] = md5(json.dumps(packet['data'])).hexdigest()
 
         url = '%s/errors/' % get_server('sentry')

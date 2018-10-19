@@ -106,15 +106,15 @@ def show_terms_dialog():
 
 # MOVE TO core
 def terms_accepted():
-    App.app_store[b'terms_accepted'] = True
+    App.app_store['terms_accepted'] = True
     App.app_store.sync()
     if userprofile_errors():
         App.screens.push_screen('userprofile')
     else:
         timestamp = datetime.utcnow().isoformat()
-        net.queue_send_userprofile(dict(App.app_store[b'profile'], timestamp=timestamp))
+        net.queue_send_userprofile(dict(App.app_store['profile'], timestamp=timestamp))
 
         if App.screens.get_screen('position').show_errors():
             App.screens.push_screen('position')
         else:
-            net.queue_send_position(dict(App.app_store[b'position'], timestamp=timestamp))
+            net.queue_send_position(dict(App.app_store['position'], timestamp=timestamp))

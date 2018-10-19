@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from __future__ import print_function
+
 import logging
 import os
 import shelve
@@ -30,7 +32,6 @@ from requests import post
 from tinydb import TinyDB
 
 from paradox import config
-
 
 
 if getattr(sys, 'frozen', False):
@@ -80,13 +81,13 @@ class ParadoxApp(App):
             App.event_store = TinyDB(join(App.user_data_dir, 'events.json'))
             App.regions = {}
 
-            if not App.app_store.get(b'app_id'):
-                App.app_store[b'app_id'] = randint(10 ** 19, 10 ** 20 - 1)
+            if not App.app_store.get('app_id'):
+                App.app_store['app_id'] = randint(10 ** 19, 10 ** 20 - 1)
                 App.app_store.sync()
 
-            position = App.app_store.get(b'position', {})
+            position = App.app_store.get('position', {})
             position.setdefault('region_id', '78')
-            App.app_store[b'position'] = position
+            App.app_store['position'] = position
 
 
             from paradox.net import SentrySendQueue, SendQueue, GetQueue
@@ -96,28 +97,30 @@ class ParadoxApp(App):
             App.get_queue = GetQueue()
 
             from paradox.uix.main_widget import MainWidget
+            #import ipdb; ipdb.sset_trace()
             App.root = MainWidget()
             App.screens = App.root.ids['screens']
+            
             return App.root
         except Exception as e:
             _traceback = traceback.format_exc()
             if config.DEBUG:
-                print _traceback
-            if isinstance(_traceback, str):
+                print(_traceback)
+            if isinstance(_traceback, bytes):
                 _traceback = _traceback.decode('utf-8')
 
             try:
                 app_store = shelve.open(join(self.user_data_dir, 'app_store.db.shelve'))
-                app_id = app_store[b'app_id']
+                app_id = app_store['app_id']
             except:
                 app_id = 'xz'
 
-            post('https://spbelect2.herokuapp.com/errors/', json={
-                'app_id': app_id,
-                'hash': md5(_traceback).hexdigest(),
-                'timestamp': datetime.utcnow().isoformat(),
-                'traceback': _traceback
-            })
+            #post('https://spbelect2.herokuapp.com/errors/', json={
+                #'app_id': app_id,
+                #'hash': md5(_traceback.encode('utf-8')).hexdigest(),
+                #'timestamp': datetime.utcnow().isoformat(),
+                #'traceback': _traceback
+            #})
             from kivy.uix.label import Label
 
             if platform in ['linux', 'windows']:
@@ -136,7 +139,7 @@ class ParadoxApp(App):
         return scr
 
     def on_pause(self):
-        print 'PAUSE'
+        print('PAUSE')
         try:
             self.screens.on_pause()
         except:
@@ -150,8 +153,8 @@ class ParadoxApp(App):
     def handle_exception(self, err):
         _traceback = traceback.format_exc()
         if config.DEBUG:
-            print _traceback
-        if isinstance(_traceback, str):
+            print(_traceback)
+        if isinstance(_traceback, bytes):
             _traceback = _traceback.decode('utf-8')
         self.errors.append(_traceback)
         message = u'\n-----\n'.join(self.errors)

@@ -24,7 +24,7 @@ from .utils import strptime
 
 def userprofile_errors():
     errors = []
-    data = App.app_store.get(b'profile', {})
+    data = App.app_store.get('profile', {})
     if not data.get('phone'):
         errors.append('Телефон')
     if not data.get('first_name'):
@@ -49,12 +49,12 @@ def new_input_event(input, value):
         return
 
     timestamp = datetime.utcnow()
-    position = App.app_store.get(b'position', {})
+    position = App.app_store.get('position', {})
 
     event = {
         'timestamp': timestamp.isoformat(),
-        'uik': position.get(b'uik'),
-        'region_id': position.get(b'region_id'),
+        'uik': position.get('uik'),
+        'region_id': position.get('region_id'),
         'input_id': input.input_id,
         'value': value}
 
@@ -91,10 +91,10 @@ def send_input_event_fatal_error(event, request, error_data):
 
 def leave_userprofile_screen():
     data = App.screens.get_screen('userprofile').get_data()
-    stored = App.app_store.get(b'profile', {})
+    stored = App.app_store.get('profile', {})
     if stored == data:
         return
-    App.app_store[b'profile'] = data
+    App.app_store['profile'] = data
     App.app_store.sync()
 
     timestamp = datetime.utcnow().isoformat()
@@ -110,7 +110,7 @@ def load(filename):
 
 
 def _get_local_forms():
-    position = App.app_store.get(b'position')
+    position = App.app_store.get('position')
     if not position or not position.get('region_id'):
         return []
     forms = load('forms_local_%s.json' % position.get('region_id'))
@@ -119,10 +119,10 @@ def _get_local_forms():
 
 def leave_position_screen():
     data = App.screens.get_screen('position').get_data()
-    stored = App.app_store.get(b'position', {})
+    stored = App.app_store.get('position', {})
     if stored == data:
         return
-    App.app_store[b'position'] = data
+    App.app_store['position'] = data
     App.app_store.sync()
     _update_position(data)
 
@@ -134,7 +134,7 @@ def leave_position_screen():
 
 
 def _refresh_mo():
-    position = App.app_store.get(b'position', {})
+    position = App.app_store.get('position', {})
     region_id = position.get('region_id')
     if region_id and position.get('uik'):
         mo_json = load('mo_%s.json' % region_id)
@@ -145,7 +145,7 @@ def _refresh_mo():
 
 
 def _rebuild_forms(form_type):
-    position = App.app_store.get(b'position', {})
+    position = App.app_store.get('position', {})
     formlist_screen = App.screens.get_screen('formlist')
 
     if form_type == 'general_forms':
@@ -160,7 +160,7 @@ def _rebuild_forms(form_type):
     formlist_screen.build(form_type, forms_json)
     for form in forms_json:
         for input_data in form['inputs']:
-            App.inputs[input_data.get('input_id').encode()] = input_data
+            App.inputs[input_data.get('input_id')] = input_data
         App.inputs.sync()
 
 
@@ -190,7 +190,6 @@ def _update_position(data):
 
 
 def screens_initialized():
-
     # TODO: this probably takes a lot of startup time, move to thread?
     regions = load('regions.json')
     App.screens.get_screen('position').build_regions(regions)
@@ -199,8 +198,8 @@ def screens_initialized():
     _rebuild_forms('general_forms')
     _rebuild_forms('federal_forms')
 
-    profile = App.app_store.get(b'profile', {})
-    position = App.app_store.get(b'position', {})
+    profile = App.app_store.get('profile', {})
+    position = App.app_store.get('position', {})
     if position:
         schedule(_update_position, position)
         if position.get('region_id'):
@@ -227,7 +226,7 @@ def restore_inputs():
         if input.json['input_type'] == 'NUMBER':
             input.reset()
 
-    position = App.app_store.get(b'position', {})
+    position = App.app_store.get('position', {})
     for event in sorted(App.event_store.all(), key=lambda x: x['timestamp']):
         #print event
         if event['uik'] == position.get('uik') and event['region_id'] == position.get('region_id'):
@@ -272,7 +271,7 @@ def get_forms_local_success(result, region_id):
     with open(join(App.user_data_dir, filename), 'w+') as f:
         f.write(json.dumps(result))
 
-    position = App.app_store.get(b'position')
+    position = App.app_store.get('position')
     if position and position.get('uik') and position.get('region_id') and \
        position.get('region_id') == region_id:
         _rebuild_forms('local_forms')

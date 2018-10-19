@@ -6,7 +6,7 @@ from kivy.properties import ObjectProperty
 from kivy.uix.boxlayout import BoxLayout
 
 # Workaround for issue with rules precedence
-Builder.load_file(b'base.kv')
+Builder.load_file('base.kv')
 
 # It has to be imported first to register new Label and Button with Factory
 from .label import Label
@@ -94,7 +94,7 @@ class MainWidget(NavigationDrawer):
 
 class SidePanel(BoxLayout):
     manager = ObjectProperty()
-
+        
     def on_click(self, screen):
         main_widget = self.parent.parent
         main_widget.ids['screens'].push_screen(screen)

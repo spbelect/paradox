@@ -94,5 +94,5 @@ def make_packet(packet):
     hh = 83582627823547224923546 % 1361724712718385691
     #print y, hh
     gg = ''.join(chain(*zip(x, str(y) + str(hh))))
-    filler = md5(gg).hexdigest()
+    filler = md5(gg.encode('utf8')).hexdigest()
     return dict(packet, hash=filler)

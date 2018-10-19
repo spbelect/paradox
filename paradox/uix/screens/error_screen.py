@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 from textwrap import dedent
 
 from kivy.lang import Builder
-from kivy.properties import StringProperty
+from kivy.properties import StringProperty, Property
 from kivy.uix.screenmanager import Screen
 
 from ...config import DEBUG

@@ -80,7 +80,7 @@ class UserProfileScreen(Screen):
 
     def __init__(self, *args, **kwargs):
         super(UserProfileScreen, self).__init__(*args, **kwargs)
-        initial_data = App.app_store.get(b'profile', {})
+        initial_data = App.app_store.get('profile', {})
         for input in self.inputs:
             self.ids[input].text = initial_data.get(input, '')
             #self.ids[input].bind(focus=self.input_focus)

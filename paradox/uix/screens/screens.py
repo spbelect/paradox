@@ -134,11 +134,12 @@ class Screens(ScreenManager):
         schedule('core.screens_initialized')
 
     def show_error_screen(self, message):
+        
         if self.has_screen('error'):
             screen = self.get_screen('error')
-            screen.message = message.encode('utf-8')
+            screen.message = message
         else:
-            screen = ErrorScreen(message=message.encode('utf8'), name='error')
+            screen = ErrorScreen(message=message, name='error')
             self.add_widget(screen)
         self.current = 'error'
 

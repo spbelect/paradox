@@ -9,6 +9,8 @@ from kivy.uix.screenmanager import Screen
 from kivy.uix.behaviors.button import ButtonBehavior
 
 
+
+from ...objects_manager import objects_manager
 from ..label import Label
 from ..vbox import VBox
 
@@ -105,6 +107,7 @@ Builder.load_string('''
                 #background_color: lightgray
 
             Button:
+                id: menu_button
                 text: 'Меню'
                 on_release: app.root.toggle_state()
                 halign: 'left'
@@ -152,7 +155,7 @@ Builder.load_string('''
 
     ##def _camera_loaded(self, *largs):
         ##if platform != 'android':
-            ##self.texture = Texture.create(size=self.resolution, colorfmt=b'rgb')
+            ##self.texture = Texture.create(size=self.resolution, colorfmt='rgb')
             ##self.texture_size = list(self.texture.size)
         ##else:
             ##super(CvCamera, self)._camera_loaded()
@@ -165,7 +168,7 @@ Builder.load_string('''
                 ###return super(CvCamera, self).on_tex(*l)
             ##frame = self._camera.decode_frame(buf)
             ###buf = self.process_frame(frame)
-            ##self.texture.blit_buffer(buf, colorfmt=b'rgb', bufferfmt=b'ubyte')
+            ##self.texture.blit_buffer(buf, colorfmt='rgb', bufferfmt=b'ubyte')
         ##super(CvCamera, self).on_tex(*l)
 
     #def process_frame(self, frame):
@@ -177,6 +180,7 @@ class FormListItem(ButtonBehavior, Label):
     json = ObjectProperty()
 
 
+@objects_manager
 class FormListScreen(Screen):
     def build(self, formtype, forms_json):
         for item in self.ids[formtype].children[:]:

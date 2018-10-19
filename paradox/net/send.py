@@ -61,7 +61,7 @@ class SendQueue(TinyDB):
 
     def on_failure(self, request, error):
         ee = error.encode('ascii', 'replace')
-        print u"request error %s" % (ee)
+        print(u"request error %s" % (ee))
         if request.resp_status // 100 == 4 and not request.resp_status == 404:
             # HTTP 4xx Client Error. Client update needed.
             # 404 error may be recovered after client update, so keep these packets.
@@ -80,14 +80,14 @@ class SendQueue(TinyDB):
         packet = self.pop()
         #print packet
         if packet:
-            print "%s packets in queue" % self._queue_len
+            print("%s packets in queue" % self._queue_len)
             self.send_packet(packet)
         else:
             schedule(self.loop, timeout=5)
 
     def send_packet(self, packet):
-        packet['data']['app_id'] = App.app_store[b'app_id']
-        packet['data']['hash'] = md5(json.dumps(packet['data'])).hexdigest()
+        packet['data']['app_id'] = App.app_store['app_id']
+        packet['data']['hash'] = md5(json.dumps(packet['data']).encode('utf8')).hexdigest()
 
         if packet['type'] == 'input_event':
             url = '%s/api/v1/events/' % get_server(self.server_name)

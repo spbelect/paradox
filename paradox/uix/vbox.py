@@ -31,6 +31,7 @@ class VBox(BoxLayout):
     background_color = ListProperty([1, 1, 1, 0])
 
     def do_layout(self, *args):
+        #import ipdb; ipdb.sset_trace()
         height = 0
         for child in self.children:
             height += child.height + self.spacing

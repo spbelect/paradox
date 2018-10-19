@@ -498,6 +498,7 @@ class NavigationDrawer(StencilView):
     def toggle_state(self, animate=True):
         '''Toggles from open to closed or vice versa, optionally animating or
         simply jumping.'''
+        #import ipdb; ipdb.sset_trace()
         if self.state == 'open':
             if animate:
                 self.anim_to_state('closed')

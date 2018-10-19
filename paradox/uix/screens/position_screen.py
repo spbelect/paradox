@@ -149,7 +149,7 @@ class PositionScreen(Screen):
 
     #def __init__(self, *args, **kwargs):
         #super(PositionScreen, self).__init__(*args, **kwargs)
-        #initial_data = App.app_store.get(b'position', {})
+        #initial_data = App.app_store.get('position', {})
         #self.ids['uik'].text = initial_data.get('uik', '')
         #self.ids['region_choices'].text = initial_data.get('region_name', '')
         #self.ids['status_choices'].text = initial_data.get('status_name', '')
@@ -178,9 +178,9 @@ class PositionScreen(Screen):
         for choice in self.ids['region_choices'].choices():
             self.ids['region_choices'].remove_choice(choice.value)
 
-        msk = filter(lambda x: 'Москва' in x['name'], data)
-        spb = filter(lambda x: 'Санкт' in x['name'], data)
-        lo = filter(lambda x: 'Ленинградская' in x['name'], data)
+        msk = list(filter(lambda x: 'Москва' in x['name'], data))
+        spb = list(filter(lambda x: 'Санкт' in x['name'], data))
+        lo = list(filter(lambda x: 'Ленинградская' in x['name'], data))
 
         #choice = RegionChoice(short_text='Москва', text='Москва', value=msk['id'])
         #self.ids['region_choices'].add_widget(choice)
@@ -197,7 +197,7 @@ class PositionScreen(Screen):
         for region in sorted(data, key=lambda x: x['name']):
             if region in spb + lo:
                 continue
-            name = region['name'].encode('utf8')
+            name = region['name']
             choice = RegionChoice(short_text=name, text=name, value=region['id'])
             self.ids['region_choices'].add_widget(choice)
 

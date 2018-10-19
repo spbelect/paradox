@@ -33,7 +33,7 @@ def import_string(dotted_path):
 
 
 def schedule(task, *args, **kwargs):
-    if isinstance(task, (str, unicode)):
+    if isinstance(task, six.string_types):
         task = import_string('paradox.' + task)
     timeout = kwargs.pop('timeout', 0)
     Clock.schedule_once(lambda *a: task(*args, **kwargs), timeout)
