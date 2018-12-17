@@ -53,6 +53,9 @@ class ParadoxApp(App):
 
     def build(self):
         try:
+            import kivy_scheduler
+            kivy_scheduler.prefix = 'paradox.'
+            
             logging.info( 'AAAAAAAAAAAAAAAAAAAAAAAAA')
             resource_add_path(join(bundle_dir, 'paradox/uix/'))
             App.version = self.version = config.version

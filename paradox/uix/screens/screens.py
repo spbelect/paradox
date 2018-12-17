@@ -144,7 +144,7 @@ class Screens(ScreenManager):
         self.current = 'error'
 
     def show_form(self, form):
-        screen_name = 'form_%(form_id)s' % form
+        screen_name = f'form_{form[id]}'
         if not self.has_screen(screen_name):
             self.add_widget(FormScreen(form, name=screen_name))
 

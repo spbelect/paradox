@@ -88,6 +88,35 @@ class UserProfileScreen(Screen):
     def get_data(self):
         return {x: self.ids[x].text for x in self.inputs}
 
+
+    @staticmethod
+    def userprofile_errors():
+        errors = []
+        data = App.app_store.get('profile', {})
+        if not data.get('phone'):
+            errors.append('Телефон')
+        if not data.get('first_name'):
+            errors.append('Имя')
+        if not data.get('last_name'):
+            errors.append('Фамилия')
+        if errors:
+            errors = 'Пожалуйста заполните обязательные поля\n' + '\n'.join(errors)
+            show_float_message(text=errors)
+            return errors
+        else:
+            return False
+        
+    def leave(self):
+        data = {x: self.ids[x].text for x in self.inputs}
+        stored = App.app_store.get('profile', {})
+        if stored == data:
+            return
+        App.app_store['profile'] = data
+        App.app_store.sync()
+
+        timestamp = datetime.utcnow().isoformat()
+        net.queue_send_userprofile(dict(data, timestamp=timestamp))
+
     #def input_focus(self, input, focus):
         #if not focus:
             #data = {x: self.ids[x].text for x in self.inputs}

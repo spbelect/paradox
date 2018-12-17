@@ -15,7 +15,7 @@ from .base_input import Input
 
 Builder.load_string('''
 #:include constants.kv
-#:import schedule paradox.scheduler.schedule
+#:import schedule kivy_scheduler.schedule
 
 <MoreButton@Button>:
     text: '+ Еще'
@@ -91,7 +91,8 @@ Builder.load_string('''
         width: dp(100)
 
 
-<VButton>:
+<VButton@Button>:
+    # Button with value
     size_hint: None, None
     height: self.parent.height
     width: dp(60)
@@ -103,11 +104,6 @@ Builder.load_string('''
 
 class TrueFalseButtons(BoxLayout):
     pass
-
-
-class VButton(Button):
-    # Workaround for kivy BUG: https://github.com/kivy/kivy/issues/4379
-    value = ObjectProperty(allownone=True)
 
 
 @objects_manager
@@ -130,11 +126,7 @@ class MoreButton(Button):
 class MultiBoolInput(Input, VBox):
     def __init__(self, *args, **kwargs):
         super(MultiBoolInput, self).__init__(*args, **kwargs)
-        #self.values = []
         self.more_button = None
-
-    def add_value(self, value):
-        schedule('core.new_input_event', self.input_id, value)
 
     def add_past_event(self, event):
         try:

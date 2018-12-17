@@ -92,7 +92,7 @@ class EventsScreen(Screen):
 
         #print(App.inputs[event.get('input_id').encode()])
         item = EventLogItem(
-            input_json=App.inputs[event.get('input_id').encode()],
+            input_json=App.inputs[event.get('input_id')],
             text='[color=#444]{time}[/color] {title}: {value}'.format(
                 time=time.strftime('%H:%M'),
                 **event))

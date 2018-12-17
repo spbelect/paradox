@@ -13,8 +13,8 @@ from kivy.uix.behaviors.focus import FocusBehavior
 from kivy.uix.textinput import TextInput
 from kivy.uix.button import Button
 from kivy.properties import StringProperty, BooleanProperty, ObjectProperty, Property
+from kivy_scheduler import schedule
 
-from ..scheduler import schedule
 from .vbox import VBox
 from .label import Label
 from .base_input import Input
@@ -22,7 +22,6 @@ from .base_input import Input
 
 Builder.load_string('''
 #:include constants.kv
-#:import schedule paradox.scheduler.schedule
 
 <NumericInput>:
     size_hint_y: None

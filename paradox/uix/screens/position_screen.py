@@ -215,3 +215,42 @@ class PositionScreen(Screen):
             return errors
         else:
             return False
+
+    def enter(self)
+        self.region = state.position.region
+        self.uik = state.position.uik
+        
+    def leave_new(self):
+        #changes = {k: v for k, v in state.position.items() if not self.enter_data[k] == state.position[k]}
+        
+        uix.side_panel.region = state.region
+        uix.side_panel.uik = state.uik
+        
+        if not (self.region == state.region) or not (self.uik == state.uik):
+            schedule('send_position')
+        
+        mokrug = get_mokrug(state.region, state.uik)
+        if mokrug == state.mokrug and mokrug is not None:
+            return  # same mokrug
+        
+        state.mokrug = mokrug
+        
+        if state.mokrug is None and self.region == state.region:
+            return  # same region
+    
+        schedule('update_campaigns')
+        
+    def leave(self):
+        data = self.get_data()
+        stored = App.app_store.get('position', {})
+        if stored == data:
+            return
+        App.app_store['position'] = data
+        App.app_store.sync()
+        _update_position(data)
+
+        timestamp = datetime.utcnow().isoformat()
+        net.queue_send_position(dict(data, timestamp=timestamp))
+
+        if data.get('region_id') and data.get('region_id') != stored.get('region_id'):
+            App.get_queue.get_regional_forms(data.get('region_id'))

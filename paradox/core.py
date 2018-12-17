@@ -22,23 +22,6 @@ from .utils import strptime
 #import config
 
 
-def userprofile_errors():
-    errors = []
-    data = App.app_store.get('profile', {})
-    if not data.get('phone'):
-        errors.append('Телефон')
-    if not data.get('first_name'):
-        errors.append('Имя')
-    if not data.get('last_name'):
-        errors.append('Фамилия')
-    if errors:
-        errors = 'Пожалуйста заполните обязательные поля\n' + '\n'.join(errors)
-        show_float_message(text=errors)
-        return errors
-    else:
-        return False
-
-
 def new_input_event(input, value):
     if userprofile_errors():
         App.screens.push_screen('userprofile')
@@ -89,18 +72,6 @@ def send_input_event_fatal_error(event, request, error_data):
         input.on_send_fatal_error(event, request, error_data)
 
 
-def leave_userprofile_screen():
-    data = App.screens.get_screen('userprofile').get_data()
-    stored = App.app_store.get('profile', {})
-    if stored == data:
-        return
-    App.app_store['profile'] = data
-    App.app_store.sync()
-
-    timestamp = datetime.utcnow().isoformat()
-    net.queue_send_userprofile(dict(data, timestamp=timestamp))
-
-
 def load(filename):
     filepath = join(App.user_data_dir, filename)
     if not exists(filepath):
@@ -116,21 +87,6 @@ def _get_local_forms():
     forms = load('forms_local_%s.json' % position.get('region_id'))
     return [x for x in forms if int(position.get('uik')) in x.get('uiks', [])]
 
-
-def leave_position_screen():
-    data = App.screens.get_screen('position').get_data()
-    stored = App.app_store.get('position', {})
-    if stored == data:
-        return
-    App.app_store['position'] = data
-    App.app_store.sync()
-    _update_position(data)
-
-    timestamp = datetime.utcnow().isoformat()
-    net.queue_send_position(dict(data, timestamp=timestamp))
-
-    if data.get('region_id') and data.get('region_id') != stored.get('region_id'):
-        App.get_queue.get_regional_forms(data.get('region_id'))
 
 
 def _refresh_mo():
@@ -286,7 +242,6 @@ def get_mo_list_success(result, region_id):
 
 
 def get_changelog_success(result):
-    #import ipdb; ipdb.sset_trace()
     vstring = u'Версия %s' % App.version[0:3]
     if vstring not in result:
         return

@@ -7,7 +7,7 @@ from kivy.uix.behaviors.togglebutton import ToggleButtonBehavior
 
 from kivy.uix.togglebutton import ToggleButton
 from kivy.properties import StringProperty, BooleanProperty, ObjectProperty, Property
-from vbox import VBox
+from .vbox import VBox
 from .label import Label
 
 Builder.load_string('''
@@ -23,7 +23,7 @@ Builder.load_string('''
         split_str: ' '
         text_size: self.width, None
         height: self.texture_size[1] + 10
-        text: self.parent.text
+        text: self.parent.json['label']
         width: 0.9 * app.root.width
 
     BoxLayout:
@@ -54,7 +54,7 @@ Builder.load_string('''
     size_hint_y: None
     allow_no_selection: False
     group: self.parent.uid
-    on_press: self.parent.parent.value = self.value
+    on_press: self.parent.parent.on_click(self.value)
     background_color: lightgray
 
 ''')
@@ -69,3 +69,27 @@ class TrueNoneFalse(VBox):
     text = StringProperty('')
     input_id = StringProperty()
     value = ObjectProperty(None, allownone=True)
+
+
+    def on_send_start(self, event):
+        self.ids['send_status'].text = 'отправляется'
+    
+    def on_send_success(self, event):
+        self.ids['send_status'].text = ''
+
+    def on_send_error(self, event, request, error_data):
+        pass
+
+    def on_send_fatal_error(self, event, request, error_data):
+        pass
+    
+    @nurse
+    async def on_click(self, value):
+        forms.on_input(self.iid, value)
+        #if not App.profile_ok():
+            #App.show_fill_profile()
+            #return
+        #emit(f'uix/input/{self.iid}/changed')
+        #event = InputEvent.save()
+        
+        

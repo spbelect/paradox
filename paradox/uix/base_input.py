@@ -13,8 +13,12 @@ class Input(object):
     def __init__(self, *args, **kwargs):
         super(Input, self).__init__(*args, **kwargs)
         self.input_id = self.json['input_id']
+        bind()
         #print self.input_id
 
+    def on_send_start(self, event):
+        pass
+    
     def on_send_success(self, event):
         pass
 
