@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+from app_state import state
+from kivy.app import App
 from kivy.lang import Builder
 from kivy.properties import ObjectProperty
 from kivy.uix.boxlayout import BoxLayout
@@ -18,6 +20,7 @@ from .screens.screens import Screens
 
 Builder.load_string('''
 #:include constants.kv
+#:import state app_state.state
 
 <SidePanel>:
     orientation: 'vertical'
@@ -29,7 +32,7 @@ Builder.load_string('''
 
     Button:
         id: region
-        text: 'Регион не выбран'
+        text: self.parent.region or 'Регион не выбран'
         on_release: root.on_click('position')
         background_color: transparent
         shorten: True
@@ -37,7 +40,7 @@ Builder.load_string('''
 
     Button:
         id: uik
-        text: 'УИК не выбран'
+        text: f'УИК {self.parent.uik}' if self.parent.uik else 'УИК не выбран'
         on_release: root.on_click('position')
         background_color: transparent
 
@@ -89,11 +92,24 @@ Builder.load_string('''
 
 
 class MainWidget(NavigationDrawer):
-    pass
+    def __init__(self, *a, **kw):
+        #kw['__no_builder'] = False
+        super().__init__(*a, **kw)
+        
+    async def init(self):
+        App.screens = App.root.ids['screens']   
 
 
 class SidePanel(BoxLayout):
     manager = ObjectProperty()
+    uik = ObjectProperty(allow_none=True)
+    region = ObjectProperty(allow_none=True)
+        
+    async def init(self):
+        self.uik = state.get('uik')
+        if 'region' in state:
+            self.region = state.region.name
+            
         
     def on_click(self, screen):
         main_widget = self.parent.parent

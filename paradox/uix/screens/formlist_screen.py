@@ -2,6 +2,7 @@
 
 from __future__ import unicode_literals
 
+from app_state import state 
 from kivy.clock import Clock
 from kivy.lang import Builder
 from kivy.properties import ObjectProperty
@@ -178,17 +179,30 @@ Builder.load_string('''
 
 class FormListItem(ButtonBehavior, Label):
     json = ObjectProperty()
-
+    
+    #def on_release(self, *a):
+        #self.
 
 @objects_manager
 class FormListScreen(Screen):
-    def build(self, formtype, forms_json):
-        for item in self.ids[formtype].children[:]:
-            self.ids[formtype].remove_widget(item)
-        for form in forms_json:
+    def build_general(self):
+        for item in self.ids['general_forms'].children[:]:
+            self.ids['general_forms'].remove_widget(item)
+        for form in state.forms.general[state.country]:
             item = FormListItem(json=form)
             item.bind(on_release=self.on_release)
-            self.ids[formtype].add_widget(item)
+            self.ids['general_forms'].add_widget(item)
 
     def on_release(self, item):
         self.manager.show_form(item.json)
+
+    @staticmethod
+    def show_loader(f):
+        async def wrapped(*a, **kw):
+            self = App.screens.get_screen('formlist')
+            self.ids['forms_loader'].show()
+            try:
+                return await f(*a, **kw)
+            finally:
+                self.ids['forms_loader'].hide()
+        return wrapped

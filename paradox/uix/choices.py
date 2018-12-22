@@ -84,6 +84,7 @@ class Choices(Button):
     choice = ObjectProperty(None, allownone=True)
     modal_header = StringProperty()
     value = ObjectProperty(None, allownone=True)
+    #input_value = ObjectProperty(None, allownone=True)
 
     def __init__(self, *args, **kwargs):
         super(Choices, self).__init__(*args, **kwargs)
@@ -95,6 +96,9 @@ class Choices(Button):
     def on_choice(self, obj, choice):
         self.text = choice.short_text
         self.value = choice.value
+        
+    #def on_input_value(self):
+        #import ipdb; ipdb.sset_trace()
 
     def add_widget(self, child):
         self.modal.ids['list'].add_widget(child)
@@ -181,6 +185,7 @@ class ChoicesModal(ModalView):
             for child in self.ids['list'].children:
                 if child.collide_point(touch.x, touch.y):
                     self.choices.choice = child
+                    #self.choices.input_value = child.value
                     self.dismiss()
                     return True
             touch.pop()

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+from app_state import state
 from kivy.app import App
 from kivy.clock import Clock
 from kivy.lang import Builder
@@ -80,7 +81,7 @@ class UserProfileScreen(Screen):
 
     def __init__(self, *args, **kwargs):
         super(UserProfileScreen, self).__init__(*args, **kwargs)
-        initial_data = App.app_store.get('profile', {})
+        initial_data = state.get('profile', {})
         for input in self.inputs:
             self.ids[input].text = initial_data.get(input, '')
             #self.ids[input].bind(focus=self.input_focus)
@@ -92,7 +93,7 @@ class UserProfileScreen(Screen):
     @staticmethod
     def userprofile_errors():
         errors = []
-        data = App.app_store.get('profile', {})
+        data = state.get('profile', {})
         if not data.get('phone'):
             errors.append('Телефон')
         if not data.get('first_name'):
@@ -108,11 +109,10 @@ class UserProfileScreen(Screen):
         
     def leave(self):
         data = {x: self.ids[x].text for x in self.inputs}
-        stored = App.app_store.get('profile', {})
+        stored = state.get('profile', {})
         if stored == data:
             return
-        App.app_store['profile'] = data
-        App.app_store.sync()
+        state['profile'] = data
 
         timestamp = datetime.utcnow().isoformat()
         net.queue_send_userprofile(dict(data, timestamp=timestamp))

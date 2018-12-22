@@ -32,6 +32,7 @@ from kivy.uix.vkeyboard import VKeyboard
 from kivy.uix.behaviors.button import ButtonBehavior
 #import plyer
 
+from paradox import uix
 from ...scheduler import schedule
 from ..vbox import VBox
 ###from uix.navigationdrawer2 import NavigationDrawer
@@ -69,7 +70,7 @@ class Screens(ScreenManager):
 
     def __init__(self, *args, **kwargs):
         super(Screens, self).__init__(*args, **kwargs)
-        Clock.schedule_once(self.build_screens)
+        #Clock.schedule_once(self.build_screens)
         EventLoop.window.bind(on_keyboard=self.hook_keyboard)
         #Window.bind(on_keyboard=self.hook_keyboard2)
 
@@ -81,7 +82,7 @@ class Screens(ScreenManager):
         if self.current == 'position' and name != 'position':
             if self.get_screen('position').show_errors():
                 return
-            schedule('core.leave_position_screen')
+            #schedule('core.leave_position_screen')
 
         if name == 'formlist':
             self.screen_history = []
@@ -121,17 +122,18 @@ class Screens(ScreenManager):
                 show_float_message(text='Нажмите еще раз для выхода')
         return True
 
-    def build_screens(self, *a):
-        self.add_widget(FormListScreen(name='formlist'))
+    async def init(self):
+        self.add_widget(uix.formlist)
         self.add_widget(HandBookScreen(name='handbook'))
-        self.add_widget(PositionScreen(name='position'))
+        #uix.position = PositionScreen(name='position')
+        self.add_widget(uix.position)
         self.add_widget(EventsScreen(name='events'))
         self.add_widget(AboutScreen(name='about'))
         self.add_widget(CommunicationScreen(name='communication'))
         self.add_widget(UserProfileScreen(name='userprofile'))
         self.push_screen('formlist')
         #self.push_screen('position')
-        schedule('core.screens_initialized')
+        #schedule('core.screens_initialized')
 
     def show_error_screen(self, message):
         

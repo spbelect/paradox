@@ -9,18 +9,27 @@ import shelve
 import sys
 import traceback
 
+from app_state import state, on
 from datetime import datetime
 from glob import glob
 from hashlib import md5
+from lockorator import lock_or_exit
 from os.path import join, exists
 from random import randint
 from shutil import copyfile
+
+import trio
+import asks
+os.environ['KIVY_EVENTLOOP'] = 'trio'
+asks.init('trio')
 
 from kivy.utils import platform
 
 from kivy.config import Config
 if platform in ['linux', 'windows']:
     Config.set('kivy', 'keyboard_mode', 'system')
+
+import kivy.uix.widget
 
 from kivy.base import ExceptionManager
 from kivy.properties import ListProperty
@@ -32,6 +41,7 @@ from requests import post
 from tinydb import TinyDB
 
 from paradox import config
+from util import delay
 
 
 if getattr(sys, 'frozen', False):
@@ -41,6 +51,55 @@ if getattr(sys, 'frozen', False):
 else:
     # we are running in a normal Python environment
     bundle_dir = os.path.dirname(os.path.abspath(__file__))
+
+
+#from kivy.lang import Builder
+
+#def load_later(string):
+    #App.nursery.start_soon(load_async, string)
+    
+    
+#async def load_async(string):
+    ##import ipdb; ipdb.sset_trace()
+    #print('load')
+    #Builder.load_string(string)
+    
+#Builder.load_later = load_later
+
+
+real_init = kivy.uix.widget.Widget.__init__
+
+#async def delayed_init(self):
+    ##print(self)
+        #await self.init()
+    
+def _init(self, *a, **kw):
+    #kw['__no_builder'] = True
+    real_init(self, *a, **kw)
+    #if hasattr(self, 'kv'):
+        #Builder.load_string(self.kv)
+        #Builder.apply(self)
+        #Clock.schedule_once(lambda *a: self.init())
+        
+    if hasattr(self, 'init'):
+        delay(self.init)
+
+    
+kivy.uix.widget.Widget.__init__ = _init
+
+
+@on('state')
+def persist():
+    App.nursery.start_soon(persist_real)
+
+
+@lock_or_exit('persist')
+async def persist_real():
+    await trio.sleep(3)
+    #print('PERSIST', state)
+    App.shelve['state'] = state._data
+    App.shelve.sync()
+    #import ipdb; ipdb.sset_trace()
 
 
 class ParadoxApp(App):
@@ -53,6 +112,9 @@ class ParadoxApp(App):
 
     def build(self):
         try:
+            #import ipdb; ipdb.sset_trace()
+            App.nursery = self.nursery
+            
             import kivy_scheduler
             kivy_scheduler.prefix = 'paradox.'
             
@@ -79,30 +141,22 @@ class ParadoxApp(App):
                 pass
             os.chmod = chmod
 
-            App.app_store = shelve.open(join(App.user_data_dir, 'app_store.db.shelve'))
-            App.inputs = shelve.open(join(App.user_data_dir, 'inputs.db.shelve'))
-            App.event_store = TinyDB(join(App.user_data_dir, 'events.json'))
-            App.regions = {}
+            App.shelve = shelve.open(join(App.user_data_dir, 'state.db.shelve'))
+            state._data = App.shelve.get('state', {})
 
-            if not App.app_store.get('app_id'):
-                App.app_store['app_id'] = randint(10 ** 19, 10 ** 20 - 1)
-                App.app_store.sync()
+            if not state.get('app_id'):
+                state['app_id'] = randint(10 ** 19, 10 ** 20 - 1)
 
-            position = App.app_store.get('position', {})
-            position.setdefault('region_id', '78')
-            App.app_store['position'] = position
-
-
-            from paradox.net import SentrySendQueue, SendQueue, GetQueue
-            App.send_queue = SendQueue('primary', join(App.user_data_dir, 'send_queue.json'))
-            App.send_queue_backup = SendQueue('backup', join(App.user_data_dir, 'send_queue_bak.json'))
-            App.send_queue_sentry = SentrySendQueue(join(App.user_data_dir, 'send_queue_sentry.json'))
-            App.get_queue = GetQueue()
+            state.setdefault('country', 'ru')
+            state.setdefault('regions', {
+                'ru_78': {'id': 'ru_78', 'name': 'Санкт-Петербург'},
+                'ru_47': {'id': 'ru_47', 'name': 'ЛО'}})
+            state.setdefault('region', state.regions.ru_47)
 
             from paradox.uix.main_widget import MainWidget
             #import ipdb; ipdb.sset_trace()
+            
             App.root = MainWidget()
-            App.screens = App.root.ids['screens']
             
             return App.root
         except Exception as e:
@@ -198,7 +252,19 @@ class ParadoxApp(App):
 
     #def on_start(self):
         #sys.excepthook = self.excepthook
+        
+    async def async_run(self):
+        '''Identical to :meth:`run`, but is a coroutine and can be
+        scheduled in a running async event loop.
 
+        .. versionadded:: 1.10.1
+        '''
+        from kivy.base import async_runTouchApp
+        async with trio.open_nursery() as nursery:
+            self.nursery = nursery
+            self._run_prepare()
+            await async_runTouchApp()
+        self.stop()
 
 if __name__ == '__main__':
-    ParadoxApp().run()
+    trio.run(ParadoxApp().async_run)

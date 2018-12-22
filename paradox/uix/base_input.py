@@ -13,7 +13,7 @@ class Input(object):
     def __init__(self, *args, **kwargs):
         super(Input, self).__init__(*args, **kwargs)
         self.input_id = self.json['input_id']
-        bind()
+        #bind()
         #print self.input_id
 
     def on_send_start(self, event):

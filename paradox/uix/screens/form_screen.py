@@ -73,28 +73,29 @@ Builder.load_string('''
 class FormScreen(Screen):
     json = ObjectProperty()
 
-    def __init__(self, form, *args, **kwargs):
-        super(FormScreen, self).__init__(*args, **kwargs)
-        self.json = form
-        schedule(self.load_inputs, timeout=0.41)
-        #Window.bind(keyboard_height=self.on_keyboard_height)
-
     #def on_keyboard_height(self, *args):
         #pass
 
-    def load_inputs(self):
+    def __init__(self, form, *args, **kwargs):
+        super(FormScreen, self).__init__(*args, **kwargs)
+        self.json = form
+        #schedule(self.load_inputs, timeout=0.41)
+        #Window.bind(keyboard_height=self.on_keyboard_height)
+
+        #def load_inputs(self):
         #print self.json['inputs']
         for n, input_data in enumerate(self.json['inputs']):
             #if not input_data.get('help_text'):
                 #input_data['help_text'] = txt
 
-            schedule(self.add_input, input_data, timeout=0.0 + 0.04 * n)
-            #self.add_input(input_data)
+            self.add_input(input_data)
 
         if self.json['form_type'] == 'GENERAL':
             self.remove_widget(self.ids['trailing_spacer'])
 
-        schedule('core.restore_inputs', timeout=0.1 + 0.04 * n)
+        filter = Q(uik=state.uik, region=state.region, timestamp__gt=now()-timedelta(days=1))
+        for event in InputEvent.objects.filter(filter):
+            Input.instances.filter(input_id=event.input_id).add_past_event(event)
 
     def add_input(self, input_data):
         if input_data['input_type'] == 'NUMBER':

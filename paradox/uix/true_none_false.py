@@ -9,6 +9,9 @@ from kivy.uix.togglebutton import ToggleButton
 from kivy.properties import StringProperty, BooleanProperty, ObjectProperty, Property
 from .vbox import VBox
 from .label import Label
+from .base_input import Input
+from util import nurse
+
 
 Builder.load_string('''
 #:include constants.kv
@@ -65,7 +68,7 @@ class TNFButton(ToggleButton):
     value = ObjectProperty(allownone=True)
 
 
-class TrueNoneFalse(VBox):
+class TrueNoneFalse(Input, VBox):
     text = StringProperty('')
     input_id = StringProperty()
     value = ObjectProperty(None, allownone=True)

@@ -51,7 +51,13 @@ class MyApp(App):
         resource_add_path(bundle_dir + '/paradox/uix/')
         from paradox.uix.true_none_false import TrueNoneFalse
         App.root = self.root = Builder.load_string(kv)
-        App.root.add_widget(TrueNoneFalse())
+        App.root.add_widget(TrueNoneFalse(json={
+            "help_text": "ст. 30, п. 1\n1. На всех заседаниях комиссии, ",
+            "input_type": "MULTI_BOOL",
+            "extra_tag": None,
+            "input_id": "5275ae82-e2c1-4351-a52c-caf7922bd728",
+            "label": "В помещении остались только члены УИК и лица, зарегистрированные в реестре"
+        }))
         await super().async_run()
 
 

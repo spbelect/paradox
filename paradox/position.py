@@ -25,15 +25,16 @@ async def send_position():
     
 
 #@lock_wait('start')
+@uix.formlist.show_loader
 async def on_start():
     Campaign.objects.exclude(fromtime__gt=now(), totime__lt=now()).update(active=False)
     Campaign.objects.filter(fromtime__gt=now(), totime__lt=now()).update(active=True)
     
-    for campaign in Campaign.objects.filter(subscription='subing'):
-        campaigns.subscribe(campaign.id)
+    for coordinator in Coordinator.objects.filter(subscription='subing'):
+        coordinators.subscribe(coordinator.id)
         
-    for campaign in Campaign.objects.filter(subscription='unsubing'):
-        campaigns.unsubscribe(campaign.id)
+    for coordinator in Coordinator.objects.filter(subscription='unsubing'):
+        coordinators.unsubscribe(coordinator.id)
     
     formdata = await recv_loop(f'/forms/general/')
     
@@ -43,10 +44,10 @@ async def on_start():
             
     if not state.forms.general == formdata:
         state.forms.general = formdata
-        screens.formlist.build_general_forms(formdata[state.country])
+        screens.formlist.build_general()
     
     state.regions = await recv_loop('/regions/')
     state.region = state.regions[state.region_id]
     mo = get_mokrug(state.region, state.uik)
     
-    await campaigns.update_campaigns()
+    await coordinators.update_campaigns()

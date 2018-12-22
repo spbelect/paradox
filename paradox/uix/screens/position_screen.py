@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 
 
+from app_state import state
 from kivy.app import App
 from kivy.clock import Clock
 from kivy.lang import Builder
@@ -24,12 +25,14 @@ from ..vbox import VBox
 from ..choices import Choice
 from ..float_message import show_float_message
 
+from paradox import uix
 
 
 Builder.load_string('''
 #:include constants.kv
 #:import show_float_message paradox.uix.float_message.show_float_message
 #:import schedule paradox.scheduler.schedule
+#:import state app_state.state
 
 
 <PositionScreen>:
@@ -46,7 +49,7 @@ Builder.load_string('''
                 on_text: self.color = black
                 height: height1
                 size_hint_y: None
-                #on_choice: schedule('core.region_changed', self.choice)
+                on_value: state.region = state.regions[self.value]
 
             BoxLayout:
                 height: height1
@@ -65,6 +68,8 @@ Builder.load_string('''
                     input_type: 'number'
                     #max_len: 4
                     hint_text: 'введите номер'
+                    text: state.uik
+                    on_focus: state.uik = self.text
 
             VBox:
                 spacing: 0
@@ -86,7 +91,7 @@ Builder.load_string('''
                     halign: 'left'
                     on_text: self.color = black
                     padding: 0, 0
-                    #on_choice: schedule('core.status_changed', self.choice)
+                    on_value: state.role = self.value
 
                     StatusChoice:
                         text: 'Член комиссии с правом решающего голоса (ПРГ)'
@@ -145,24 +150,36 @@ class StatusChoice(Choice):
 
 
 class PositionScreen(Screen):
-    data = ObjectProperty(None, allownone=True)
+    #data = ObjectProperty(None, allownone=True)
+    #kv = kv
 
     #def __init__(self, *args, **kwargs):
-        #super(PositionScreen, self).__init__(*args, **kwargs)
+        #super().__init__(*args, **kwargs)
+        
+    async def init(self):
+        self.build_regions()
+        #import ipdb; ipdb.sset_trace()
+        if state.get('region'):
+            region_choice = RegionChoice.objects.get(value=state.region.id)
+            if region_choice:
+                self.ids['region_choices'].choice = region_choice
+        if state.get('role'):
+            self.ids['status_choices'].choice = StatusChoice.objects.get(value=state.role)
+  
         #initial_data = App.app_store.get('position', {})
         #self.ids['uik'].text = initial_data.get('uik', '')
         #self.ids['region_choices'].text = initial_data.get('region_name', '')
         #self.ids['status_choices'].text = initial_data.get('status_name', '')
         #self.ids['uik'].bind(focus=self.input_focus)
 
-    def get_data(self):
-        return {
-            'uik': self.ids['uik'].text,
-            'region_id': self.ids['region_choices'].value,
-            #'region_name': self.ids['region_choices'].text,
-            'status': self.ids['status_choices'].value,
-            #'status_name': self.ids['status_choices'].text,
-        }
+    #def get_data(self):
+        #return {
+            #'uik': self.ids['uik'].text,
+            #'region_id': self.ids['region_choices'].value,
+            ##'region_name': self.ids['region_choices'].text,
+            #'status': self.ids['status_choices'].value,
+            ##'status_name': self.ids['status_choices'].text,
+        #}
 
     #def input_focus(self, input, focus):
         #if not focus:
@@ -170,32 +187,29 @@ class PositionScreen(Screen):
             #if input == self.ids['uik']:
                 #schedule('core.uik_changed', self.ids['uik'].text)
 
-    def build_regions(self, data):
-        if data == self.data:
-            return
-        self.data = data
-
+    def build_regions(self):
+        regions = state.regions.values()
+        
         for choice in self.ids['region_choices'].choices():
             self.ids['region_choices'].remove_choice(choice.value)
 
-        msk = list(filter(lambda x: 'Москва' in x['name'], data))
-        spb = list(filter(lambda x: 'Санкт' in x['name'], data))
-        lo = list(filter(lambda x: 'Ленинградская' in x['name'], data))
+        msk = list(filter(lambda x: 'Москва' in x['name'], regions))
+        spb = list(filter(lambda x: 'Санкт' in x['name'], regions))
+        lo = list(filter(lambda x: 'Ленинградская' in x['name'], regions))
 
         #choice = RegionChoice(short_text='Москва', text='Москва', value=msk['id'])
         #self.ids['region_choices'].add_widget(choice)
         
         choice = RegionChoice(
-            short_text='Санкт-Петербург', text='Санкт-Петербург', value='78')
+            short_text='Санкт-Петербург', text='Санкт-Петербург', value='ru_78')
         self.ids['region_choices'].add_widget(choice)
 
         choice = RegionChoice(
-            short_text='Ленинградская область', text='Ленинградская область', value='47')
+            short_text='Ленинградская область', text='Ленинградская область', value='ru_47')
         self.ids['region_choices'].add_widget(choice)
 
-
-        for region in sorted(data, key=lambda x: x['name']):
-            if region in spb + lo:
+        for region in sorted(regions, key=lambda x: x['name']):
+            if region in spb + lo or not region['id'].startswith(state.country):
                 continue
             name = region['name']
             choice = RegionChoice(short_text=name, text=name, value=region['id'])
@@ -216,41 +230,28 @@ class PositionScreen(Screen):
         else:
             return False
 
-    def enter(self)
-        self.region = state.position.region
-        self.uik = state.position.uik
+    def on_enter(self):
+        self.regionid = state.get('region', {}).get('id')
+        self.uik = state.get('uik')
         
-    def leave_new(self):
+    def on_leave(self):
         #changes = {k: v for k, v in state.position.items() if not self.enter_data[k] == state.position[k]}
         
-        uix.side_panel.region = state.region
-        uix.side_panel.uik = state.uik
+        uix.side_panel.region = state.get('region').get('name')
+        uix.side_panel.uik = state.get('uik')
+        #import ipdb; ipdb.sset_trace()
         
-        if not (self.region == state.region) or not (self.uik == state.uik):
-            schedule('send_position')
+        #if not (self.region == state.region) or not (self.uik == state.uik):
+            #schedule('send_position')
         
-        mokrug = get_mokrug(state.region, state.uik)
-        if mokrug == state.mokrug and mokrug is not None:
-            return  # same mokrug
+        #mokrug = get_mokrug(state.region, state.uik)
+        #if mokrug == state.mokrug and mokrug is not None:
+            #return  # same mokrug
         
-        state.mokrug = mokrug
+        #state.mokrug = mokrug
         
-        if state.mokrug is None and self.region == state.region:
-            return  # same region
+        #if state.mokrug is None and self.region == state.region:
+            #return  # same region
     
-        schedule('update_campaigns')
+        #schedule('update_campaigns')
         
-    def leave(self):
-        data = self.get_data()
-        stored = App.app_store.get('position', {})
-        if stored == data:
-            return
-        App.app_store['position'] = data
-        App.app_store.sync()
-        _update_position(data)
-
-        timestamp = datetime.utcnow().isoformat()
-        net.queue_send_position(dict(data, timestamp=timestamp))
-
-        if data.get('region_id') and data.get('region_id') != stored.get('region_id'):
-            App.get_queue.get_regional_forms(data.get('region_id'))
