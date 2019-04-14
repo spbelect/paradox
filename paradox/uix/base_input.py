@@ -1,14 +1,14 @@
 from kivy.properties import StringProperty, BooleanProperty, ObjectProperty, Property
 from kivy.clock import Clock
 #from scheduler import schedule
-from ..objects_manager import objects_manager
+from getinstance import InstanceManager
 
 
-@objects_manager
 class Input(object):
     json = ObjectProperty()
     form = ObjectProperty()
     #value = ObjectProperty(None, allownone=True)
+    instances = InstanceManager()
 
     def __init__(self, *args, **kwargs):
         super(Input, self).__init__(*args, **kwargs)

@@ -60,9 +60,16 @@ Builder.load_string('''
         background_color: teal
 
     Button:
-        text: 'Связь'
-        on_release: root.on_click('communication')
+        text: 'Координаторы'
+        on_release: root.on_click('coordinators')
         background_color: transparent
+        disabled: True
+
+    #Button:
+        #text: 'Сообщения'
+        #on_release: root.on_click('messages')
+        #background_color: transparent
+        #disabled: True
 
     Widget:  # spacer
 

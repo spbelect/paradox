@@ -38,10 +38,12 @@ from kivy.clock import Clock
 from kivy.core.window import Window
 from kivy.resources import resource_add_path
 from requests import post
-from tinydb import TinyDB
+#from tinydb import TinyDB
 
 from paradox import config
 from util import delay
+
+
 
 
 if getattr(sys, 'frozen', False):
@@ -88,19 +90,6 @@ def _init(self, *a, **kw):
 kivy.uix.widget.Widget.__init__ = _init
 
 
-@on('state')
-def persist():
-    App.nursery.start_soon(persist_real)
-
-
-@lock_or_exit('persist')
-async def persist_real():
-    await trio.sleep(3)
-    #print('PERSIST', state)
-    App.shelve['state'] = state._data
-    App.shelve.sync()
-    #import ipdb; ipdb.sset_trace()
-
 
 class ParadoxApp(App):
     errors = ListProperty([])
@@ -113,6 +102,11 @@ class ParadoxApp(App):
     def build(self):
         try:
             #import ipdb; ipdb.sset_trace()
+            
+            os.environ.setdefault("DJANGO_SETTINGS_MODULE", "django_settings")
+            import django
+            django.setup()
+
             App.nursery = self.nursery
             
             import kivy_scheduler
@@ -122,7 +116,7 @@ class ParadoxApp(App):
             resource_add_path(join(bundle_dir, 'paradox/uix/'))
             App.version = self.version = config.version
             App.user_data_dir = self.user_data_dir
-
+            
             if platform in ['linux', 'windows']:
                 Window.size = (420, 800)
 
@@ -141,8 +135,7 @@ class ParadoxApp(App):
                 pass
             os.chmod = chmod
 
-            App.shelve = shelve.open(join(App.user_data_dir, 'state.db.shelve'))
-            state._data = App.shelve.get('state', {})
+            state.autopersist(join(App.user_data_dir, 'state.db.shelve'), nursery=App.nursery)
 
             if not state.get('app_id'):
                 state['app_id'] = randint(10 ** 19, 10 ** 20 - 1)

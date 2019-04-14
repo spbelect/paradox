@@ -26,8 +26,8 @@ def on_input(iid, value):
         uik=state.uik,
     )
     
-    campaigns = Campaign.objects.positional().filter(active=True, subscription='yes')
-    event.coordinators = [x.coordinator.id for x in campaigns]
+    #campaigns = Campaign.objects.positional().filter(active=True, subscription='yes')
+    #event.coordinators = [x.coordinator.id for x in campaigns]
 
     #eid = App.event_store.insert(dict(event, title=event_title))
 

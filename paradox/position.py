@@ -1,4 +1,5 @@
-
+from lockorator import lock_or_exit
+from django.core.management import call_command
 
 @lock_or_exit('send_position')
 async def send_position():
@@ -27,6 +28,8 @@ async def send_position():
 #@lock_wait('start')
 @uix.formlist.show_loader
 async def on_start():
+    call_command('migrate')
+
     Campaign.objects.exclude(fromtime__gt=now(), totime__lt=now()).update(active=False)
     Campaign.objects.filter(fromtime__gt=now(), totime__lt=now()).update(active=True)
     
