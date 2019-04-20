@@ -5,19 +5,23 @@ from kivy.properties import ObjectProperty
 from kivy.uix.modalview import ModalView
 from kivy.uix.popup import Popup
 
-from .button import Button
-#from objects_manager import objects_manager
+from button import Button
 
 Builder.load_string('''
 #:include constants.kv
 
+#:import state app_state.state
 
 <ChoicesModal>:
     background: ''
     #background_color: transparent
 
     size_hint: 0.9, None
-    height: content.height if content.height < 0.9 * app.root.height else 0.9 * app.root.height
+    hparent: getattr(self.parent, 'height', 10) * 0.9
+    height: 
+        content.height if content.height < self.hparent else self.hparent
+    #height:
+        
     _anim_duration: 0
     _anim_alpha: 1
     #_window: app.root_window
@@ -56,7 +60,8 @@ Builder.load_string('''
     color: black
     background_color: white
     #width: self.parent.width if self.parent else '300dp'
-    width: 0.9 * app.root.width
+    width: 0.9 * (self.parent.width if self.parent else 29)
+    #width: 40
     size_hint: None, None
     #size: '300dp', height1 * 2
     #height: height1 * 1.5

@@ -1,11 +1,12 @@
 
 import trio
-from kivy.app import App
+from app_state import state
+#from kivy.app import App
 
 
 def nurse(f):
     def wrapped(*a, **kw):
-        App.get_running_app().nursery.start_soon(f, *a, **kw)
+        state._nursery.start_soon(f, *a, **kw)
         return True
     return wrapped
         
@@ -15,4 +16,4 @@ def delay(f, *a, timeout=0.1, **kw):
         if timeout:
             await trio.sleep(timeout)
         return await f(*a, **kw)
-    App.nursery.start_soon(_delay)
+    state._nursery.start_soon(_delay)

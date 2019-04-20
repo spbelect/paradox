@@ -33,7 +33,6 @@ from kivy.uix.behaviors.button import ButtonBehavior
 #import plyer
 
 from paradox import uix
-from ...scheduler import schedule
 from ..vbox import VBox
 ###from uix.navigationdrawer2 import NavigationDrawer
 from ..float_message import show_float_message
@@ -73,12 +72,26 @@ class Screens(ScreenManager):
         #Clock.schedule_once(self.build_screens)
         EventLoop.window.bind(on_keyboard=self.hook_keyboard)
         #Window.bind(on_keyboard=self.hook_keyboard2)
+            #self.init()
+            
+        #def init(self):
+        self.add_widget(uix.formlist)
+        self.add_widget(HandBookScreen(name='handbook'))
+        #uix.position = PositionScreen(name='position')
+        self.add_widget(uix.position)
+        self.add_widget(EventsScreen(name='events'))
+        self.add_widget(AboutScreen(name='about'))
+        self.add_widget(CommunicationScreen(name='communication'))
+        self.add_widget(UserProfileScreen(name='userprofile'))
+        self.push_screen('formlist')
+        #self.push_screen('position')
+        #schedule('core.screens_initialized')
 
 
     def push_screen(self, name):
         self.transition.direction = 'left'
-        if self.current == 'userprofile' and name != 'userprofile':
-            schedule('core.leave_userprofile_screen')
+        #if self.current == 'userprofile' and name != 'userprofile':
+            #schedule('core.leave_userprofile_screen')
         if self.current == 'position' and name != 'position':
             if self.get_screen('position').show_errors():
                 return
@@ -122,19 +135,6 @@ class Screens(ScreenManager):
                 show_float_message(text='Нажмите еще раз для выхода')
         return True
 
-    async def init(self):
-        self.add_widget(uix.formlist)
-        self.add_widget(HandBookScreen(name='handbook'))
-        #uix.position = PositionScreen(name='position')
-        self.add_widget(uix.position)
-        self.add_widget(EventsScreen(name='events'))
-        self.add_widget(AboutScreen(name='about'))
-        self.add_widget(CommunicationScreen(name='communication'))
-        self.add_widget(UserProfileScreen(name='userprofile'))
-        self.push_screen('formlist')
-        #self.push_screen('position')
-        #schedule('core.screens_initialized')
-
     def show_error_screen(self, message):
         
         if self.has_screen('error'):
@@ -146,7 +146,7 @@ class Screens(ScreenManager):
         self.current = 'error'
 
     def show_form(self, form):
-        screen_name = f'form_{form[id]}'
+        screen_name = f'form_{form["form_id"]}'
         if not self.has_screen(screen_name):
             self.add_widget(FormScreen(form, name=screen_name))
 

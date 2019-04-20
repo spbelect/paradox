@@ -5,17 +5,15 @@ from kivy.lang import Builder
 from kivy.uix.boxlayout import BoxLayout
 from kivy.properties import ObjectProperty, StringProperty
 
-from ..utils import utc_to_local, strptime
-from ..scheduler import schedule
-from ..objects_manager import objects_manager
-from .button import Button
+from ..utils import strptime
 from .vbox import VBox
 from .base_input import Input
 
+from button import Button
 
 Builder.load_string('''
 #:include constants.kv
-#:import schedule kivy_scheduler.schedule
+#:import state app_state.state
 
 <MoreButton@Button>:
     text: '+ Еще'
@@ -53,24 +51,25 @@ Builder.load_string('''
         height: height1
 
 
-<MultiBoolInput@VBox>:
-    padding: 0
-    spacing: 0
-    size_hint_x: None
-    width: 0.9 * app.root.width
+<MultiBoolInput>:
+    VBox:
+        padding: 0
+        spacing: 0
+        size_hint_x: None
+        width: 0.9 * self.parent.width
 
-    Button:
-        id: input_label
-        padding_x: dp(6)
-        split_str: ' '
-        text_size: self.width, None
-        height: self.texture_size[1] + dp(10)
-        text: self.parent.json['label']
-        color: black
-        #on_press: root.show
+        Button:
+            id: input_label
+            padding_x: dp(6)
+            split_str: ' '
+            text_size: self.width, None
+            height: self.texture_size[1] + dp(10)
+            text: self.parent.parent.json['label']
+            color: black
+            #on_press: root.show
 
-    TrueFalseButtons:
-        id: true_false_buttons
+        TrueFalseButtons:
+            id: true_false_buttons
 
 
 <TrueFalseButtons@BoxLayout>:
@@ -106,7 +105,6 @@ class TrueFalseButtons(BoxLayout):
     pass
 
 
-@objects_manager
 class ValueLogItem(BoxLayout):
     text = StringProperty(None, allownone=True)
     input_id = StringProperty(None, allownone=True)
@@ -123,9 +121,14 @@ class MoreButton(Button):
     pass
 
 
-class MultiBoolInput(Input, VBox):
+class MultiBoolInput(Input):
     def __init__(self, *args, **kwargs):
-        super(MultiBoolInput, self).__init__(*args, **kwargs)
+        
+        #print(11, args, kwargs)
+        #VBox.__init__(self)
+        #print(22, args, kwargs)
+        super().__init__(*args, **kwargs)
+        #print(22, args, kwargs)
         self.more_button = None
 
     def add_past_event(self, event):

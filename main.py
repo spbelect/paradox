@@ -4,6 +4,7 @@
 from __future__ import print_function
 
 import logging
+import json
 import os
 import shelve
 import sys
@@ -13,7 +14,7 @@ from app_state import state, on
 from datetime import datetime
 from glob import glob
 from hashlib import md5
-from lockorator import lock_or_exit
+from lockorator.asyncio import lock_or_exit
 from os.path import join, exists
 from random import randint
 from shutil import copyfile
@@ -23,6 +24,7 @@ import asks
 os.environ['KIVY_EVENTLOOP'] = 'trio'
 asks.init('trio')
 
+state._root = {'width': 200, 'height': 200}
 from kivy.utils import platform
 
 from kivy.config import Config
@@ -30,6 +32,7 @@ if platform in ['linux', 'windows']:
     Config.set('kivy', 'keyboard_mode', 'system')
 
 import kivy.uix.widget
+
 
 from kivy.base import ExceptionManager
 from kivy.properties import ListProperty
@@ -40,10 +43,10 @@ from kivy.resources import resource_add_path
 from requests import post
 #from tinydb import TinyDB
 
-from paradox import config
-from util import delay
 
-
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "django_settings")
+import django
+django.setup()
 
 
 if getattr(sys, 'frozen', False):
@@ -53,6 +56,18 @@ if getattr(sys, 'frozen', False):
 else:
     # we are running in a normal Python environment
     bundle_dir = os.path.dirname(os.path.abspath(__file__))
+
+resource_add_path(join(bundle_dir, 'paradox/uix/'))
+
+from kivy.lang import Builder
+Builder.load_file('base.kv')
+
+from paradox import config
+from util import delay
+import label
+import button
+
+state._config = config
 
 
 #from kivy.lang import Builder
@@ -69,25 +84,25 @@ else:
 #Builder.load_later = load_later
 
 
-real_init = kivy.uix.widget.Widget.__init__
+#real_init = kivy.uix.widget.Widget.__init__
 
-#async def delayed_init(self):
-    ##print(self)
-        #await self.init()
+##async def delayed_init(self):
+    ###print(self)
+        ##await self.init()
     
-def _init(self, *a, **kw):
-    #kw['__no_builder'] = True
-    real_init(self, *a, **kw)
-    #if hasattr(self, 'kv'):
-        #Builder.load_string(self.kv)
-        #Builder.apply(self)
-        #Clock.schedule_once(lambda *a: self.init())
+#def _init(self, *a, **kw):
+    ##kw['__no_builder'] = True
+    #real_init(self, *a, **kw)
+    ##if hasattr(self, 'kv'):
+        ##Builder.load_string(self.kv)
+        ##Builder.apply(self)
+        ##Clock.schedule_once(lambda *a: self.init())
         
-    if hasattr(self, 'init'):
-        delay(self.init)
+    #if hasattr(self, 'init'):
+        #delay(self.init)
 
     
-kivy.uix.widget.Widget.__init__ = _init
+#kivy.uix.widget.Widget.__init__ = _init
 
 
 
@@ -103,17 +118,8 @@ class ParadoxApp(App):
         try:
             #import ipdb; ipdb.sset_trace()
             
-            os.environ.setdefault("DJANGO_SETTINGS_MODULE", "django_settings")
-            import django
-            django.setup()
 
-            App.nursery = self.nursery
-            
-            import kivy_scheduler
-            kivy_scheduler.prefix = 'paradox.'
-            
             logging.info( 'AAAAAAAAAAAAAAAAAAAAAAAAA')
-            resource_add_path(join(bundle_dir, 'paradox/uix/'))
             App.version = self.version = config.version
             App.user_data_dir = self.user_data_dir
             
@@ -134,23 +140,30 @@ class ParadoxApp(App):
             def chmod(*a, **kw):
                 pass
             os.chmod = chmod
-
-            state.autopersist(join(App.user_data_dir, 'state.db.shelve'), nursery=App.nursery)
+            
+            statefile = join(App.user_data_dir, 'state.db.shelve')
+            print(statefile)
+            state.autopersist(statefile)
 
             if not state.get('app_id'):
                 state['app_id'] = randint(10 ** 19, 10 ** 20 - 1)
 
+            state.setdefault('inputs', {})
             state.setdefault('country', 'ru')
             state.setdefault('regions', {
                 'ru_78': {'id': 'ru_78', 'name': 'Санкт-Петербург'},
-                'ru_47': {'id': 'ru_47', 'name': 'ЛО'}})
+                'ru_47': {'id': 'ru_47', 'name': 'ЛО'}
+            })
             state.setdefault('region', state.regions.ru_47)
+            state.setdefault('mokrug', 262)
+            state.setdefault('profile', {})
 
             from paradox.uix.main_widget import MainWidget
             #import ipdb; ipdb.sset_trace()
             
             App.root = MainWidget()
             
+            state._nursery.start_soon(on_start)
             return App.root
         except Exception as e:
             _traceback = traceback.format_exc()
@@ -254,10 +267,55 @@ class ParadoxApp(App):
         '''
         from kivy.base import async_runTouchApp
         async with trio.open_nursery() as nursery:
-            self.nursery = nursery
+            state._nursery = nursery
             self._run_prepare()
             await async_runTouchApp()
         self.stop()
 
+
+
+from paradox import uix
+from paradox import client
+
+from django.core.management import call_command
+
+@uix.formlist.show_loader
+async def on_start():
+    call_command('migrate')
+
+    ##Campaign.objects.exclude(fromtime__gt=now(), totime__lt=now()).update(active=False)
+    ##Campaign.objects.filter(fromtime__gt=now(), totime__lt=now()).update(active=True)
+    
+    ##for coordinator in Coordinator.objects.filter(subscription='subing'):
+        ##coordinators.subscribe(coordinator.id)
+        
+    ##for coordinator in Coordinator.objects.filter(subscription='unsubing'):
+        ##coordinators.unsubscribe(coordinator.id)
+    
+    #formdata = await client.recv_loop(f'/forms/general/')
+    formdata = {'ru': json.load(open('forms_general.json'))}
+    
+    for country in formdata:
+        for form in formdata[country]:
+            for input in form['inputs']:
+                state.inputs[input['input_id']] = input
+            
+    state.setdefault('forms', {})
+    if not state.forms.get('general') == formdata:
+        state.forms.general = formdata
+    uix.formlist.build_general()
+    
+    #state.regions = await recv_loop('/regions/')
+    state.regions = {f'ru_{x["id"]}': dict(x, id=f'ru_{x["id"]}') for x in json.load(open('regions.json'))}
+    #mo = get_mokrug(state.region, state.uik)
+    
+    await client.update_campaigns()
+    #import ipdb; ipdb.sset_trace()
+    await client.send_position()
+    #await client.send_userprofile()
+    state._nursery.start_soon(client.event_send_loop)
+
+
 if __name__ == '__main__':
+    
     trio.run(ParadoxApp().async_run)

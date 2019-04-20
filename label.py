@@ -12,6 +12,7 @@ Builder.load_string("""
     canvas.before:
         Color:
             rgba: self.background_color if hasattr(self, 'background_color') else transparent
+            #rgba: (0,0,9, 1)
         Rectangle:
             pos: self.pos
             size: self.size

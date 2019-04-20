@@ -18,14 +18,13 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.button import Button
 from kivy.uix.vkeyboard import VKeyboard
 
-from ...scheduler import schedule
 from ..vbox import VBox
 
 
 
 Builder.load_string('''
 #:include constants.kv
-#:import schedule paradox.scheduler.schedule
+#:import state app_state.state
 
 <NiceTextInput@TextInput>:
     background_active: ''
@@ -39,18 +38,22 @@ Builder.load_string('''
             NiceTextInput:
                 id: email
                 hint_text: 'Email'
+                on_focus: state.profile.email = self.text
 
             NiceTextInput:
                 id: last_name
                 hint_text: 'Фамилия'
+                on_focus: state.profile.last_name = self.text
 
             NiceTextInput:
                 id: first_name
                 hint_text: 'Имя'
+                on_focus: state.profile.first_name = self.text
 
             NiceTextInput:
                 id: middle_name
                 hint_text: 'Отчество'
+                on_focus: state.profile.middle_name = self.text
 
             BoxLayout:
                 height: height1
@@ -66,11 +69,11 @@ Builder.load_string('''
                     hint_text: 'Телефон'
                     input_filter: 'int'
                     input_type: 'number'
+                    on_focus: state.profile.phone = self.text
 
             Button:
                 text: 'Продолжить'
-                on_release: schedule(lambda: root.manager.push_screen('position'))
-                #on_release: root.on_continue()
+                on_release: root.manager.push_screen('formlist')
                 background_color: darkgray
 
 ''')
@@ -107,12 +110,12 @@ class UserProfileScreen(Screen):
         else:
             return False
         
-    def leave(self):
+    def on_leave(self):
         data = {x: self.ids[x].text for x in self.inputs}
         stored = state.get('profile', {})
         if stored == data:
             return
-        state['profile'] = data
+        state.profile = data
 
         timestamp = datetime.utcnow().isoformat()
         net.queue_send_userprofile(dict(data, timestamp=timestamp))

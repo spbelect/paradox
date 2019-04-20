@@ -7,13 +7,13 @@ from kivy.properties import StringProperty
 from kivy.uix.modalview import ModalView
 from kivy.lang import Builder
 
-from ..scheduler import schedule
 
 Builder.load_string('''
+#:import state app_state.state
 
 <NewVersionDialog>:
     size_hint: 0.9, 0.9
-    #size: 0.9, 0.9 * app.root.height
+    #size: 0.9, 0.9 * state._root.height
     background: ''
     #background_color: transparent
     #_anim_duration: 3

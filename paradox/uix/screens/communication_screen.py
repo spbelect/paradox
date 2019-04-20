@@ -9,7 +9,7 @@ from kivy.uix.screenmanager import Screen
 from kivy.uix.behaviors.button import ButtonBehavior
 
 
-from ..label import Label
+from label import Label
 from ..vbox import VBox
 
 

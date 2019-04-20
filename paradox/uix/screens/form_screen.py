@@ -2,16 +2,19 @@
 
 from __future__ import unicode_literals
 
+from datetime import datetime, timedelta
+
+from app_state import state
+from django.db.models import Q
 from kivy.lang import Builder
 from kivy.properties import ObjectProperty
 from kivy.uix.screenmanager import Screen
 from kivy.uix.widget import Widget
 
-from ...scheduler import schedule
-from ...objects_manager import objects_manager
 from ..multibool_input import MultiBoolInput
 from ..numeric_input import NumericInput
 from ..vbox import VBox
+from paradox.models import InputEvent
 
 
 Builder.load_string('''
@@ -69,7 +72,6 @@ Builder.load_string('''
 ''')
 
 
-@objects_manager
 class FormScreen(Screen):
     json = ObjectProperty()
 
@@ -93,7 +95,7 @@ class FormScreen(Screen):
         if self.json['form_type'] == 'GENERAL':
             self.remove_widget(self.ids['trailing_spacer'])
 
-        filter = Q(uik=state.uik, region=state.region, timestamp__gt=now()-timedelta(days=1))
+        filter = Q(uik=state.uik, region=state.region.id, timestamp__gt=datetime.now()-timedelta(days=1))
         for event in InputEvent.objects.filter(filter):
             Input.instances.filter(input_id=event.input_id).add_past_event(event)
 

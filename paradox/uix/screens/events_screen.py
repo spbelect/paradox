@@ -5,14 +5,15 @@ from __future__ import unicode_literals
 import time
 
 from datetime import datetime
+from getinstance import InstanceManager
 from kivy.app import App
 from kivy.lang import Builder
 from kivy.properties import ObjectProperty
 from kivy.uix.screenmanager import Screen
 
-from ...utils import utc_to_local, strptime
+from ...utils import strptime
 from ..vbox import VBox
-from ..button import Button
+from button import Button
 
 
 Builder.load_string('''
@@ -63,39 +64,41 @@ class EventLogItem(Button):
 
 
 class EventsScreen(Screen):
+    instances = InstanceManager()
+    
     def __init__(self, *args, **kwargs):
         super(EventsScreen, self).__init__(*args, **kwargs)
         self.last_uik = None
         self.last_region = None
         self.last_date = None
 
-    def add_event(self, event):
-        t = utc_to_local(strptime(event['timestamp'], '%Y-%m-%dT%H:%M:%S.%f'))
+    @classmethod
+    def add_event(cls, event):
+        self = cls.instances.get()
+        #t = utc_to_local(strptime(event['timestamp'], '%Y-%m-%dT%H:%M:%S.%f'))
 
-        if self.last_uik != event['uik'] or self.last_region != event['region_id']:
-            self.ids['content'].add_widget(
-                EventLogItem(halign='center', text='[color=#444]\n{}\nУИК {}[/color]'.format(
-                    App.regions.get(event['region_id'], {}).get('name'), event['uik'])))
-            self.ids['content'].add_widget(
-                EventLogItem(text='[color=#444]{}[/color]'.format(t.strftime('%d.%m.%Y'))))
-            self.last_uik = event['uik']
-            self.last_region = event['region_id']
-            self.last_date = t.date()
+        if self.last_uik != event.uik or self.last_region != event.region:
+            region = state.regions.get(event.region, {}).get('name')
+            self.ids['content'].add_widget(EventLogItem(
+                halign='center', 
+                text=f'[color=#444]\n{region}\nУИК {event.uik}[/color]'
+            ))
+            self.last_uik, self.last_region = event.uik, event.region
 
-        elif self.last_date != t.date():
-            self.ids['content'].add_widget(
-                EventLogItem(text='\n[color=#444]{}[/color]'.format(t.strftime('%d.%m.%Y'))))
-            self.last_date = t.date()
+        if self.last_date != event.timestamp.date():
+            self.ids['content'].add_widget(EventLogItem(
+                text=f'[color=#444]{event.timestamp.strftime("%d.%m.%Y")}[/color]'
+            ))
+            self.last_date = event.timestamp.date()
 
-        if isinstance(event['value'], bool):
-            event['value'] = 'Да' if event['value'] else 'Нет'
+        #if isinstance(event['value'], bool):
+            #event['value'] = 'Да' if event['value'] else 'Нет'
 
-        #print(App.inputs[event.get('input_id').encode()])
+        time = event.timestamp.strftime("%H:%M")
         item = EventLogItem(
-            input_json=App.inputs[event.get('input_id')],
-            text='[color=#444]{time}[/color] {title}: {value}'.format(
-                time=time.strftime('%H:%M'),
-                **event))
+            input_json = state.inputs[event.input_id],
+            text = f'[color=#444]{time}[/color] {event.input_label}: {event.value}'
+        )
         self.ids['content'].add_widget(item)
         item.bind(on_long_press=self.on_event_press)
 

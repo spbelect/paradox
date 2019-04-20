@@ -8,7 +8,7 @@ from kivy.properties import StringProperty
 from kivy.uix.screenmanager import Screen
 from kivy.uix.widget import Widget
 
-from ..label import Label
+from label import Label
 
 
 Builder.load_string('''
@@ -16,13 +16,16 @@ Builder.load_string('''
 #:import open_url paradox.utils.open_url
 #:include constants.kv
 
+#:import state app_state.state
+
+
 <AboutScreen>:
     ScrollView:
         VBox:
             padding: '10dp'
 
             Label:
-                text: 'Paradox v%s' % app.version
+                text: 'Paradox v%s' % state._config.version
                 text_size: self.width, None
                 halign: 'left'
 

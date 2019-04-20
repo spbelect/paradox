@@ -13,24 +13,24 @@ from kivy.uix.behaviors.focus import FocusBehavior
 from kivy.uix.textinput import TextInput
 from kivy.uix.button import Button
 from kivy.properties import StringProperty, BooleanProperty, ObjectProperty, Property
-from kivy_scheduler import schedule
 
 from .vbox import VBox
-from .label import Label
+from label import Label
 from .base_input import Input
 
 
 Builder.load_string('''
 #:include constants.kv
+#:import state app_state.state
 
 <NumericInput>:
     size_hint_y: None
-    width: 0.9 * app.root.width
+    width: 0.9 * getattr(self.parent, 'width', 10)
 
     Button:
         id: input_label
         size_hint: None, None
-        width: 0.9 * app.root.width
+        width: 0.9 * self.parent.width
         height: self.texture_size[1] + 10
         text: self.parent.json['label']
         color: black

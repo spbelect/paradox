@@ -2,7 +2,7 @@
 from __future__ import unicode_literals
 
 
-from app_state import state
+from app_state import state, on
 from kivy.app import App
 from kivy.clock import Clock
 from kivy.lang import Builder
@@ -19,8 +19,6 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.button import Button
 from kivy.uix.vkeyboard import VKeyboard
 
-from ...scheduler import schedule
-from ...objects_manager import objects_manager
 from ..vbox import VBox
 from ..choices import Choice
 from ..float_message import show_float_message
@@ -30,10 +28,16 @@ from paradox import uix
 
 Builder.load_string('''
 #:include constants.kv
-#:import show_float_message paradox.uix.float_message.show_float_message
-#:import schedule paradox.scheduler.schedule
+##:import show_float_message paradox.uix.float_message.show_float_message
 #:import state app_state.state
 
+
+<NiceTextInput@TextInput>:
+    background_active: ''
+    background_normal: ''
+    multiline: False
+    size_hint: 1, None
+    
 
 <PositionScreen>:
     ScrollView:
@@ -68,7 +72,7 @@ Builder.load_string('''
                     input_type: 'number'
                     #max_len: 4
                     hint_text: 'введите номер'
-                    text: state.uik
+                    text: state.get('uik', '')
                     on_focus: state.uik = self.text
 
             VBox:
@@ -133,20 +137,20 @@ Builder.load_string('''
 
             Button:
                 text: 'Продолжить'
-                on_release: schedule(lambda: root.manager.push_screen('formlist'))
+                on_release: root.manager.push_screen('userprofile')
                 background_color: darkgray
 
 ''')
 
 
-@objects_manager
+from getinstance import InstanceManager
+
 class RegionChoice(Choice):
-    pass
+    instances = InstanceManager()
 
 
-@objects_manager
 class StatusChoice(Choice):
-    pass
+    instances = InstanceManager()
 
 
 class PositionScreen(Screen):
@@ -160,7 +164,7 @@ class PositionScreen(Screen):
         self.build_regions()
         #import ipdb; ipdb.sset_trace()
         if state.get('region'):
-            region_choice = RegionChoice.objects.get(value=state.region.id)
+            region_choice = RegionChoice.instances.get(value=state.region.id)
             if region_choice:
                 self.ids['region_choices'].choice = region_choice
         if state.get('role'):
@@ -187,7 +191,9 @@ class PositionScreen(Screen):
             #if input == self.ids['uik']:
                 #schedule('core.uik_changed', self.ids['uik'].text)
 
+    @on('state.regions')
     def build_regions(self):
+        print(461137137)
         regions = state.regions.values()
         
         for choice in self.ids['region_choices'].choices():
@@ -214,6 +220,14 @@ class PositionScreen(Screen):
             name = region['name']
             choice = RegionChoice(short_text=name, text=name, value=region['id'])
             self.ids['region_choices'].add_widget(choice)
+            
+        if state.get('region'):
+            region_choice = RegionChoice.instances.get(value=state.region.id)
+            if region_choice:
+                self.ids['region_choices'].choice = region_choice
+        if state.get('role'):
+            self.ids['status_choices'].choice = StatusChoice.instances.get(value=state.role)
+  
 
     def show_errors(self):
         errors = []
@@ -231,27 +245,27 @@ class PositionScreen(Screen):
             return False
 
     def on_enter(self):
-        self.regionid = state.get('region', {}).get('id')
-        self.uik = state.get('uik')
+        self.prev_regionid = state.get('region', {}).get('id')
+        #self.uik = state.get('uik')
         
-    def on_leave(self):
+    #def on_leave(self):
         #changes = {k: v for k, v in state.position.items() if not self.enter_data[k] == state.position[k]}
         
-        uix.side_panel.region = state.get('region').get('name')
-        uix.side_panel.uik = state.get('uik')
-        #import ipdb; ipdb.sset_trace()
+        #uix.sidepanel.sidepanel.region = state.get('region').get('name')
+        #uix.sidepanel.sidepanel.uik = state.get('uik')
         
-        #if not (self.region == state.region) or not (self.uik == state.uik):
-            #schedule('send_position')
+        ###if not (self.region == state.region) or not (self.uik == state.uik):
+            ###schedule('send_position')
         
-        #mokrug = get_mokrug(state.region, state.uik)
-        #if mokrug == state.mokrug and mokrug is not None:
-            #return  # same mokrug
+        ###mokrug = get_mokrug(state.region, state.uik)
+        ###if mokrug == state.mokrug and mokrug is not None:
+            ###return  # same mokrug
         
-        #state.mokrug = mokrug
+        ###state.mokrug = mokrug
         
-        #if state.mokrug is None and self.region == state.region:
-            #return  # same region
-    
-        #schedule('update_campaigns')
+        ###if state.mokrug is None and self.region == state.region:
+            ###return  # same region
+        #import client
+        #if not self.prev_regionid == state.get('region', {}).get('id'):
+            #state._nursery.start_soon(client.update_campaigns)
         

@@ -3,6 +3,7 @@
 from __future__ import unicode_literals
 
 from app_state import state 
+from getinstance import InstanceManager
 from kivy.clock import Clock
 from kivy.lang import Builder
 from kivy.properties import ObjectProperty
@@ -10,14 +11,15 @@ from kivy.uix.screenmanager import Screen
 from kivy.uix.behaviors.button import ButtonBehavior
 
 
-
-from ...objects_manager import objects_manager
-from ..label import Label
+from label import Label
 from ..vbox import VBox
 
 
 Builder.load_string('''
 #:include constants.kv
+
+#:import state app_state.state
+
 
 <SmartCamera>:
     canvas.before:
@@ -48,7 +50,9 @@ Builder.load_string('''
                     #play: True
                     #size: '100dp', '200dp'
 
-
+                Label:
+                    id: forms_loader
+                    text: "LOL"
                 VBox:
                     padding: 0, dp(10)
 
@@ -113,12 +117,15 @@ Builder.load_string('''
                 on_release: app.root.toggle_state()
                 halign: 'left'
                 text_size: self.size
+                #text_size: 100, 300
                 size_hint: None, None
                 width: dp(150)
                 height: height1
-                background_color: white
+                #background_color: (4,4,0,1)
+                background_normal: ''
                 color: lightgray
                 pos_hint: {'center_y':.5}
+                #font_size: sp(30)
 
 
             Widget:  # horizontal spacer
@@ -183,26 +190,31 @@ class FormListItem(ButtonBehavior, Label):
     #def on_release(self, *a):
         #self.
 
-@objects_manager
+
 class FormListScreen(Screen):
+    #instances = InstanceManager()
+    
     def build_general(self):
         for item in self.ids['general_forms'].children[:]:
             self.ids['general_forms'].remove_widget(item)
+        print('reb', len(state.forms.general[state.country]))
         for form in state.forms.general[state.country]:
             item = FormListItem(json=form)
-            item.bind(on_release=self.on_release)
+            item.bind(on_release=self.on_form_click)
             self.ids['general_forms'].add_widget(item)
 
-    def on_release(self, item):
+    def on_form_click(self, item):
         self.manager.show_form(item.json)
 
-    @staticmethod
-    def show_loader(f):
+    def show_loader(self, f):
         async def wrapped(*a, **kw):
-            self = App.screens.get_screen('formlist')
-            self.ids['forms_loader'].show()
+            self.ids['forms_loader'].height = 20
             try:
                 return await f(*a, **kw)
             finally:
-                self.ids['forms_loader'].hide()
+                self.ids['forms_loader'].height = 0
         return wrapped
+
+    @classmethod
+    def show_campaign_forms(cls, ):
+        self = cls.instances.get()

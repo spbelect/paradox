@@ -1,10 +1,12 @@
+from datetime import datetime
 
 from django.db.models import (
     ForeignKey, UUIDField, DateTimeField, TextField, CharField, IntegerField,
-    BooleanField, ManyToManyField, SET_NULL, CASCADE, PROTECT, Manager)
+    BooleanField, ManyToManyField, SET_NULL, CASCADE, PROTECT, Manager, QuerySet, Q)
 from django.utils.timezone import now
-
 from django import db
+
+from app_state import state
 
 
 class Model(db.models.Model):
@@ -41,14 +43,14 @@ def FK(*args, **kw):
 
 class InputEvent(Model):
     #coordinators
-    timestamp = DateTimeField()
-    send_status = CharField(max_length=20)  # sent/pending/exception/http_{NNN}
+    timestamp = DateTimeField(default=now)
+    send_status = CharField(max_length=20, default='pending')  # sent/pending/exception/http_{NNN}
     input_id = CharField(max_length=40)  # UUID
     input_label = TextField()
     value = TextField()
     alarm = BooleanField()
-    country = IntegerField()
-    region = IntegerField()
+    country = CharField(max_length=2)
+    region = CharField(max_length=6)
     uik = IntegerField()
     COMPLAINT_STATUS = [
         ('none', 'не подавалась'),
@@ -61,37 +63,37 @@ class InputEvent(Model):
     complaint_status = CharField(max_length=20, choices=COMPLAINT_STATUS)
     
     
-class Message(Model):
-    channel = FK(Channel)
-    sender = FK(User)
-    text = TextField()
-    readen = BooleanField(default=False)
-    timestamp = DateTimeField()
-    time_local_received = DateTimeField()
-    send_status = CharField(max_length=20)  # 'sent', 'pending', 'exception', 'http_{NNN}'
-    inreply_to = FK('self')
+#class Message(Model):
+    #channel = FK(Channel)
+    #sender = FK(User)
+    #text = TextField()
+    #readen = BooleanField(default=False)
+    #timestamp = DateTimeField()
+    #time_local_received = DateTimeField()
+    #send_status = CharField(max_length=20)  # 'sent', 'pending', 'exception', 'http_{NNN}'
+    #inreply_to = FK('self')
     
     
-class Channel(Model):
-    id = CharField(max_length=40)  # UUID
-    name = TextField()
-    joined = Bool(default=False)
-    actual = Bool(default=True)
-    coordinator = FK(Coordinator, null=True)
-    campaign = FK(Campaign, null=True)
-    icon_url = TextField()
-    icon_local = TextField()
+#class Channel(Model):
+    #id = CharField(max_length=40)  # UUID
+    #name = TextField()
+    #joined = Bool(default=False)
+    #actual = Bool(default=True)
+    #coordinator = FK(Coordinator, null=True)
+    #campaign = FK(Campaign, null=True)
+    #icon_url = TextField()
+    #icon_local = TextField()
     
-    class Meta:
-        abstract=True
-    
-    
-class ReadonlyChanel(Channel):
-    pass
+    #class Meta:
+        #abstract=True
     
     
-class InputEventSupportChannel(Channel):
-    event = FK(InputEvent)
+#class ReadonlyChanel(Channel):
+    #pass
+    
+    
+#class InputEventSupportChannel(Channel):
+    #event = FK(InputEvent)
     
     
 class Coordinator(Model):
@@ -100,7 +102,7 @@ class Coordinator(Model):
     external_channels = TextField()  #json
     
     
-class CampaignQuerySet(models.QuerySet):
+class CampaignQuerySet(QuerySet):
     def positional(self):
         filter = Q(region__isnull=True)  # federal
         filter |= Q(region=state.region, mokrug__isnull=True)  # regional
@@ -108,27 +110,30 @@ class CampaignQuerySet(models.QuerySet):
             filter |= Q(mokrug=state.mokrug)
         return self.filter(filter)
 
+    def current(self):
+        now = datetime.now().astimezone()
+        return self.filter(fromtime__gt=now, totime__lt=now)
     
 class Campaign(Model):
     objects = CampaignQuerySet.as_manager()
     
     coordinator = FK(Coordinator)
-    subscription = CharField() # yes no subing unsubing
-    active = BooleanField()  # shortcut for filtering current timerange
+    #subscription = CharField() # yes/no/subing/unsubing
+    #active = BooleanField()  # shortcut for filtering current timerange
     fromtime = DateTimeField()
     totime = DateTimeField()
-    country = IntegerField()
-    region = IntegerField()
-    mokrug
-    election
+    country = CharField(max_length=2)
+    region = CharField(max_length=6, null=True)
+    mokrug = IntegerField(null=True) # Муниципльный округ
+    #election
     phones = TextField()  #json
     external_channels = TextField()  #json
     elect_flags = TextField()
     #channels = ManyToManyField(Channel)
     
-class User(Model):
-    name = TextField()
-    avatar
+#class User(Model):
+    #name = TextField()
+    #avatar
     
 class InputEventImage(Model):
     event = FK(InputEvent)
