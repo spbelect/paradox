@@ -1,24 +1,67 @@
+import asyncio
 import json
-import trio
-import asks
+from asyncio import sleep, create_task
+from itertools import chain
+from urllib.parse import urljoin
 
+#import asks
+#import trio
 from app_state import state, on
 from dateutil.parser import parse as dtparse
 from django.db.models import Q
 from lockorator.asyncio import lock_or_exit
+from loguru import logger
+#from trio import sleep
+import requests_async as requests
 
 from paradox import uix
 from .models import Campaign, Coordinator, InputEvent
+from . import config
+
+try:
+    from get_server import get_server
+except ImportError:
+    def get_server():
+        state.server = config.SERVER_ADDRESS
 
 
+async def ping_loop():
+    while True:
+        try:
+            return await requests.get(urljon(state.server, '/ping'))
+        except Exception:
+            pass
+        await sleep(5)
+    
+@lock_or_exit('check_server')
+async def check_server():
+    logger.info('Checking server.')
+    try:
+        await asyncio.wait_for(ping_loop(), timeout=0.5*60)
+    except asyncio.TimeoutError:
+        logger.info('Server ping timeout.')
+        get_server()
+
+
+async def post(url, data):
+    try:
+        return await requests.post(urljon(state.server, url), data)
+    except Exception:
+        create_task(check_server())
+        raise
+        
+        
 @on('state.region', 'state.country', 'state.uik', 'state.role')
 @lock_or_exit('send_position')
 async def send_position():
-    await trio.sleep(10)
+    await sleep(10)
     while True:
-        prev = (state.uik, state.region.id, state.country, state.role)
         try:
-            response = await asks.post(f'{state.server}/position/', {
+            prev = (state.uik, state.region.id, state.country, state.role)
+        except AttributeError:
+            return
+        try:
+            response = await post(f'/position/', {
                 'app_id': state.app_id,
                 'uik': state.uik,
                 'role': state.role,
@@ -37,30 +80,34 @@ async def send_position():
                     #continue 
             #else:
                 #uix.sidepanel.http_error(response)
-        await trio.sleep(5)
+        await sleep(5)
 
 
 async def event_send_loop():
     while True:
         tosend = Q(send_status__in=['pending', 'exception']) | Q(send_status__startswith='http_')
-        #pending = InputEvent.objects.filter(tosend)
-        for event in InputEvent.objects.filter(tosend).values():
+        tosend = InputEvent.objects.filter(tosend)
+        logger.info(f'{tosend.count()} events to send.')
+        for event in tosend:
             try:
-                response = await asks.post('{state.server}/input_events/', {
+                response = await post('/input_events/', {
                     'iid': event.input_id,
-                    #'coordinators': [x.id]
                 })
             except Exception as e:
                 event.update(send_status='exception')
-                uix.Input.instances.find(iid=iid).on_send_error(event)
-                break
+                #print('err', event.input_id)
+                for input in uix.Input.instances.filter(input_id=event.input_id):
+                    input.on_send_error(event)
+                continue
             if not response.status_code == 200:
                 event.update(send_status=f'http_{response.status_code}')
-                uix.Input.instances.find(iid=iid).on_send_error(event)
-                break
+                for input in uix.Input.instances.filter(input_id=event.input_id):
+                    input.on_send_error(event)
+                continue
             event.update(send_status='sent')
-            uix.Input.instances.find(iid=iid).on_send_success(event)
-        await trio.sleep(5)
+            for input in uix.Input.instances.filter(input_id=event.input_id).on_send_success(event):
+                input.on_send_success(event)
+        await sleep(5)
         
         
 async def recv_loop(url):
@@ -69,7 +116,7 @@ async def recv_loop(url):
             response = await asks.get('{state.server}{url}')
         except Exception as e:
             raise  # TODO
-            await trio.sleep(5)
+            await sleep(5)
         else:
             return response
             
@@ -80,7 +127,7 @@ mock_campaigns = {
             'election': '6b26',
             'coordinator': '724',
             'fromtime': '2018.07.22T00:00',
-            'totime': '2018.07.22T00:00',
+            'totime': '2019.12.22T00:00',
             'channels': [
                 {'type': 'readonly', 'uuid': '51', 'name': 'НП NEWS МО Дачное', 'icon': 'http://'},
                 {'type': 'groupchat', 'uuid':'724', 'name': 'НП чат МО Дачное', 'icon': 'http://'},
@@ -95,8 +142,9 @@ mock_campaigns = {
         '6b26': {
             'name': 'Выборы Депутатов МО Дачное',
             'date': '2018.09.08', 
-            'mokrug': '3467',
-            'flags': ['otkrep', 'mestonah', 'dosrochka']
+            'mokrug': 3467,
+            'flags': ['otkrep', 'mestonah', 'dosrochka'],
+            'region': 'ru_78'
         },  
         'f674': {
             'name': 'Выборы президента'
@@ -133,25 +181,14 @@ mock_campaigns = {
 @uix.formlist.show_loader
 #@uix.coordinators.show_loader
 @lock_or_exit('update_campaigns')
+@on('state.region')
 async def update_campaigns():
     while True:
-        region, country = state.region, state.country
+        region, country = state.get('region'), state.get('country')
+        logger.info(f'region: {getattr(region, "name", None)}, country: {country}')
+        if not region or not country:
+            break
         #data = await recv_loop(f'/region/{region}/campaigns/')
-        #data = {
-            #'coordinators': {'NP12345': {
-                #'name': 'Наблюдатели петербурга',
-                #'phones': ['555'],
-                #'external_channels': ['http://t.me/spb_lo']
-            #}},
-            #'campaigns': {'EDG2019-26246':{
-                #'election': '2019-mo-dachnoye-7272',
-            #}},
-            #'elections': {'2019-mo-dachnoye-7272':{
-                #'region': 'ru_78',
-                #'mokrug': 'mo-dachnoye',
-                #'flags': 
-            #}}
-        #}
         data = mock_campaigns
         
         ##Channel.objects.filter(coordinator__in=data['coordinators']).update(actual=False)
@@ -193,22 +230,29 @@ async def update_campaigns():
         if (region, country) == (state.region, state.country):
             break  # Пока ожидали http ответ, регион не изменился, продолжим
         
-        trio.sleep(5)
+        await sleep(5)
     
-    campaigns = Campaign.objects.positional().current()
-    #uix.coordinators.show(Coordinator.objects.filter(campaign__in=campaigns))
-    
+    create_task(update_elect_flags())
+    #campaigns = Campaign.objects.positional().current()
     #uix.FormListScreen.delete_campaign_forms()
     #for campaign in campaigns:  #.filter(coordinator__subscription='yes'):
         #uix.formlist.show_campaign_forms(campaign)
     
     #if campaigns.count() == 0:
         #uix.formlist.show_no_campaign_notice()
+        
 
-
-#async def on_subscribe(id):
-    #Coordinator.objects.filter(id=id).update(subscription='subing')
-    #subscribe(id)
+    #uix.coordinators.show(Coordinator.objects.filter(campaign__in=campaigns))
+    
+@on('state.uik')
+@lock_or_exit('update_elect_flags')
+async def update_elect_flags():
+    await sleep(5)
+    campaigns = Campaign.objects.positional().current().filter(elect_flags__isnull=False)
+    state.elect_flags = set(chain(*(x.elect_flags.split(',') for x in campaigns)))
+    logger.debug(f'{campaigns.count()} active campaigns.')
+    logger.debug(f'Election flags: {list(state.elect_flags)}')
+    
     
     
 #@uix.formlist.show_loader

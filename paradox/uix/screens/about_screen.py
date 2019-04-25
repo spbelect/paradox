@@ -41,7 +41,7 @@ Builder.load_string('''
                 size_hint_y: None
 
                 Image:
-                    source: 'Telegram_alternative_logo.png'
+                    source: 'img/Telegram_alternative_logo.png'
                     width: height1 + dp(20)
                     size_hint_x: None
 
@@ -54,7 +54,7 @@ Builder.load_string('''
                 size_hint_y: None
 
                 Image:
-                    source: 'fb_icon_325x325.png'
+                    source: 'img/fb_icon_325x325.png'
                     width: height1 + dp(20)
                     size_hint_x: None
 
@@ -66,7 +66,7 @@ Builder.load_string('''
                 size_hint_y: None
 
                 Image:
-                    source: 'vkontakte-256.png'
+                    source: 'img/vkontakte-256.png'
                     width: height1 + dp(20)
                     size_hint_x: None
 

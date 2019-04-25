@@ -3,18 +3,22 @@
 from __future__ import unicode_literals
 
 from datetime import datetime, timedelta
+from itertools import groupby
 
-from app_state import state
+from app_state import state, on
 from django.db.models import Q
 from kivy.lang import Builder
 from kivy.properties import ObjectProperty
 from kivy.uix.screenmanager import Screen
 from kivy.uix.widget import Widget
 
+#from .. import base_input 
 from ..multibool_input import MultiBoolInput
+from ..true_none_false import TrueNoneFalse
 from ..numeric_input import NumericInput
 from ..vbox import VBox
-from paradox.models import InputEvent
+from paradox.models import InputEvent, Campaign
+from paradox import uix
 
 
 Builder.load_string('''
@@ -81,29 +85,27 @@ class FormScreen(Screen):
     def __init__(self, form, *args, **kwargs):
         super(FormScreen, self).__init__(*args, **kwargs)
         self.json = form
-        #schedule(self.load_inputs, timeout=0.41)
-        #Window.bind(keyboard_height=self.on_keyboard_height)
-
-        #def load_inputs(self):
-        #print self.json['inputs']
-        for n, input_data in enumerate(self.json['inputs']):
+        
+        #for item in self.ids['content'].children[:]:
+            #self.ids['content'].remove_widget(item)
+            
+        for input in self.json['inputs']:
             #if not input_data.get('help_text'):
                 #input_data['help_text'] = txt
-
-            self.add_input(input_data)
+            
+            self.add_input(input)
 
         if self.json['form_type'] == 'GENERAL':
             self.remove_widget(self.ids['trailing_spacer'])
 
-        filter = Q(uik=state.uik, region=state.region.id, timestamp__gt=datetime.now()-timedelta(days=1))
-        for event in InputEvent.objects.filter(filter):
-            Input.instances.filter(input_id=event.input_id).add_past_event(event)
+        uix.base_input.restore_past_events()
 
+        
     def add_input(self, input_data):
         if input_data['input_type'] == 'NUMBER':
             input = NumericInput(json=input_data, form=self.json)
         elif input_data['input_type'] == 'MULTI_BOOL':
-            input = MultiBoolInput(json=input_data, form=self.json)
+            input = TrueNoneFalse(json=input_data, form=self.json)
         else:
             return
         input.ids['input_label'].bind(on_long_press=self.on_input_label_press)

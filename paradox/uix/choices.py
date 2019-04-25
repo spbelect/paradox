@@ -94,16 +94,17 @@ class Choices(Button):
     def __init__(self, *args, **kwargs):
         super(Choices, self).__init__(*args, **kwargs)
         self.modal = ChoicesModal(choices=self)
+        self.register_event_type('on_input')
 
     def on_release(self):
         self.modal.open()
 
-    def on_choice(self, obj, choice):
-        self.text = choice.short_text
-        self.value = choice.value
+    def on_input(self, *a):
+        pass
         
-    #def on_input_value(self):
-        #import ipdb; ipdb.sset_trace()
+    def on_choice(self, *a):
+        self.text = self.choice.short_text
+        self.value = self.choice.value
 
     def add_widget(self, child):
         self.modal.ids['list'].add_widget(child)
@@ -116,6 +117,11 @@ class Choices(Button):
 
     def choices(self):
         return self.modal.ids['list'].children[:]
+    
+    def do_input(self, choice):
+        self.choice = choice
+        self.on_input(choice.value)
+        
 
 class ChoicesModal(ModalView):
     choices = ObjectProperty()
@@ -189,7 +195,7 @@ class ChoicesModal(ModalView):
             touch.apply_transform_2d(self.ids['scrollview'].to_local)
             for child in self.ids['list'].children:
                 if child.collide_point(touch.x, touch.y):
-                    self.choices.choice = child
+                    self.choices.do_input(child)
                     #self.choices.input_value = child.value
                     self.dismiss()
                     return True

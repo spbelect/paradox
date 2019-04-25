@@ -9,7 +9,7 @@ from kivy.lang import Builder
 from kivy.properties import ObjectProperty
 from kivy.uix.screenmanager import Screen
 from kivy.uix.behaviors.button import ButtonBehavior
-
+from loguru import logger
 
 from label import Label
 from ..vbox import VBox
@@ -52,7 +52,10 @@ Builder.load_string('''
 
                 Label:
                     id: forms_loader
-                    text: "LOL"
+                    text: "Анкеты обновляются..."
+                    size_hint_y: None
+                    background_color: wheat4
+                    
                 VBox:
                     padding: 0, dp(10)
 
@@ -103,7 +106,7 @@ Builder.load_string('''
             #padding: dp(2)
 
             Button:
-                background_normal: 'HAMBURGER_MENU-1282.png'
+                background_normal: 'img/HAMBURGER_MENU-1282.png'
                 size: height1, height1
                 #size_hint_x: None
                 size_hint: None, None
@@ -135,7 +138,8 @@ Builder.load_string('''
     split_str: ' '
     text_size: self.width, None
     height: self.texture_size[1]
-    width: 300
+    size_hint_y: None
+    #width: 300
     text: self.json['name']
 
 
@@ -192,13 +196,12 @@ class FormListItem(ButtonBehavior, Label):
 
 
 class FormListScreen(Screen):
-    #instances = InstanceManager()
-    
     def build_general(self):
         for item in self.ids['general_forms'].children[:]:
             self.ids['general_forms'].remove_widget(item)
-        print('reb', len(state.forms.general[state.country]))
-        for form in state.forms.general[state.country]:
+        forms = state.forms.general[state.country]
+        logger.debug(f'Rebuilding {len(forms)} forms.')
+        for form in forms:
             item = FormListItem(json=form)
             item.bind(on_release=self.on_form_click)
             self.ids['general_forms'].add_widget(item)
@@ -208,13 +211,15 @@ class FormListScreen(Screen):
 
     def show_loader(self, f):
         async def wrapped(*a, **kw):
-            self.ids['forms_loader'].height = 20
+            self.ids['forms_loader'].height = 40
+            self.ids['forms_loader'].opacity = 1
             try:
                 return await f(*a, **kw)
             finally:
+                logger.debug('hide loader')
                 self.ids['forms_loader'].height = 0
+                self.ids['forms_loader'].opacity = 0
         return wrapped
 
-    @classmethod
-    def show_campaign_forms(cls, ):
-        self = cls.instances.get()
+    #def show_campaign_forms(self):
+        #pass

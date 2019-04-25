@@ -1,20 +1,25 @@
 from .screens.screens import Screens
 
+from .screens.userprofile_screen import UserProfileScreen
 from .screens.position_screen import PositionScreen
 from .screens.formlist_screen import FormListScreen
+from .screens.events_screen import EventsScreen
 #from .screens.coordinators_screen import CoordinatorsScreen
 from .screens.events_screen import EventsScreen
 
 
 
+events_screen = EventsScreen(name='events')
 formlist = FormListScreen(name='formlist')
 position = PositionScreen(name='position')
+userprofile = UserProfileScreen(name='userprofile')
 
 screeens = Screens()
 
 from .sidepanel import SidePanel
 sidepanel = SidePanel()
 
+from .base_input import Input
 #from kivy.app import App
 
 #position = None

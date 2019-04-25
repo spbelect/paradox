@@ -47,7 +47,6 @@ class InputEvent(Model):
     send_status = CharField(max_length=20, default='pending')  # sent/pending/exception/http_{NNN}
     input_id = CharField(max_length=40)  # UUID
     input_label = TextField()
-    value = TextField()
     alarm = BooleanField()
     country = CharField(max_length=2)
     region = CharField(max_length=6)
@@ -62,6 +61,17 @@ class InputEvent(Model):
     ]
     complaint_status = CharField(max_length=20, choices=COMPLAINT_STATUS)
     
+    def get_value(self):
+        if hasattr(self, 'integerinputevent'):
+            return self.integerinputevent.value
+        if hasattr(self, 'boolinputevent'):
+            return self.boolinputevent.value
+    
+class IntegerInputEvent(InputEvent):
+    value = IntegerField(null=True)
+    
+class BoolInputEvent(InputEvent):
+    value = BooleanField(null=True)
     
 #class Message(Model):
     #channel = FK(Channel)
@@ -105,14 +115,15 @@ class Coordinator(Model):
 class CampaignQuerySet(QuerySet):
     def positional(self):
         filter = Q(region__isnull=True)  # federal
-        filter |= Q(region=state.region, mokrug__isnull=True)  # regional
-        if state.mokrug:
-            filter |= Q(mokrug=state.mokrug)
+        if state.get('region'):
+            filter |= Q(region=state.region.id, mokrug__isnull=True)  # regional
+        if state.get('mokrug'):
+            filter |= Q(mokrug=state.mokrug.id)
         return self.filter(filter)
 
     def current(self):
         now = datetime.now().astimezone()
-        return self.filter(fromtime__gt=now, totime__lt=now)
+        return self.filter(fromtime__lt=now, totime__gt=now)
     
 class Campaign(Model):
     objects = CampaignQuerySet.as_manager()

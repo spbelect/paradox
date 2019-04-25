@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 
 import time
 
+from app_state import state, on
 from datetime import datetime
 from getinstance import InstanceManager
 from kivy.app import App
@@ -14,6 +15,7 @@ from kivy.uix.screenmanager import Screen
 from ...utils import strptime
 from ..vbox import VBox
 from button import Button
+from paradox.models import InputEvent
 
 
 Builder.load_string('''
@@ -71,12 +73,14 @@ class EventsScreen(Screen):
         self.last_uik = None
         self.last_region = None
         self.last_date = None
+        #events = 
+        
+    def restore_past_events(self):
+        for event in InputEvent.objects.order_by('timestamp'):
+            self.add_event(event)
 
-    @classmethod
-    def add_event(cls, event):
-        self = cls.instances.get()
-        #t = utc_to_local(strptime(event['timestamp'], '%Y-%m-%dT%H:%M:%S.%f'))
-
+    def add_event(self, event):
+        time = event.timestamp.astimezone()
         if self.last_uik != event.uik or self.last_region != event.region:
             region = state.regions.get(event.region, {}).get('name')
             self.ids['content'].add_widget(EventLogItem(
@@ -85,19 +89,19 @@ class EventsScreen(Screen):
             ))
             self.last_uik, self.last_region = event.uik, event.region
 
-        if self.last_date != event.timestamp.date():
+        if self.last_date != time.date():
             self.ids['content'].add_widget(EventLogItem(
-                text=f'[color=#444]{event.timestamp.strftime("%d.%m.%Y")}[/color]'
+                text=f'[color=#444]{time.strftime("%d.%m.%Y")}[/color]'
             ))
-            self.last_date = event.timestamp.date()
+            self.last_date = time.date()
 
         #if isinstance(event['value'], bool):
             #event['value'] = 'Да' if event['value'] else 'Нет'
 
-        time = event.timestamp.strftime("%H:%M")
+        time = time.strftime("%H:%M")
         item = EventLogItem(
             input_json = state.inputs[event.input_id],
-            text = f'[color=#444]{time}[/color] {event.input_label}: {event.value}'
+            text = f'[color=#444]{time}[/color] {event.input_label}: {event.get_value()}'
         )
         self.ids['content'].add_widget(item)
         item.bind(on_long_press=self.on_event_press)

@@ -52,24 +52,23 @@ Builder.load_string('''
 
 
 <MultiBoolInput>:
-    VBox:
-        padding: 0
-        spacing: 0
-        size_hint_x: None
-        width: 0.9 * self.parent.width
+    padding: 0
+    spacing: 0
+    #size_hint_x: None
+    width: 0.9 * (self.parent.width if self.parent else 10)
 
-        Button:
-            id: input_label
-            padding_x: dp(6)
-            split_str: ' '
-            text_size: self.width, None
-            height: self.texture_size[1] + dp(10)
-            text: self.parent.parent.json['label']
-            color: black
-            #on_press: root.show
+    Button:
+        id: input_label
+        padding_x: dp(6)
+        split_str: ' '
+        text_size: self.width, None
+        height: self.texture_size[1] + dp(10)
+        text: self.parent.json['label']
+        color: black
+        #on_press: root.show
 
-        TrueFalseButtons:
-            id: true_false_buttons
+    TrueFalseButtons:
+        id: true_false_buttons
 
 
 <TrueFalseButtons@BoxLayout>:
@@ -95,7 +94,8 @@ Builder.load_string('''
     size_hint: None, None
     height: self.parent.height
     width: dp(60)
-    on_release: schedule('core.new_input_event', self.parent.parent, self.value)
+    #on_release: schedule('core.new_input_event', self.parent.parent, self.value)
+    on_release: print(1)
     background_color: lightgray
 
 ''')
@@ -121,7 +121,7 @@ class MoreButton(Button):
     pass
 
 
-class MultiBoolInput(Input):
+class MultiBoolInput(Input, VBox):
     def __init__(self, *args, **kwargs):
         
         #print(11, args, kwargs)

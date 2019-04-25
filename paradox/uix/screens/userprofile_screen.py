@@ -117,8 +117,8 @@ class UserProfileScreen(Screen):
             return
         state.profile = data
 
-        timestamp = datetime.utcnow().isoformat()
-        net.queue_send_userprofile(dict(data, timestamp=timestamp))
+        #timestamp = datetime.utcnow().isoformat()
+        #net.queue_send_userprofile(dict(data, timestamp=timestamp))
 
     #def input_focus(self, input, focus):
         #if not focus:

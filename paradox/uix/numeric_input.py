@@ -25,12 +25,15 @@ Builder.load_string('''
 
 <NumericInput>:
     size_hint_y: None
+    
+    padding: 0
+    spacing: 0
     width: 0.9 * getattr(self.parent, 'width', 10)
 
     Button:
         id: input_label
-        size_hint: None, None
-        width: 0.9 * self.parent.width
+        #size_hint: None, None
+        #width: 0.9 * self.parent.width
         height: self.texture_size[1] + 10
         text: self.parent.json['label']
         color: black
@@ -96,8 +99,8 @@ class SerialTextInput(TextInput):
         #return super(SerialTextInput, self).keyboard_on_key_down(window, keycode, text, modifiers)
 
     def on_focus(self, s, f):
-        if f == FOCUS_OUT and self.text:
-            self.parent.value = self.text
+        if f == FOCUS_OUT:
+            self.parent.on_input(self.text or '')
 
 
 
@@ -105,14 +108,16 @@ class NumericInput(Input, VBox):
     value = ObjectProperty(None, allownone=True)
     #loader = ObjectProperty(None, allownone=True)
 
-    def add_past_event(self, event):
-        self.ids['value_input'].text = event['value']
+    def add_past_events(self, events):
+        if events:
+            self.ids['value_input'].text = events[-1].value
+        super().add_past_events(events)
 
     def reset(self):
         self.ids['value_input'].text = ''
         
-    def on_value(self, *args):
-        schedule('core.new_input_event', self, self.value)
+    #def on_value(self, *args):
+        #schedule('core.new_input_event', self, self.value)
 
     def on_save_success(self, eid, timestamp, value):
         self.ids['loader'].timestamp = timestamp.isoformat()

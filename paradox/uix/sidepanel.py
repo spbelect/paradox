@@ -78,8 +78,8 @@ Builder.load_string('''
 
 class SidePanel(BoxLayout):
     manager = ObjectProperty()
-    uik = ObjectProperty(allow_none=True)
-    region = ObjectProperty(allow_none=True)
+    uik = ObjectProperty(allownone=True)
+    region = ObjectProperty(allownone=True)
         
     #async def init(self):
         #if 'region' in state:
@@ -87,10 +87,12 @@ class SidePanel(BoxLayout):
             
     @on('state.uik')
     def set_uik(self):
+        print(f'uik {state.get("uik")}')
         self.uik = state.get('uik')
         
     @on('state.region')
     def set_region(self):
+        print(f'region {state.get("region")}')
         self.region = state.get('region', {}).get('name')
         
         

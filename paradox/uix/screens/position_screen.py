@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+from itertools import chain
 
 from app_state import state, on
 from kivy.app import App
@@ -18,12 +19,14 @@ from kivy.uix.widget import Widget
 from kivy.uix.textinput import TextInput
 from kivy.uix.button import Button
 from kivy.uix.vkeyboard import VKeyboard
+from loguru import logger
 
 from ..vbox import VBox
 from ..choices import Choice
 from ..float_message import show_float_message
 
 from paradox import uix
+from paradox.models import Campaign
 
 
 Builder.load_string('''
@@ -53,7 +56,9 @@ Builder.load_string('''
                 on_text: self.color = black
                 height: height1
                 size_hint_y: None
-                on_value: state.region = state.regions[self.value]
+                on_input: 
+                    #print(self.value)
+                    state.region = state.regions[self.value]
 
             BoxLayout:
                 height: height1
@@ -72,8 +77,8 @@ Builder.load_string('''
                     input_type: 'number'
                     #max_len: 4
                     hint_text: 'введите номер'
-                    text: state.get('uik', '')
-                    on_focus: state.uik = self.text
+                    text: root.uik or ''
+                    on_focus: state.uik = int(self.text) if self.text.isnumeric() else None
 
             VBox:
                 spacing: 0
@@ -132,6 +137,12 @@ Builder.load_string('''
                         short_text: 'Мимо проходил'
                         value: 'other'
 
+            Label:
+                #id: mokrug
+                #text: state.get('mokrug', {}).get('name', '') if state.get('mokrug') else ''
+                text: root.mokrug['name'] if root.mokrug else ''
+                #text: "lol"
+                
             Widget:  #spacer
                 height: dp(15)
 
@@ -154,46 +165,15 @@ class StatusChoice(Choice):
 
 
 class PositionScreen(Screen):
-    #data = ObjectProperty(None, allownone=True)
-    #kv = kv
+    mokrug = ObjectProperty(None, allownone=True)
+    uik = ObjectProperty(None, allownone=True)
 
     #def __init__(self, *args, **kwargs):
         #super().__init__(*args, **kwargs)
         
-    async def init(self):
-        self.build_regions()
-        #import ipdb; ipdb.sset_trace()
-        if state.get('region'):
-            region_choice = RegionChoice.instances.get(value=state.region.id)
-            if region_choice:
-                self.ids['region_choices'].choice = region_choice
-        if state.get('role'):
-            self.ids['status_choices'].choice = StatusChoice.objects.get(value=state.role)
-  
-        #initial_data = App.app_store.get('position', {})
-        #self.ids['uik'].text = initial_data.get('uik', '')
-        #self.ids['region_choices'].text = initial_data.get('region_name', '')
-        #self.ids['status_choices'].text = initial_data.get('status_name', '')
-        #self.ids['uik'].bind(focus=self.input_focus)
-
-    #def get_data(self):
-        #return {
-            #'uik': self.ids['uik'].text,
-            #'region_id': self.ids['region_choices'].value,
-            ##'region_name': self.ids['region_choices'].text,
-            #'status': self.ids['status_choices'].value,
-            ##'status_name': self.ids['status_choices'].text,
-        #}
-
-    #def input_focus(self, input, focus):
-        #if not focus:
-            ##data = {x: self.ids[x].text for x in self.inputs}
-            #if input == self.ids['uik']:
-                #schedule('core.uik_changed', self.ids['uik'].text)
-
     @on('state.regions')
     def build_regions(self):
-        print(461137137)
+        logger.debug('rebuilding region choices')
         regions = state.regions.values()
         
         for choice in self.ids['region_choices'].choices():
@@ -225,10 +205,33 @@ class PositionScreen(Screen):
             region_choice = RegionChoice.instances.get(value=state.region.id)
             if region_choice:
                 self.ids['region_choices'].choice = region_choice
+                
+    @on('state.role')
+    def set_role(self):
         if state.get('role'):
             self.ids['status_choices'].choice = StatusChoice.instances.get(value=state.role)
+            
+    @on('state.uik')
+    def set_uik(self):
+        self.uik = str(state.get('uik', ''))
   
-
+    def get_mokrug(self):
+        if not (state.get('uik') and state.get('region')):
+            return None
+        for mokrug in state.region.get('mokruga', []):
+            if int(state.uik) in mokrug.get('uiks', []):
+                return mokrug
+            for first, last in mokrug.get('ranges', []):
+                if first <= int(state.uik) <= last:
+                    return mokrug
+        return None
+        
+    @on('state.uik', 'state.region')
+    def update_mokrug(self):
+        self.mokrug = state.mokrug = self.get_mokrug()
+        logger.debug(f'Mokrug: {self.mokrug}')
+        
+                   
     def show_errors(self):
         errors = []
         if not self.ids['region_choices'].choice:
@@ -244,9 +247,9 @@ class PositionScreen(Screen):
         else:
             return False
 
-    def on_enter(self):
-        self.prev_regionid = state.get('region', {}).get('id')
-        #self.uik = state.get('uik')
+    #def on_enter(self):
+        #self.prev_regionid = state.get('region', {}).get('id')
+        #self.prev_uik = state.get('uik')
         
     #def on_leave(self):
         #changes = {k: v for k, v in state.position.items() if not self.enter_data[k] == state.position[k]}

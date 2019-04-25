@@ -8,9 +8,9 @@ from kivy.uix.behaviors.togglebutton import ToggleButtonBehavior
 from kivy.uix.togglebutton import ToggleButton
 from kivy.properties import StringProperty, BooleanProperty, ObjectProperty, Property
 from .vbox import VBox
-from .label import Label
 from .base_input import Input
 from util import nurse
+from label import Label
 
 
 Builder.load_string('''
@@ -20,16 +20,16 @@ Builder.load_string('''
 
 <TrueNoneFalse>:
     size_hint_y: None
-    width: 0.9 * self.parent.width
+    width: 0.9 * getattr(self.parent, 'width', 10)
 
-    Label:
+    Button:
+        id: input_label
         padding_x: dp(6)
-        font_size: sp(22)
         split_str: ' '
         text_size: self.width, None
-        height: self.texture_size[1] + 10
+        height: self.texture_size[1] + dp(10)
         text: self.parent.json['label']
-        #width: 0.9 * self.parent..width
+        color: black
 
     BoxLayout:
         size_hint: None, None
@@ -40,23 +40,25 @@ Builder.load_string('''
         TNFButton:
             size_hint_x: .2
             text: 'Да'
-            #value: True
-            on_press: root.on_click(True)
+            value: True
+            on_press: root.on_input(True)
 
         TNFButton:
             size_hint_x: .6
             text: 'Неизвестно'
-            #value: None
+            value: None
             state: 'down'
-            on_press: root.on_click(None)
+            on_press: root.on_input(None)
 
         TNFButton:
             size_hint_x: .2
             text: 'Нет'
-            #value: False
-            on_press: root.on_click(False)
+            value: False
+            on_press: root.on_input(False)
             
     Label:
+        color: lightgray
+        font_size: dp(16)
         id: send_status
 
 
@@ -79,7 +81,6 @@ Builder.load_string('''
 class TrueNoneFalse(Input, VBox):
     text = StringProperty('')
     input_id = StringProperty()
-    value = ObjectProperty(None, allownone=True)
 
 
     #def on_send_start(self, event):
@@ -88,20 +89,22 @@ class TrueNoneFalse(Input, VBox):
     def on_send_success(self, event):
         self.ids['send_status'].text = ''
 
-    def on_send_error(self, event, request, error_data):
-        self.ids['send_status'].text = 'ошибка'
+    def on_send_error(self, event):
+        self.ids['send_status'].text = 'отправляется (error)'
 
     #def on_send_fatal_error(self, event, request, error_data):
         #self.ids['send_status'].text = 'ошибка'
     
-    @nurse
-    async def on_click(self, value):
+    def on_input(self, value):
         self.ids['send_status'].text = 'отправляется'
-        forms.on_input(self.iid, value)
-        #if not App.profile_ok():
-            #App.show_fill_profile()
-            #return
-        #emit(f'uix/input/{self.iid}/changed')
-        #event = InputEvent.save()
+        super().on_input(value)
         
-        
+    def set_past_events(self, events):
+        if events:
+            print('set past', events[-1].get_value())
+            for button in self.ids['buttons'].children:
+                if button.value == events[-1].get_value():
+                    button.state = 'down'
+                else:
+                    button.state = 'normal'
+        super().set_past_events(events)

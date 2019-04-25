@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
+# TODO: move this into standalone package
 
 import kivy.uix.button
 from kivy.clock import Clock
