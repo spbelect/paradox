@@ -85,6 +85,7 @@ class FormScreen(Screen):
     def __init__(self, form, *args, **kwargs):
         super(FormScreen, self).__init__(*args, **kwargs)
         self.json = form
+        #raise Exception()
         
         #for item in self.ids['content'].children[:]:
             #self.ids['content'].remove_widget(item)

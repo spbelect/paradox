@@ -73,8 +73,12 @@ class Input(Widget):
             value = int(value) if value else None
             
         alarm = False
-        if 'alarm_value' in self.json:
-            alarm = bool(value == self.json['alarm_value'])
+        if 'alarm' in self.json:
+            if self.json['alarm'].get('eq'):
+                alarm = bool(value == self.json['alarm'].get('eq'))
+            elif self.json['alarm'].get('gt'):
+                alarm = bool(int(value) > self.json['alarm'].get('gt'))
+            
             
         event = InputEventt.objects.create(
             input_id=self.input_id,
@@ -87,6 +91,7 @@ class Input(Widget):
             country=state.country,
             region=state.region.id,
             uik=state.uik,
+            time_updated=now()
         )
         
         #campaigns = Campaign.objects.positional().filter(active=True, subscription='yes')

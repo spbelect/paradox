@@ -9,7 +9,6 @@ from kivy.uix.togglebutton import ToggleButton
 from kivy.properties import StringProperty, BooleanProperty, ObjectProperty, Property
 from .vbox import VBox
 from .base_input import Input
-from util import nurse
 from label import Label
 
 

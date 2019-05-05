@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from app_state import state
+from app_state import state, on
 from kivy.app import App
 from kivy.clock import Clock
 from kivy.lang import Builder
@@ -39,21 +39,25 @@ Builder.load_string('''
                 id: email
                 hint_text: 'Email'
                 on_focus: state.profile.email = self.text
+                #text: root.email
 
             NiceTextInput:
                 id: last_name
                 hint_text: 'Фамилия'
                 on_focus: state.profile.last_name = self.text
+                #text: root.last_name
 
             NiceTextInput:
                 id: first_name
                 hint_text: 'Имя'
                 on_focus: state.profile.first_name = self.text
+                #text: root.name
 
             NiceTextInput:
                 id: middle_name
                 hint_text: 'Отчество'
                 on_focus: state.profile.middle_name = self.text
+                #text: root.middle_name
 
             BoxLayout:
                 height: height1
@@ -70,6 +74,7 @@ Builder.load_string('''
                     input_filter: 'int'
                     input_type: 'number'
                     on_focus: state.profile.phone = self.text
+                    #text: root.phone
 
             Button:
                 text: 'Продолжить'
@@ -81,17 +86,23 @@ Builder.load_string('''
 
 class UserProfileScreen(Screen):
     inputs = 'email last_name first_name middle_name phone'.split()
+    #email = Ob last_name first_name middle_name phone
 
     def __init__(self, *args, **kwargs):
         super(UserProfileScreen, self).__init__(*args, **kwargs)
-        initial_data = state.get('profile', {})
-        for input in self.inputs:
-            self.ids[input].text = initial_data.get(input, '')
+        #initial_data = state.get('profile', {})
+        #for input in self.inputs:
+            #self.ids[input].text = initial_data.get(input, '')
             #self.ids[input].bind(focus=self.input_focus)
 
-    def get_data(self):
-        return {x: self.ids[x].text for x in self.inputs}
+    #def get_data(self):
+        #return {x: self.ids[x].text for x in self.inputs}
 
+    @on('state.profile')
+    def update_inputs(self):
+        for input in self.inputs:
+            self.ids[input].text = state.get('profile', {}).get(input, '')
+        
 
     @staticmethod
     def userprofile_errors():

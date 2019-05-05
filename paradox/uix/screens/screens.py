@@ -124,9 +124,9 @@ class Screens(ScreenManager):
     def hook_keyboard(self, window, key, *args):
         logging.info( "XXXXXXXXXXXXXXXXX key %d pressed" % key)
         if key in (1000, 27, 1073742095, 4):
-            if App.root.state == 'open':
-                App.root.toggle_state()
-            elif len(self.screen_history) >= 1:
+            #if App.root.state == 'open':
+                #App.root.toggle_state()
+            if len(self.screen_history) >= 1:
                 self.pop_screen()
             elif self.about_to_exit:
                 return False
@@ -136,7 +136,6 @@ class Screens(ScreenManager):
         return True
 
     def show_error_screen(self, message):
-        
         if self.has_screen('error'):
             screen = self.get_screen('error')
             screen.message = message

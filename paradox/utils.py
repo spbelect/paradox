@@ -1,14 +1,16 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+import base64
 import calendar
+import hashlib
 import json
 import re
 import time
 
 from datetime import datetime
 
-from kivy.app import App
+#from kivy.app import App
 from kivy.utils import platform
 
 
@@ -51,3 +53,31 @@ def strptime(string, format):
     except TypeError:
         # Workaround for http://bugs.python.org/issue27400
         return datetime(*(time.strptime(string, format)[0:6]))
+
+
+def md5_file(file_name, chunk_size=4096):
+    """
+    Sometimes the files can be large to fit in memory. So it would
+    be good to chunk the file and update the hash.
+    This function will read 4096 bytes sequentially and
+    feed them to the Md5 function
+
+    :param chunk_size: The chunk size to the file read
+    :param file_name: The path of the file
+    :return: base64-encoded MD5 hash of the file
+    """
+    hash_md5 = hashlib.md5()
+    with open(file_name, "rb") as f:
+        for chunk in iter(lambda: f.read(chunk_size), b""):
+            hash_md5.update(chunk)
+    return hash_md5.hexdigest()
+ 
+ 
+ 
+def delay(f, *a, timeout=0.1, **kw):
+    async def _delay():
+        if timeout:
+            await trio.sleep(timeout)
+        return await f(*a, **kw)
+    state._nursery.start_soon(_delay)
+

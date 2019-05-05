@@ -43,8 +43,12 @@ def FK(*args, **kw):
 
 class InputEvent(Model):
     #coordinators
+    
     timestamp = DateTimeField(default=now)
     send_status = CharField(max_length=20, default='pending')  # sent/pending/exception/http_{NNN}
+    time_sent = DateTimeField(null=True)
+    time_updated = DateTimeField()
+    
     input_id = CharField(max_length=40)  # UUID
     input_label = TextField()
     alarm = BooleanField()
@@ -107,6 +111,7 @@ class BoolInputEvent(InputEvent):
     
     
 class Coordinator(Model):
+    id = CharField(primary_key=True, max_length=40)  # UUID
     name = TextField()
     phones = TextField()  #json
     external_channels = TextField()  #json
@@ -125,9 +130,11 @@ class CampaignQuerySet(QuerySet):
         now = datetime.now().astimezone()
         return self.filter(fromtime__lt=now, totime__gt=now)
     
+    
 class Campaign(Model):
     objects = CampaignQuerySet.as_manager()
     
+    id = CharField(primary_key=True, max_length=40)  # UUID
     coordinator = FK(Coordinator)
     #subscription = CharField() # yes/no/subing/unsubing
     #active = BooleanField()  # shortcut for filtering current timerange
@@ -146,6 +153,18 @@ class Campaign(Model):
     #name = TextField()
     #avatar
     
+    
+
+class InputEventUserComment(Model):
+    event = FK(InputEvent)
+    timestamp = DateTimeField()
+    text = TextField()
+    send_status = CharField(max_length=20, default='pending') 
+    
+    class Meta:
+        ordering = ('timestamp',)
+        
+        
 class InputEventImage(Model):
     event = FK(InputEvent)
     TYPES = [
@@ -155,5 +174,11 @@ class InputEventImage(Model):
         ('tik_reply', 'Ответы, решения от ТИК'),
     ]
     type = CharField(max_length=20, choices=TYPES)
-    file = TextField()
-    send_status = CharField(max_length=20)  # sent/pending/exception/http_{NNN}
+    md5 = CharField(max_length=32)
+    filepath = TextField()
+    send_status = CharField(max_length=40, default='pending') 
+    timestamp = DateTimeField()
+    
+    class Meta:
+        ordering = ('timestamp',)
+        
