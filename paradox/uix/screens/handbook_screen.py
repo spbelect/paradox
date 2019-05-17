@@ -94,14 +94,14 @@ Builder.load_string('''
 #'''
 
 
-imput_help_stub = '''
-Здесь будет справочная информация: ссылки на закон, порядок действий в случае нарушения, итд.
-'''
+#imput_help_stub = '''
+#Здесь будет справочная информация: ссылки на закон, порядок действий в случае нарушения, итд.
+#'''
 
 
 class HandBookScreen(Screen):
-    def show_input_help(self, input_data):
-        label = input_data['label'].upper()
-        help_text = input_data['help_text'] or imput_help_stub
-        self.ids['text'].text = '%s\n\n%s' % (label, help_text)
+    def show_help(self, title, text):
+        #label = input_data['label'].upper()
+        #help_text = input_data['help_text'] or imput_help_stub
+        self.ids['text'].text = f'{title.upper()}\n\n{text}'
         self.ids['scrollview'].scroll_y = 1

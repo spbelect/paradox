@@ -151,8 +151,8 @@ class Screens(ScreenManager):
 
         self.push_screen(screen_name)
 
-    def show_handbook(self, input_data):
-        self.get_screen('handbook').show_input_help(input_data)
+    def show_handbook(self, title, text):
+        self.get_screen('handbook').show_help(title, text)
         self.push_screen('handbook')
 
     def on_pause(self):

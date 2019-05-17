@@ -9,6 +9,7 @@ from urllib.parse import urljoin
 from app_state import state, on
 from dateutil.parser import parse as dtparse
 from django.db.models import Q, F
+from django.utils.timezone import now
 from lockorator.asyncio import lock_or_exit
 from loguru import logger
 #from trio import sleep
@@ -112,7 +113,6 @@ async def event_image_send_loop():
                                         .exclude(send_status='sent')
         logger.info(f'{tosend.count()} images to send.')
         for image in tosend:
-            #md5 = paradox.utils.md5_file(image.filepath)
             try:
                 response = await api_request('POST', '/upload_request/', {
                     'filename': image.md5 + basename(image.filepath),
@@ -156,30 +156,32 @@ async def event_image_send_loop():
             #print('ok')
         await sleep(5)
             
+            
 async def event_send_loop():
     while True:
         tosend = Q(time_sent__isnull=True) | Q(time_sent__lt=F('time_updated'))
         tosend = InputEvent.objects.filter(tosend)
         logger.info(f'{tosend.count()} events to send.')
         for event in tosend:
+            uix_inputs = uix.Input.instances.filter(input_id=event.input_id)
             try:
                 response = await api_request('POST', '/input_events/', {
                     'iid': event.input_id,
+                    'value': event.get_value(),
+                    'complaint_status': event.complaint_status,
+                    'region': event.region,
+                    'uik': event.uik
                 })
             except Exception as e:
                 event.update(send_status='exception')
-                #print('err', event.input_id)
-                for input in uix.Input.instances.filter(input_id=event.input_id):
-                    input.on_send_error(event)
+                uix_inputs.on_send_error(event)
                 continue
             if not response.status_code == 200:
                 event.update(send_status=f'http_{response.status_code}')
-                for input in uix.Input.instances.filter(input_id=event.input_id):
-                    input.on_send_error(event)
+                uix_inputs.on_send_error(event)
                 continue
-            event.update(send_status='sent')
-            for input in uix.Input.instances.filter(input_id=event.input_id).on_send_success(event):
-                input.on_send_success(event)
+            event.update(send_status='sent', time_sent=now())
+            uix_inputs.on_send_success(event)
         await sleep(5)
         
         

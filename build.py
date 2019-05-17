@@ -33,7 +33,7 @@ dist = '/home/u1/.local/share/python-for-android/dists/%s' % dist_name
 
 args = '--private /home/z/pproj/paradox_ssh/ --version={version} --bootstrap=sdl2 --local-recipes=./p4a-recipes --requirements=python2,kivy,openssl,pil,requests,sdl2,tinydb,plyer --whitelist=./whitelist.txt --permission=CALL_PHONE --permission=INTERNET --orientation=portrait'.format(**locals())
 
-cmd = 'p4a apk {args} --package=org.spbelect.{name}_debug --name="{name}_debug"'.format(**locals())
+cmd = f'p4a apk {args} --package=org.spbelect.{name}_debug --name="{name}_debug"'
 
 #cmd = 'p4a apk --private /home/z/pproj/paradox_ssh/ --package=org.spbelect.{name}_debug --name="{name}_debug" --version={version} --dist-name {dist_name} --orientation=portrait --blacklist=/home/z/pproj/paradox_ssh/blacklist.txt --permission=INTERNET --permission=CALL_PHONE'.format(**locals())
 #print cmd

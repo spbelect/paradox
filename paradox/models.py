@@ -1,4 +1,6 @@
+
 from datetime import datetime
+from uuid import uuid4
 
 from django.db.models import (
     ForeignKey, UUIDField, DateTimeField, TextField, CharField, IntegerField,
@@ -7,6 +9,7 @@ from django.utils.timezone import now
 from django import db
 
 from app_state import state
+import paradox
 
 
 class Model(db.models.Model):
@@ -166,6 +169,8 @@ class InputEventUserComment(Model):
         
         
 class InputEventImage(Model):
+    
+    uuid = CharField(default=uuid4, max_length=40)  # UUID
     event = FK(InputEvent)
     TYPES = [
         ('uik_complaint', 'Подаваемые в УИК жалобы'),
@@ -177,8 +182,17 @@ class InputEventImage(Model):
     md5 = CharField(max_length=32)
     filepath = TextField()
     send_status = CharField(max_length=40, default='pending') 
-    timestamp = DateTimeField()
+    timestamp = DateTimeField(default=now)
     
     class Meta:
         ordering = ('timestamp',)
         
+    def save(self, *a, **kw):
+        
+        from paradox import uix
+        self.md5 = paradox.utils.md5_file(self.filepath)
+        result = super().save(*a,**kw)
+         #= uix.imagepicker.instances.filter(id=self.uuid)
+        #if self.send_status == 'sent':
+            
+        return result

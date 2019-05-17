@@ -8,6 +8,7 @@ import json
 import re
 import time
 
+from asyncio import create_task, sleep
 from datetime import datetime
 
 #from kivy.app import App
@@ -73,11 +74,15 @@ def md5_file(file_name, chunk_size=4096):
     return hash_md5.hexdigest()
  
  
- 
+def asynced(f):
+    def wrapper(*a, **kw):
+        delay(f, *a, timeout=0, **kw)
+    return wrapper
+
 def delay(f, *a, timeout=0.1, **kw):
     async def _delay():
         if timeout:
-            await trio.sleep(timeout)
+            await sleep(timeout)
         return await f(*a, **kw)
-    state._nursery.start_soon(_delay)
+    create_task(_delay())
 

@@ -1,25 +1,36 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+from getinstance import InstanceManager
 from kivy.lang import Builder
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.behaviors.togglebutton import ToggleButtonBehavior
-
 from kivy.uix.togglebutton import ToggleButton
 from kivy.properties import StringProperty, BooleanProperty, ObjectProperty, Property
+
 from .vbox import VBox
 from .base_input import Input
 from label import Label
-
+from button import Button
+from .choices import Choice
+from paradox import utils
+from .imagepicker import ImagePicker
+from .complaint import Complaint
 
 Builder.load_string('''
 #:include constants.kv
 
 #:import state app_state.state
 
+#:import uix paradox.uix
+
+
+###:import ImagePicker paradox.uix.imagepicker.ImagePicker
+
 <TrueNoneFalse>:
     size_hint_y: None
     width: 0.9 * getattr(self.parent, 'width', 10)
+    padding_y: 0
 
     Button:
         id: input_label
@@ -29,6 +40,7 @@ Builder.load_string('''
         height: self.texture_size[1] + dp(10)
         text: self.parent.json['label']
         color: black
+        on_long_press: uix.screeens.show_handbook(root.json['label'], root.json['help_text'])
 
     BoxLayout:
         size_hint: None, None
@@ -59,8 +71,14 @@ Builder.load_string('''
         color: lightgray
         font_size: dp(16)
         id: send_status
+        #background_color: lightgray
+        size_hint_y: None
+        height: dp(16)
+        #text: '124'
 
-
+    Complaint:
+        id: complaint
+        
 <TNFButton@ToggleButton>:
     height: self.parent.height - 10
     size_hint_y: None
@@ -69,18 +87,22 @@ Builder.load_string('''
     #on_press: self.parent.parent.on_click(self.value)
     background_color: lightgray
 
-''')
+#<ComplaintStatusChoice>
+    
 
+''')
 
 #class TNFButton(ToggleButton):
     ## workaround for kivy BUG: https://github.com/kivy/kivy/issues/4379
     #value = ObjectProperty(allownone=True)
 
+class ComplaintStatusChoice(Choice):
+    instances = InstanceManager()
+    
 
 class TrueNoneFalse(Input, VBox):
     text = StringProperty('')
     input_id = StringProperty()
-
 
     #def on_send_start(self, event):
         #self.ids['send_status'].text = 'отправляется'

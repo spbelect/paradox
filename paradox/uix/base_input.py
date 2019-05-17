@@ -17,6 +17,7 @@ class Input(Widget):
     json = ObjectProperty()
     form = ObjectProperty()
     value = ObjectProperty(None, allownone=True)
+    last_event = ObjectProperty(None, allownone=True)
     instances = InstanceManager()
     
     def __init__(self, *args, **kwargs):
@@ -38,7 +39,9 @@ class Input(Widget):
             
     def set_past_events(self, events):
         if events:
-            self.value = list(events)[-1].get_value()
+            self.last_event = list(events)[-1]
+            self.value = self.last_event.get_value()
+            self.ids.complaint.visible = self.last_event.alarm
         else:
             self.value = None
         self.show_dependants()
@@ -74,11 +77,11 @@ class Input(Widget):
             
         alarm = False
         if 'alarm' in self.json:
-            if self.json['alarm'].get('eq'):
+            #print(self.json['alarm'])
+            if 'eq' in self.json['alarm']:
                 alarm = bool(value == self.json['alarm'].get('eq'))
-            elif self.json['alarm'].get('gt'):
+            elif 'gt' in self.json['alarm']:
                 alarm = bool(int(value) > self.json['alarm'].get('gt'))
-            
             
         event = InputEventt.objects.create(
             input_id=self.input_id,
@@ -100,6 +103,7 @@ class Input(Widget):
         for input in Input.instances.filter(input_id=self.input_id):
             input.on_save_success(event)
         uix.events_screen.add_event(event)
+        self.ids.complaint.visible = alarm
 
     def show(self):
         self.height = 10
@@ -124,8 +128,17 @@ class Input(Widget):
         pass
 
     def on_save_success(self, event):
-        pass
+        self.last_event = event
 
+    def complaint_image_save(self, type, filepath):
+        InputEventImage.objects.create(
+            type=type, 
+            event=self.last_event,
+            filepath=filepath
+        )
+        
+    def on_complaint_status_input(self, value):
+        self.last_event.update(complaint_status=value, time_updated=now())
 
 @on('state.uik', 'state.region')
 def restore_past_events():

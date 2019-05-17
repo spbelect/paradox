@@ -109,7 +109,7 @@ class FormScreen(Screen):
             input = TrueNoneFalse(json=input_data, form=self.json)
         else:
             return
-        input.ids['input_label'].bind(on_long_press=self.on_input_label_press)
+        #input.ids['input_label'].bind(on_long_press=self.on_input_label_press)
         self.ids['content'].add_widget(input)
 
     def on_input_label_press(self, input_label):

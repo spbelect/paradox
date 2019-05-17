@@ -57,12 +57,6 @@ def chmod(*a, **kw):
 os.chmod = chmod
 
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "django_settings")
-django.setup()
-
-del os.environ['TZ']  # use local timezone instead of django default setting
-time.tzset()
-
 
 if getattr(sys, 'frozen', False):
     # we are running in a PyInstaller windows bundle
@@ -75,6 +69,12 @@ else:
 resource_add_path(join(bundle_dir, 'paradox/uix/'))
 
 Builder.load_file('base.kv')
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "django_settings")
+django.setup()
+
+del os.environ['TZ']  # use local timezone instead of django default setting
+time.tzset()
 
 state._config = config
 
@@ -198,14 +198,16 @@ mock_forms = {'ru': [{
         "input_type": "MULTI_BOOL",
         "input_id": "ecc1deb3-5fe7-48b3-a07c-839993e4563b",
         "label": "Неиспользованные бюллетени убраны в сейф или лежат на видном месте.",
-        "alarm_value": "False"
+        "alarm": { "eq": False },
+        "example_uik_complaint": "это пример"
       },
       {
         "help_text": "pwijgpw \n",
         "input_type": "MULTI_BOOL",
         "input_id": "b87436e0-e7f2-4453-b364-a952c0c7842d",
         "label": "Этот только дострочка",
-        "elect_flags": ["dosrochka"]
+        "elect_flags": ["dosrochka"],
+        "example_uik_complaint": "это пример"
       }
     ],
     "form_id": "14bf4a0a-30f4-4ed2-9bcb-9a16a65033d7",
