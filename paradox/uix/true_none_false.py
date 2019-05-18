@@ -78,6 +78,7 @@ Builder.load_string('''
 
     Complaint:
         id: complaint
+        input: root
         
 <TNFButton@ToggleButton>:
     height: self.parent.height - 10

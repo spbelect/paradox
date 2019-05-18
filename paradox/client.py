@@ -106,13 +106,35 @@ async def send_position():
                 #uix.sidepanel.http_error(response)
         await sleep(5)
 
+async def _update_image(image):
+    try:
+        response = await api_request('POST', f'/event/{image.event_id}/images/', {
+            'type': image.type,
+            'time_created': image.time_created,
+            'deleted': image.deleted,
+            'filename': image.md5 + basename(image.filepath),
+        })
+    except Exception as e:
+        image.update(send_status='update_exception')
+        return
+    if not response.status_code == 200:
+        image.update(send_status=f'update_http_{response.status_code}')
+        return
+    
+    image.update(send_status='sent', time_sent=now())
 
 async def event_image_send_loop():
     while True:
-        tosend = InputEventImage.objects.filter(event__time_sent__isnull=False)\
-                                        .exclude(send_status='sent')
+        tosend = Q(event__time_sent__isnull=False) & \
+            (Q(time_sent__isnull=True) | Q(time_sent__lt=F('time_updated')))
+        tosend = InputEventImage.objects.filter(Q).exclude(deleted=True, time_sent__isnull=True)
+                                        
         logger.info(f'{tosend.count()} images to send.')
         for image in tosend:
+            if image.time_sent:
+                await _update_image(image)
+                continue
+            
             try:
                 response = await api_request('POST', '/upload_request/', {
                     'filename': image.md5 + basename(image.filepath),
@@ -138,20 +160,20 @@ async def event_image_send_loop():
                 continue
             
             try:
-                response = await api_request('POST', '/upload_finalize/', {
-                    'event_id': image.event_id,
+                response = await api_request('POST', f'/event/{image.event_id}/images/', {
                     'type': image.type,
-                    'timestamp': image.timestamp,
+                    'time_created': image.time_created,
+                    'deleted': image.deleted,
                     'filename': image.md5 + basename(image.filepath),
                 })
             except Exception as e:
-                image.update(send_status='fin_exception')
+                image.update(send_status='create_exception')
                 continue
             if not response.status_code == 200:
-                image.update(send_status=f'fin_http_{response.status_code}')
+                image.update(send_status=f'create_http_{response.status_code}')
                 continue
             
-            image.update(send_status='sent')
+            image.update(send_status='sent', time_sent=now())
             #print(res.content)
             #print('ok')
         await sleep(5)
@@ -170,6 +192,7 @@ async def event_send_loop():
                     'value': event.get_value(),
                     'complaint_status': event.complaint_status,
                     'region': event.region,
+                    'time_created': event.time_created,
                     'uik': event.uik
                 })
             except Exception as e:

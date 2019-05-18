@@ -47,7 +47,7 @@ def FK(*args, **kw):
 class InputEvent(Model):
     #coordinators
     
-    timestamp = DateTimeField(default=now)
+    time_created = DateTimeField(default=now)
     send_status = CharField(max_length=20, default='pending')  # sent/pending/exception/http_{NNN}
     time_sent = DateTimeField(null=True)
     time_updated = DateTimeField()
@@ -66,7 +66,7 @@ class InputEvent(Model):
         ('got_unfair_reply', 'получено неудовлетворительное решение'),
         ('got_fair_reply', 'получено удовлетворительное решение'),
     ]
-    complaint_status = CharField(max_length=20, choices=COMPLAINT_STATUS)
+    uik_complaint_status = CharField(max_length=20, choices=COMPLAINT_STATUS)
     
     def get_value(self):
         if hasattr(self, 'integerinputevent'):
@@ -85,7 +85,7 @@ class BoolInputEvent(InputEvent):
     #sender = FK(User)
     #text = TextField()
     #readen = BooleanField(default=False)
-    #timestamp = DateTimeField()
+    #time_created = DateTimeField()
     #time_local_received = DateTimeField()
     #send_status = CharField(max_length=20)  # 'sent', 'pending', 'exception', 'http_{NNN}'
     #inreply_to = FK('self')
@@ -160,18 +160,23 @@ class Campaign(Model):
 
 class InputEventUserComment(Model):
     event = FK(InputEvent)
-    timestamp = DateTimeField()
+    time_created = DateTimeField()
     text = TextField()
     send_status = CharField(max_length=20, default='pending') 
     
     class Meta:
-        ordering = ('timestamp',)
+        ordering = ('time_created',)
         
         
 class InputEventImage(Model):
     
-    uuid = CharField(default=uuid4, max_length=40)  # UUID
-    event = FK(InputEvent)
+    #uuid = CharField(primary_key=True, default=uuid4, max_length=40)  # UUID
+    time_sent = DateTimeField(null=True)
+    time_updated = DateTimeField(default=now)
+    
+    deleted = BooleanField(default=False)
+    
+    event = FK(InputEvent, related_name='images')
     TYPES = [
         ('uik_complaint', 'Подаваемые в УИК жалобы'),
         ('uik_reply', 'Ответы, решения от УИК'),
@@ -182,10 +187,10 @@ class InputEventImage(Model):
     md5 = CharField(max_length=32)
     filepath = TextField()
     send_status = CharField(max_length=40, default='pending') 
-    timestamp = DateTimeField(default=now)
+    time_created = DateTimeField(default=now)
     
     class Meta:
-        ordering = ('timestamp',)
+        ordering = ('time_created',)
         
     def save(self, *a, **kw):
         

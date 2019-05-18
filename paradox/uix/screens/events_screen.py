@@ -76,11 +76,11 @@ class EventsScreen(Screen):
         #events = 
         
     def restore_past_events(self):
-        for event in InputEvent.objects.order_by('timestamp'):
+        for event in InputEvent.objects.order_by('time_created'):
             self.add_event(event)
 
     def add_event(self, event):
-        time = event.timestamp.astimezone()
+        time = event.time_created.astimezone()
         if self.last_uik != event.uik or self.last_region != event.region:
             region = state.regions.get(event.region, {}).get('name')
             self.ids['content'].add_widget(EventLogItem(

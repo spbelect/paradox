@@ -9,6 +9,7 @@ import re
 import time
 
 from asyncio import create_task, sleep
+from inspect import iscoroutinefunction
 from datetime import datetime
 
 #from kivy.app import App
@@ -83,6 +84,9 @@ def delay(f, *a, timeout=0.1, **kw):
     async def _delay():
         if timeout:
             await sleep(timeout)
-        return await f(*a, **kw)
+        if iscoroutinefunction(f):
+            return await f(*a, **kw)
+        else:
+            return f(*a, **kw)
     create_task(_delay())
 

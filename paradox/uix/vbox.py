@@ -52,11 +52,16 @@ class VBox(BoxLayout):
 
     def on_visible(self, *a):
         if self.visible:
-            self.size_hint_y = 1
+            self.size_hint = 1, 1
+            self.size = 100,100
+            
             self.opacity = 1
+            self.disabled = False
         else:
-            self.size_hint_y = None
+            self.size_hint = None, None
+            self.size = 0,0
             self.opacity = 0
+            self.disabled = True
         self.do_layout()
         
     #def add_widget(self, *args):

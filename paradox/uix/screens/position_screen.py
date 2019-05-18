@@ -56,8 +56,7 @@ Builder.load_string('''
                 on_text: self.color = black
                 height: height1
                 size_hint_y: None
-                on_input: 
-                    #print(self.value)
+                on_input:
                     state.region = state.regions[self.value]
 
             BoxLayout:

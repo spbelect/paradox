@@ -46,6 +46,9 @@ class Button(kivy.uix.button.Button):
     def set_long_touch(self, *a):
         self.long_touch = True
 
+    #def on_touch_down(self, e):
+        #print(e.grab_state, e.grab_list, e.is_mouse_scrolling, e.ud, '\n')
+        
     def on_touch_cancel(self, *a):
         Clock.unschedule(self.set_long_touch)
         self.long_touch = False

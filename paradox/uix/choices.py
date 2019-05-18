@@ -120,7 +120,7 @@ class Choices(Button):
     
     def do_input(self, choice):
         self.choice = choice
-        self.on_input(choice.value)
+        self.dispatch('on_input', choice.value)
         
 
 class ChoicesModal(ModalView):

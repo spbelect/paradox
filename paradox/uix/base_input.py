@@ -9,7 +9,7 @@ from kivy.properties import StringProperty, BooleanProperty, ObjectProperty, Pro
 from kivy.clock import Clock
 from kivy.uix.widget import Widget
 
-from paradox.models import InputEvent, BoolInputEvent, IntegerInputEvent
+from paradox.models import InputEvent, BoolInputEvent, IntegerInputEvent, InputEventImage
 from paradox import uix
 
 
@@ -41,7 +41,7 @@ class Input(Widget):
         if events:
             self.last_event = list(events)[-1]
             self.value = self.last_event.get_value()
-            self.ids.complaint.visible = self.last_event.alarm
+            self.ids.complaint.set_past_events(events)
         else:
             self.value = None
         self.show_dependants()
@@ -130,15 +130,6 @@ class Input(Widget):
     def on_save_success(self, event):
         self.last_event = event
 
-    def complaint_image_save(self, type, filepath):
-        InputEventImage.objects.create(
-            type=type, 
-            event=self.last_event,
-            filepath=filepath
-        )
-        
-    def on_complaint_status_input(self, value):
-        self.last_event.update(complaint_status=value, time_updated=now())
 
 @on('state.uik', 'state.region')
 def restore_past_events():
@@ -146,8 +137,8 @@ def restore_past_events():
         input.set_past_events(None)
     if not (state.get('uik') and state.get('region')):
         return
-    filter = Q(uik=state.uik, region=state.region.id, timestamp__gt=now()-timedelta(days=1))
-    events = InputEvent.objects.filter(filter).order_by('input_id', 'timestamp')
+    filter = Q(uik=state.uik, region=state.region.id, time_created__gt=now()-timedelta(days=1))
+    events = InputEvent.objects.filter(filter).order_by('input_id', 'time_created')
     for iid, events in groupby(events, key=lambda x: x.input_id):
         for input in Input.instances.filter(input_id=iid):
             input.set_past_events(list(events))
