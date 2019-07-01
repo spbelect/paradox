@@ -212,7 +212,7 @@ class PositionScreen(Screen):
             
     @on('state.uik')
     def set_uik(self):
-        self.uik = str(state.get('uik', ''))
+        self.uik = str(state.get('uik', '') or '')
   
     def get_mokrug(self):
         if not (state.get('uik') and state.get('region')):

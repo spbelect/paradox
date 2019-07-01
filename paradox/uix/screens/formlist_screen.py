@@ -37,101 +37,118 @@ Builder.load_string('''
             size: self.size
 
 <FormListScreen>:
-
-    BoxLayout:
-        orientation: 'vertical'
-        ScrollView:
-            VBox:
-                #Camera:
-                #SmartCamera:
-                    #id: camera
-                    #resolution: (640, 480)
-                    ##resolution: (480, 640)
-                    #play: True
-                    #size: '100dp', '200dp'
-
-                Label:
-                    id: forms_loader
-                    text: "Анкеты обновляются..."
-                    size_hint_y: None
-                    background_color: wheat4
-                    
-                VBox:
-                    padding: 0, dp(10)
-
-                    Label:
-                        height: dp(20)
-                        text_size: self.size
-                        text: 'Анкеты'
-                        font_size: sp(18)
-                        color: lightgray
-
-                    VBox:
-                        id: general_forms
-                        padding: 0
-
-                    Widget:  # spacer
-                        height: dp(60)
-                        size_hint: 1, None
-
-                VBox:
-                    padding: 0, dp(10)
-
-                    background_color: lightgray
-
-                    Label:
-                        height: dp(20)
-                        text_size: self.size
-                        text: 'Итоговые протоколы'
-                        font_size: sp(18)
-                        color: white
-                        background_color: lightgray
-
-                    VBox:
-                        id: federal_forms
-                        background_color: lightgray
-                    VBox:
-                        id: regional_forms
-                        background_color: lightgray
-                    VBox:
-                        id: local_forms
-                        background_color: lightgray
-
-        #Widget:  # spacer
-
+    FloatLayout:
+        #Label:
+            #pos_hint: {'top': 1}
+            #id: forms_loader
+            #text: "Анкеты обновляются..."
+            #height: dp(14)
+            #font_size: dp(14)
+            #width: self.parent.width
+            #size_hint_y: None
+            #background_color: wheat4
         BoxLayout:
-            height: height1
-            size_hint: 1, None
-            #spacing: dp(2)
-            #padding: dp(2)
+            size: self.parent.size
+            orientation: 'vertical'
+            ScrollView:
+                VBox:
+                    #Camera:
+                    #SmartCamera:
+                        #id: camera
+                        #resolution: (640, 480)
+                        ##resolution: (480, 640)
+                        #play: True
+                        #size: '100dp', '200dp'
 
-            Button:
-                background_normal: 'img/HAMBURGER_MENU-1282.png'
-                size: height1, height1
-                #size_hint_x: None
-                size_hint: None, None
-                pos_hint: {'center_y': .5}
-                on_release: app.root.toggle_state()
-                #background_color: lightgray
+                        
+                    VBox:
+                        padding: 0, dp(10)
 
-            Button:
-                id: menu_button
-                text: 'Меню'
-                on_release: app.root.toggle_state()
-                halign: 'left'
-                text_size: self.size
-                #text_size: 100, 300
-                size_hint: None, None
-                width: dp(150)
+                        Label:
+                            height: dp(20)
+                            text_size: self.size
+                            text: 'Анкеты'
+                            font_size: sp(18)
+                            color: lightgray
+                            Label:
+                                #pos_hint: {'top': 1}
+                                pos: self.parent.pos
+                                id: forms_loader
+                                text: "Анкеты обновляются..."
+                                #height: dp(14)
+                                font_size: sp(18)
+                                #width: self.parent.width
+                                #size_hint_y: None
+                                size: self.parent.size
+                                background_color: wheat4
+            
+
+                        VBox:
+                            id: general_forms
+                            padding: 0
+
+                        Widget:  # spacer
+                            height: dp(60)
+                            size_hint: 1, None
+
+                    VBox:
+                        padding: 0, dp(10)
+
+                        background_color: lightgray
+
+                        Label:
+                            height: dp(20)
+                            text_size: self.size
+                            text: 'Итоговые протоколы'
+                            font_size: sp(18)
+                            color: white
+                            background_color: lightgray
+
+                        VBox:
+                            id: federal_forms
+                            background_color: lightgray
+                        VBox:
+                            id: regional_forms
+                            background_color: lightgray
+                        VBox:
+                            id: local_forms
+                            background_color: lightgray
+
+            #Widget:  # spacer
+
+            BoxLayout:
                 height: height1
-                #background_color: (4,4,0,1)
-                background_normal: ''
-                color: lightgray
-                pos_hint: {'center_y':.5}
-                #font_size: sp(30)
+                size_hint: 1, None
+                #spacing: dp(2)
+                #padding: dp(2)
+
+                Button:
+                    background_normal: 'img/HAMBURGER_MENU-1282.png'
+                    size: height1, height1
+                    #size_hint_x: None
+                    size_hint: None, None
+                    pos_hint: {'center_y': .5}
+                    on_release: app.root.toggle_state()
+                    #background_color: lightgray
+
+                Button:
+                    id: menu_button
+                    text: 'Меню'
+                    on_release: app.root.toggle_state()
+                    halign: 'left'
+                    text_size: self.size
+                    #text_size: 100, 300
+                    size_hint: None, None
+                    width: dp(150)
+                    height: height1
+                    #background_color: (4,4,0,1)
+                    background_normal: ''
+                    color: lightgray
+                    pos_hint: {'center_y':.5}
+                    #font_size: sp(30)
 
 
-            Widget:  # horizontal spacer
+                Widget:  # horizontal spacer
 
 <FormListItem>:
     halign: 'left'

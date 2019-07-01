@@ -1,3 +1,5 @@
+import os
+
 #from environ import Env
 INSTALLED_APPS = ['paradox'] 
 
@@ -10,6 +12,6 @@ USE_TZ = True
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': 'db.sqlite'
+        'NAME': os.environ['DBDIR'] + '/db.sqlite'
     }
 }

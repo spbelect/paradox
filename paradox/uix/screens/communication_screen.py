@@ -47,7 +47,7 @@ Builder.load_string('''
                 size_hint_y: None
 
                 Image:
-                    source: 'Telegram_alternative_logo.png'
+                    source: 'img/Telegram_alternative_logo.png'
                     width: height1 + dp(20)
                     size_hint_x: None
 
@@ -68,7 +68,7 @@ Builder.load_string('''
                 size_hint_y: None
 
                 Image:
-                    source: 'Phone.png'
+                    source: 'img/Phone.png'
                     width: height1 + dp(20)
                     size_hint_x: None
 
@@ -89,7 +89,7 @@ Builder.load_string('''
                 size_hint_y: None
 
                 Image:
-                    source: 'Telegram_alternative_logo.png'
+                    source: 'img/Telegram_alternative_logo.png'
                     width: height1 + dp(20)
                     size_hint_x: None
 

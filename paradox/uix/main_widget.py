@@ -14,7 +14,7 @@ from kivy.uix.boxlayout import BoxLayout
 
 from .navigationdrawer.navigationdrawer import NavigationDrawer
 #from .screens.screens import screens
-from . import sidepanel, screeens
+from . import sidepanel, screenmgr
 
 
 Builder.load_string('''
@@ -45,7 +45,7 @@ class MainWidget(NavigationDrawer):
         ##kw['__no_builder'] = False
         super().__init__(*a, **kw)
         self.add_widget(sidepanel)
-        self.add_widget(screeens)
+        self.add_widget(screenmgr)
         
         
     #async def init(self):

@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+from asyncio import sleep
+
 from django.utils.timezone import now
 from getinstance import InstanceManager
 from kivy.lang import Builder
@@ -47,33 +49,44 @@ Builder.load_string('''
         text_size: self.width, None
         #halign: 'left'
         
+        Label:
+            pos: self.parent.pos
+            size: self.parent.size
+            id: loader
+            font_size: dp(20)
+            opacity: 0
+            text: 'загрузка...'
+            background_color: wheat4
+        
     BoxLayout:
         size_hint_y: None
-        height: dp(16)
+        height: dp(22)
+        padding: 0
+        spacing: 0
         Button:
             #background_color: lightblue
             
             #halign: 'left'
             text_size: self.width, None
-            height: dp(16)
+            height: dp(32)
             color: lightblue
             size_hint_y: None
             #background_color: white
             text: 'пример жалобы'
-            font_size: dp(16)
+            font_size: dp(14)
             #he
             on_release: 
-                uix.screeens.show_handbook(root.input.json['label'], root.input.json['example_uik_complaint'])
+                uix.screenmgr.show_handbook(root.input.json['label'], root.input.json['example_uik_complaint'])
             
         Button:
             #halign: 'right'
             text_size: self.width, None
-            height: dp(16)
+            height: dp(32)
             size_hint_y: None
             color: lightblue
             text: 'правила обжалования'
-            font_size: dp(16)
-            on_release: uix.screeens.show_handbook('правила обжалования', 'TODO')
+            font_size: dp(14)
+            on_release: uix.screenmgr.show_handbook('правила обжалования', 'TODO')
 
     Widget: #spacer
         height: dp(1)
@@ -90,6 +103,8 @@ Builder.load_string('''
         id: uik_complaint_images
         type: 'uik_complaint'
         input: root.input
+        #on_image_picked: root.on_image_picked(filepath)
+        
         
     Widget: #spacer
         height: dp(1)
@@ -172,11 +187,14 @@ class ComplaintPhotoPicker(ImagePicker):
     
     def on_image_picked(self, filepath):
         #existing = InputEventImage.objects.filter()
+        logger.info(f'create image {filepath}')
         dbimage, created = InputEventImage.objects.get_or_create(
             type=self.type, 
             event=self.input.last_event,
             filepath=filepath
         )
+        
+        logger.debug(list(InputEventImage.objects.values_list('filepath', flat=True)))
         if dbimage.deleted:
             logger.debug('undelete')
             dbimage.update(deleted=False, time_updated=now())
@@ -196,19 +214,29 @@ class ComplaintPhotoPicker(ImagePicker):
 class Complaint(VBox):
     input = ObjectProperty()
     
-    def set_past_events(self, events):
+    @utils.asynced
+    async def set_past_events(self, events):
+        
+        self.ids.loader.opacity = 1
+        await sleep(0.1)
         last_event = events[-1]
         
         self.visible = last_event.alarm
-        for dbimage in last_event.images.filter(deleted=False):
+        logger.debug(f'{self.input.json["label"]}: restore {last_event.images.count()} images for event {last_event.id}')
+        for dbimage in last_event.images.all():
+            if dbimage.deleted:
+                logger.debug(f'image {dbimage.filepath} was deleted by user')
+                continue
             if dbimage.type == 'uik_complaint':
                 uxitem = self.ids.uik_complaint_images.add_image(dbimage.filepath)
                 
             elif dbimage.type == 'uik_reply':
                 uxitem = self.ids.uik_reply_images.add_image(dbimage.filepath)
             uxitem.dbid = dbimage.id
+            await sleep(0.1)
                 #('tik_complaint', 'Подаваемые в ТИК жалобы'),
                 #('tik_reply', 'Ответы, решения от ТИК'),'
+        self.ids.loader.opacity = 0
                 
     #def __init__(self, *args, **kwargs):
         #super().__init__(*args, **kwargs)

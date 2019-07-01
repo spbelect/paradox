@@ -42,6 +42,7 @@ class Input(Widget):
             self.last_event = list(events)[-1]
             self.value = self.last_event.get_value()
             self.ids.complaint.set_past_events(events)
+            #Clock.schedule_once(lambda *a: self.ids.complaint.set_past_events(events), 0.5)
         else:
             self.value = None
         self.show_dependants()
@@ -61,13 +62,13 @@ class Input(Widget):
                 
 
     def on_input(self, value):
-        #if uix.position.show_errors():
-            #uix.screeens.push_screen('position')
-            #return
+        if uix.position.show_errors():
+            uix.screenmgr.push_screen('position')
+            return False
         
-        #if uix.userprofile.userprofile_errors():
-            #uix.screeens.push_screen('userprofile')
-            #return
+        if uix.userprofile.userprofile_errors():
+            uix.screenmgr.push_screen('userprofile')
+            return False
 
         if self.json['input_type'] == 'MULTI_BOOL':
             InputEventt = BoolInputEvent
@@ -104,6 +105,7 @@ class Input(Widget):
             input.on_save_success(event)
         uix.events_screen.add_event(event)
         self.ids.complaint.visible = alarm
+        return True
 
     def show(self):
         self.height = 10

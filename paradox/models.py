@@ -55,6 +55,7 @@ class InputEvent(Model):
     input_id = CharField(max_length=40)  # UUID
     input_label = TextField()
     alarm = BooleanField()
+    role = CharField(max_length=15)
     country = CharField(max_length=2)
     region = CharField(max_length=6)
     uik = IntegerField()

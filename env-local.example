@@ -1,0 +1,14 @@
+
+# Target API version of your application
+ANDROIDAPI=28
+# Minimum supported API version of your application
+NDKAPI=21
+ANDROIDNDK='/home/z/soft/android-ndk-r17c/'
+ANDROIDSDK='/home/u1/Android/Sdk/'
+
+#JAVA_HOME='/usr/lib64/jvm/jre-12-openjdk'
+JAVA_HOME='/usr/lib64/jvm/jre-1.8.0-openjdk'
+
+KEYSTORE_PASSWORD=123
+
+DEBUG=1

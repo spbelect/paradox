@@ -14,7 +14,7 @@ formlist = FormListScreen(name='formlist')
 position = PositionScreen(name='position')
 userprofile = UserProfileScreen(name='userprofile')
 
-screeens = Screens()
+screenmgr = Screens()
 
 from .sidepanel import SidePanel
 sidepanel = SidePanel()

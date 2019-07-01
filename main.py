@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from __future__ import print_function
 
 import asyncio
 import logging
@@ -12,10 +11,16 @@ import sys
 import time
 import traceback
 
+from kivy.config import Config
+#Config.set('graphics', 'multisamples', '0')
+Config.set('kivy', 'log_level', 'debug')
+
+os.environ['KIVY_EVENTLOOP'] = 'async'
+
 from datetime import datetime
 from glob import glob
 from hashlib import md5
-from os.path import join, exists
+from os.path import join, exists, dirname, expanduser
 from random import randint
 from shutil import copyfile
 
@@ -24,7 +29,6 @@ from app_state import state, on
 from kivy.app import App
 from kivy.base import ExceptionManager
 from kivy.clock import Clock
-from kivy.config import Config
 from kivy.core.window import Window
 from kivy.lang import Builder
 from kivy.properties import ListProperty
@@ -41,14 +45,13 @@ import button
 #import trio
 #import asks
 #os.environ['KIVY_EVENTLOOP'] = 'trio'
-os.environ['KIVY_EVENTLOOP'] = 'asyncio'
 #asks.init('trio')
 
 if platform in ['linux', 'windows']:
     Config.set('kivy', 'keyboard_mode', 'system')
     Window.size = (420, 800)
 
-Window.softinput_mode = 'below_target'
+#Window.softinput_mode = 'below_target'
 #Window.softinput_mode = 'pan'
 
 # https://github.com/kuri65536/python-for-android/issues/71
@@ -56,6 +59,25 @@ def chmod(*a, **kw):
     pass
 os.chmod = chmod
 
+
+if platform == 'android':
+    from jnius import autoclass, cast
+    PythonActivity = autoclass('org.kivy.android.PythonActivity')
+    context = cast('android.content.Context', PythonActivity.mActivity)
+    file_p = cast('java.io.File', context.getFilesDir())
+    os.environ['DBDIR'] = file_p.getAbsolutePath()
+else:
+    data_dir = os.environ.get('XDG_CONFIG_HOME', '~/.config')
+    os.environ['DBDIR'] = expanduser(join(data_dir, 'paradox'))
+    
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "django_settings")
+django.setup()
+
+if platform == 'linux':
+    if 'TZ' in os.environ:
+        del os.environ['TZ']  # use local timezone instead of django default setting
+    time.tzset()
 
 
 if getattr(sys, 'frozen', False):
@@ -70,12 +92,6 @@ resource_add_path(join(bundle_dir, 'paradox/uix/'))
 
 Builder.load_file('base.kv')
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "django_settings")
-django.setup()
-
-del os.environ['TZ']  # use local timezone instead of django default setting
-time.tzset()
-
 state._config = config
 
 
@@ -88,19 +104,38 @@ class ParadoxApp(App):
     def build(self):
         ExceptionManager.add_handler(self)
         try:
+
             logger.info('Build started')
-            
+            state.user_data_dir = self.user_data_dir
             for filename in glob('forms_*.json') + ['regions.json', 'mo_78.json']:
                 path = join(self.user_data_dir, filename)
                 if not exists(path):
                     logger.debug('copying %s to %s' % (filename, self.user_data_dir))
                     copyfile(filename, path)
 
-            #state._nursery.start_soon(on_start)
+            ####state._nursery.start_soon(on_start)
             asyncio.create_task(on_start(self))
             
             from paradox.uix.main_widget import MainWidget
             return MainWidget()
+        
+            #from label import Label
+            ##from kivy.uix.label import Label
+            #from button import Button
+
+            ###if platform in ['linux', 'windows']:
+                ###Window.size = (420, 800)
+
+            #self.label = Label()
+            ##self.label.text_size = Window.width - 20, None
+            ##self.label.halign = 'center'
+            #self.label.text = 'lolol'
+            #self.label.color = (55,0,50,0)
+            #self.label.size = (100,100)
+            #self.label.background_color = (255,255,0)
+            ##raise Exception('00')
+            #return Button(text='lol')
+            #return self.label
         except Exception as e:
             _traceback = traceback.format_exc()
             if config.DEBUG:
@@ -159,7 +194,7 @@ class ParadoxApp(App):
         self.errors.append(_traceback)
         message = u'\n-----\n'.join(self.errors)
         
-        uix.screeens.show_error_screen(message)
+        uix.screenmgr.show_error_screen(message)
         #if config.SENTRY and hasattr(App, 'send_queue_sentry'):
             #App.send_queue_sentry.add_trace(message)
         return ExceptionManager.PASS
@@ -172,18 +207,26 @@ class ParadoxApp(App):
         #self.root.switch_to(ErrorScreen(message=_traceback, name='error'))
         ##log_exception(value, tb_msg)
         
-    #async def async_run(self):
-        #from kivy.base import async_runTouchApp
-        ##async with trio.open_nursery() as nursery:
-            ##state._nursery = nursery
-        #self._run_prepare()
+    def run(self):
+        '''Launches the app in standalone mode.
+        '''
+        super().run()
+        logger.info('Paradox finished')
         
-        #await async_runTouchApp()
-        ##logger.info('Cancelling async tasks')
-        ##nursery.cancel_scope.cancel()
-        #logger.info('App about to exit')
-        #self.stop()
-        #logger.info('App stopped')
+    async def async_run(self):
+        from kivy.base import async_runTouchApp
+        #async with trio.open_nursery() as nursery:
+            #state._nursery = nursery
+        self._run_prepare()
+        
+        await async_runTouchApp()
+        #logger.info('Cancelling async tasks')
+        #nursery.cancel_scope.cancel()
+        logger.info('App about to exit')
+        self.stop()
+        logger.info('App stopped')
+        
+        #asyncio.get_running_loop().stop()
 
 
 from paradox import uix
@@ -205,7 +248,7 @@ mock_forms = {'ru': [{
         "help_text": "pwijgpw \n",
         "input_type": "MULTI_BOOL",
         "input_id": "b87436e0-e7f2-4453-b364-a952c0c7842d",
-        "label": "Этот только дострочка",
+        "label": "Этот только досрочка",
         "elect_flags": ["dosrochka"],
         "example_uik_complaint": "это пример"
       }
@@ -246,14 +289,15 @@ async def on_start(app):
         state.forms.general = formdata
     uix.formlist.build_general()
     
-    #state.regions = await recv_loop('/regions/')
+    #state.regions = await client.recv_loop('/regions/')
     state.regions = {f'ru_{x["id"]}': dict(x, id=f'ru_{x["id"]}') for x in json.load(open('regions.json'))}
     
     uix.events_screen.restore_past_events()
+    
     logger.info('Restored past events.')
     await client.update_campaigns()
     await client.send_position()
-    #await client.send_userprofile()
+    ##await client.send_userprofile()
     asyncio.create_task(client.event_send_loop())
     asyncio.create_task(client.event_image_send_loop())
     logger.info('Startup finished.')
@@ -333,6 +377,8 @@ async def xb():
     print('ok')
 
 if __name__ == '__main__':
-    asyncio.run(ParadoxApp().async_run())
+    app = ParadoxApp()
+    asyncio.run(app.async_run())
+    #app.run()
     #trio.run(ParadoxApp().async_run)
     #asyncio.run(xb())

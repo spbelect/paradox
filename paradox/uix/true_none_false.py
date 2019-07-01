@@ -40,7 +40,7 @@ Builder.load_string('''
         height: self.texture_size[1] + dp(10)
         text: self.parent.json['label']
         color: black
-        on_long_press: uix.screeens.show_handbook(root.json['label'], root.json['help_text'])
+        on_long_press: uix.screenmgr.show_handbook(root.json['label'], root.json['help_text'])
 
     BoxLayout:
         size_hint: None, None
@@ -52,20 +52,20 @@ Builder.load_string('''
             size_hint_x: .2
             text: 'Да'
             value: True
-            on_press: root.on_input(True)
+            #on_press: root.on_input(True)
 
         TNFButton:
+            id: neizvestno
             size_hint_x: .6
             text: 'Неизвестно'
             value: None
             state: 'down'
-            on_press: root.on_input(None)
+            #on_press: root.on_input(None)
 
         TNFButton:
             size_hint_x: .2
             text: 'Нет'
             value: False
-            on_press: root.on_input(False)
             
     Label:
         color: lightgray
@@ -86,6 +86,7 @@ Builder.load_string('''
     allow_no_selection: False
     group: self.parent.uid
     #on_press: self.parent.parent.on_click(self.value)
+    on_press: self.parent.parent.on_input(self)
     background_color: lightgray
 
 #<ComplaintStatusChoice>
@@ -117,14 +118,17 @@ class TrueNoneFalse(Input, VBox):
     #def on_send_fatal_error(self, event, request, error_data):
         #self.ids['send_status'].text = 'ошибка'
     
-    def on_input(self, value):
-        self.ids['send_status'].text = 'отправляется'
-        super().on_input(value)
+    def on_input(self, button):
+        if super().on_input(button.value):
+            self.ids['send_status'].text = 'отправляется'
+        else:
+            button.state = 'normal'
+            self.ids.neizvestno.state = 'down'
         
     def set_past_events(self, events):
         if events:
-            print('set past', events[-1].get_value())
-            for button in self.ids['buttons'].children:
+            #print('set past', events[-1].get_value())
+            for button in self.ids.buttons.children:
                 if button.value == events[-1].get_value():
                     button.state = 'down'
                 else:

@@ -20,6 +20,7 @@ from kivy.uix.vkeyboard import VKeyboard
 
 from ..vbox import VBox
 
+from ..float_message import show_float_message
 
 
 Builder.load_string('''

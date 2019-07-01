@@ -1,4 +1,4 @@
-from kivy.utils import platform
+#from kivy.utils import platform
 
 CHANGELOG_URL = 'https://bitbucket.org/fak3/paradox/raw/last_version/CHANGELOG.rst'
 
@@ -9,5 +9,5 @@ HAS_BACKUP_SERVER = True
 
 DEBUG = True
 
-if platform == 'linux':
-    SENTRY = False
+#if platform == 'linux':
+    #SENTRY = False

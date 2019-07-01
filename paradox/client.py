@@ -20,11 +20,12 @@ from .models import Campaign, Coordinator, InputEvent, InputEventImage, InputEve
 from . import config
 from . import utils
 
-
+state.server = config.SERVER_ADDRESS
 try:
     from get_server import get_server
 except ImportError:
-    def get_server():
+    @lock_or_exit()
+    async def get_server():
         state.server = config.SERVER_ADDRESS
 
 
@@ -47,7 +48,7 @@ async def check_server():
         await asyncio.wait_for(ping_loop(), timeout=0.5*60)
     except asyncio.TimeoutError:
         logger.info('Server ping timeout.')
-        get_server()
+        await get_server()
     except Exception as e:
         logger.info(e)
     else:
@@ -55,14 +56,26 @@ async def check_server():
 
 
 async def api_request(method, url, data):
+    while True:
+        if 'server' in state:
+            break
+        await get_server()
+        await sleep(5)
+        
     try:
         #state.server = 'http://8.8.8.8'
-        return await requests.request(method, urljoin(state.server, '/api/v1/', url), data=data, timeout=10)
+        return await requests.request(
+            method, urljoin(state.server, '/api/v2/', url), timeout=10,
+            data=dict(data, app_id=state.app_id)
+        )
     except requests.Timeout as e:
         logger.debug(repr(e))
         create_task(check_server())
         raise
     except Exception as e:
+        
+        #import ipdb; ipdb.sset_trace()
+        #raise
         #logger.exception(e)
         if getattr(e, 'args', None) and isinstance(e.args[0], OSError):
             if getattr(e.args[0], 'errno', None) == 101:
@@ -83,11 +96,10 @@ async def send_position():
             return
         try:
             response = await api_request('POST', f'/position/', {
-                'app_id': state.app_id,
                 'uik': state.uik,
-                'role': state.role,
                 'region': state.region.id,
                 'country': state.country,
+                'role': state.role,
             })
         except Exception as e:
             pass
@@ -104,15 +116,16 @@ async def send_position():
                 logger.info(repr(response))
                 return
                 #uix.sidepanel.http_error(response)
-        await sleep(5)
+        await sleep(50)
 
-async def _update_image(image):
+
+async def _put_image(image):
     try:
-        response = await api_request('POST', f'/event/{image.event_id}/images/', {
-            'type': image.type,
-            'time_created': image.time_created,
+        response = await api_request('PUT', f'/input_events/{image.event_id}/images/{image.md5}', {
+            #'type': image.type,
+            #'time_created': image.time_created,
             'deleted': image.deleted,
-            'filename': image.md5 + basename(image.filepath),
+            #'filename': image.md5 + basename(image.filepath),
         })
     except Exception as e:
         image.update(send_status='update_exception')
@@ -123,18 +136,24 @@ async def _update_image(image):
     
     image.update(send_status='sent', time_sent=now())
 
+
 async def event_image_send_loop():
     while True:
-        tosend = Q(event__time_sent__isnull=False) & \
-            (Q(time_sent__isnull=True) | Q(time_sent__lt=F('time_updated')))
-        tosend = InputEventImage.objects.filter(Q).exclude(deleted=True, time_sent__isnull=True)
-                                        
-        logger.info(f'{tosend.count()} images to send.')
-        for image in tosend:
-            if image.time_sent:
-                await _update_image(image)
-                continue
+        waiting = InputEventImage.objects.filter(event__time_sent__isnull=True).count()
+        
+        topost = Q(time_sent__isnull=True) & Q(event__time_sent__isnull=False)
+        topost = InputEventImage.objects.filter(topost).exclude(deleted=True)
+        
+        toput = Q(time_sent__isnull=False) & Q(time_sent__lt=F('time_updated'))
+        toput = InputEventImage.objects.filter(toput)
+        
+        logger.info(f'{topost.count()} images to create. {toput.count()} images to update. {waiting} waiting.')
+        
+        #logger.debug(list(topost.values_list('filepath')))
+        for image in toput:
+            await _put_image(image)
             
+        for image in topost:
             try:
                 response = await api_request('POST', '/upload_request/', {
                     'filename': image.md5 + basename(image.filepath),
@@ -148,10 +167,12 @@ async def event_image_send_loop():
                 image.update(send_status=f'req_http_{response.status_code}')
                 continue
             
-            response = response.json()
+            s3params = response.json()
             try:
-                response = await requests.post(response['url'], data=response['fields'], 
-                        files={'file': ('unused.jpeg', open(image.filepath, 'rb'))})
+                response = await requests.post(
+                    s3params['url'], data=s3params['fields'], 
+                    files={'file': ('unused.jpeg', open(image.filepath, 'rb'))}
+                )
             except Exception as e:
                 image.update(send_status='upload_exception')
                 continue
@@ -160,9 +181,9 @@ async def event_image_send_loop():
                 continue
             
             try:
-                response = await api_request('POST', f'/event/{image.event_id}/images/', {
+                response = await api_request('POST', f'/input_events/{image.event_id}/images/', {
                     'type': image.type,
-                    'time_created': image.time_created,
+                    'timestamp': image.time_created,
                     'deleted': image.deleted,
                     'filename': image.md5 + basename(image.filepath),
                 })
@@ -176,7 +197,7 @@ async def event_image_send_loop():
             image.update(send_status='sent', time_sent=now())
             #print(res.content)
             #print('ok')
-        await sleep(5)
+        await sleep(50)
             
             
 async def event_send_loop():
@@ -190,10 +211,11 @@ async def event_send_loop():
                 response = await api_request('POST', '/input_events/', {
                     'iid': event.input_id,
                     'value': event.get_value(),
-                    'complaint_status': event.complaint_status,
+                    'uik_complaint_status': event.uik_complaint_status,
                     'region': event.region,
-                    'time_created': event.time_created,
-                    'uik': event.uik
+                    'uik': event.uik,
+                    'role': event.role,
+                    'timestamp': event.time_created,
                 })
             except Exception as e:
                 event.update(send_status='exception')
@@ -205,7 +227,7 @@ async def event_send_loop():
                 continue
             event.update(send_status='sent', time_sent=now())
             uix_inputs.on_send_success(event)
-        await sleep(5)
+        await sleep(50)
         
         
 async def recv_loop(url):
@@ -214,7 +236,7 @@ async def recv_loop(url):
             response = await api_request('GET', url)
         except Exception as e:
             raise  # TODO
-            await sleep(5)
+            await sleep(50)
         else:
             return response
             
@@ -277,13 +299,14 @@ mock_campaigns = {
 }
  
 @uix.formlist.show_loader
-#@uix.coordinators.show_loader
+###@uix.coordinators.show_loader
 @lock_or_exit()
 @on('state.region')
 async def update_campaigns():
+    await sleep(1)
     while True:
         region, country = state.get('region'), state.get('country')
-        logger.info(f'region: {getattr(region, "name", None)}, country: {country}')
+        logger.info(f'Updating campaigns. Region: {getattr(region, "name", None)}, country: {country}')
         if not region or not country:
             break
         #data = await recv_loop(f'/region/{region}/campaigns/')
@@ -331,6 +354,7 @@ async def update_campaigns():
         await sleep(5)
     
     create_task(update_elect_flags())
+    logger.debug('Update campaigns finished')
     #campaigns = Campaign.objects.positional().current()
     #uix.FormListScreen.delete_campaign_forms()
     #for campaign in campaigns:  #.filter(coordinator__subscription='yes'):
@@ -345,7 +369,8 @@ async def update_campaigns():
 @on('state.uik')
 @lock_or_exit()
 async def update_elect_flags():
-    await sleep(5)
+    logger.debug('11')
+    await sleep(0.5)
     campaigns = Campaign.objects.positional().current().filter(elect_flags__isnull=False)
     state.elect_flags = set(chain(*(x.elect_flags.split(',') for x in campaigns)))
     logger.debug(f'{campaigns.count()} active campaigns.')

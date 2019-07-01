@@ -2,15 +2,21 @@
 
 from __future__ import unicode_literals
 
+import asyncio
+
+from asyncio import sleep
 from datetime import datetime, timedelta
 from itertools import groupby
 
 from app_state import state, on
 from django.db.models import Q
+from kivy.clock import Clock
 from kivy.lang import Builder
 from kivy.properties import ObjectProperty
 from kivy.uix.screenmanager import Screen
 from kivy.uix.widget import Widget
+from kivy.effects.dampedscroll import DampedScrollEffect
+from loguru import logger
 
 #from .. import base_input 
 from ..multibool_input import MultiBoolInput
@@ -23,9 +29,11 @@ from paradox import uix
 
 Builder.load_string('''
 #:include constants.kv
+#:import DampedScrollEffect kivy.effects.dampedscroll.DampedScrollEffect 
 
 <FormScreen>:
     ScrollView:
+        effect_y: DampedScrollEffect(min_velocity=dp(40), friction=dp(0.09))
         VBox:
             VBox:
                 spacing: dp(4)
@@ -89,17 +97,26 @@ class FormScreen(Screen):
         
         #for item in self.ids['content'].children[:]:
             #self.ids['content'].remove_widget(item)
-            
+        
+        asyncio.create_task(self.build())
+        #Clock.schedule_once(lambda *a: self.build(), 0.5)
+    
+    async def build(self):
+        await sleep(0.5)
+        logger.debug(f'building form {self.json["name"]}')
         for input in self.json['inputs']:
             #if not input_data.get('help_text'):
                 #input_data['help_text'] = txt
             
             self.add_input(input)
+            await sleep(0.1)
 
         if self.json['form_type'] == 'GENERAL':
             self.remove_widget(self.ids['trailing_spacer'])
-
+        
+        logger.debug(f'building form {self.json["name"]} inputs added')
         uix.base_input.restore_past_events()
+        logger.debug(f'building form {self.json["name"]} finished')
 
         
     def add_input(self, input_data):

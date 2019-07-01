@@ -9,7 +9,7 @@ from kivy.uix.boxlayout import BoxLayout
 
 
 from .navigationdrawer.navigationdrawer import NavigationDrawer
-from . import screeens
+from . import screenmgr
 
 from button import Button
 
@@ -98,5 +98,5 @@ class SidePanel(BoxLayout):
         
     def on_click(self, screen):
         main_widget = self.parent.parent
-        screeens.push_screen(screen)
+        screenmgr.push_screen(screen)
         main_widget.state = 'closed'
