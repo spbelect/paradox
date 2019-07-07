@@ -8,9 +8,12 @@ from getinstance import InstanceManager
 from kivy.properties import StringProperty, BooleanProperty, ObjectProperty, Property
 from kivy.clock import Clock
 from kivy.uix.widget import Widget
+from loguru import logger
 
 from paradox.models import InputEvent, BoolInputEvent, IntegerInputEvent, InputEventImage
 from paradox import uix
+from paradox import utils
+from paradox.uix import confirm
 
 
 class Input(Widget):
@@ -40,11 +43,16 @@ class Input(Widget):
     def set_past_events(self, events):
         if events:
             self.last_event = list(events)[-1]
-            self.value = self.last_event.get_value()
-            self.ids.complaint.set_past_events(events)
+            if self.last_event.revoked:
+                self.value = None
+            else:
+                self.value = self.last_event.get_value()
+            #self.ids.complaint.event = self.last_event
+            self.ids.complaint.on_event(self.last_event)
             #Clock.schedule_once(lambda *a: self.ids.complaint.set_past_events(events), 0.5)
         else:
             self.value = None
+            self.ids.complaint.on_event(None)
         self.show_dependants()
 
     def show_dependants(self):
@@ -60,8 +68,8 @@ class Input(Widget):
             for input in Input.instances.filter(input_id=dep['iid']):
                 input.hide()
                 
-
-    def on_input(self, value):
+    @utils.asynced
+    async def on_input(self, value):
         if uix.position.show_errors():
             uix.screenmgr.push_screen('position')
             return False
@@ -75,36 +83,49 @@ class Input(Widget):
         elif self.json['input_type'] == 'NUMBER':
             InputEventt = IntegerInputEvent
             value = int(value) if value else None
+                
+        if value == self.value:
+            return False
+        
+        if self.value is not None:
+            if not await uix.confirm.yesno('Отозвать предыдущее значение?'):
+                self.set_state(self.last_event.get_value())
+                return False
             
-        alarm = False
-        if 'alarm' in self.json:
-            #print(self.json['alarm'])
-            if 'eq' in self.json['alarm']:
-                alarm = bool(value == self.json['alarm'].get('eq'))
-            elif 'gt' in self.json['alarm']:
-                alarm = bool(int(value) > self.json['alarm'].get('gt'))
+            event = self.last_event
+            event.update(revoked=True, time_updated=now())
+            uix.events_screen.add_event(event)
             
-        event = InputEventt.objects.create(
-            input_id=self.input_id,
-            input_label=self.json['label'],
-            value=value,
-            #country=state.country,
-            #region='ru_78',
-            #uik=55,
-            alarm=alarm,
-            country=state.country,
-            region=state.region.id,
-            uik=state.uik,
-            time_updated=now()
-        )
+        if value is not None:
+            alarm = False
+            if 'alarm' in self.json:
+                #print(self.json['alarm'])
+                if 'eq' in self.json['alarm']:
+                    alarm = bool(value == self.json['alarm'].get('eq'))
+                elif 'gt' in self.json['alarm']:
+                    alarm = bool(int(value) > self.json['alarm'].get('gt'))
+                
+            event = InputEventt.objects.create(
+                input_id=self.input_id,
+                input_label=self.json['label'],
+                value=value,
+                #region='ru_78',
+                #uik=55,
+                alarm=alarm,
+                region=state.region.id,
+                uik=state.uik,
+                time_updated=now()
+            )
         
         #campaigns = Campaign.objects.positional().filter(active=True, subscription='yes')
         #event.coordinators = [x.coordinator.id for x in campaigns]
+        
+        self.value = value
 
         for input in Input.instances.filter(input_id=self.input_id):
             input.on_save_success(event)
         uix.events_screen.add_event(event)
-        self.ids.complaint.visible = alarm
+        self.ids.complaint.on_event(event)
         return True
 
     def show(self):
@@ -117,6 +138,9 @@ class Input(Widget):
         self.size_hint_y = None
         self.opacity = 0
 
+    def set_state(self, value):
+        pass
+    
     def on_send_start(self, event):
         pass
     

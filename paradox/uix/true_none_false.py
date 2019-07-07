@@ -89,8 +89,6 @@ Builder.load_string('''
     on_press: self.parent.parent.on_input(self)
     background_color: lightgray
 
-#<ComplaintStatusChoice>
-    
 
 ''')
 
@@ -98,39 +96,50 @@ Builder.load_string('''
     ## workaround for kivy BUG: https://github.com/kivy/kivy/issues/4379
     #value = ObjectProperty(allownone=True)
 
-class ComplaintStatusChoice(Choice):
-    instances = InstanceManager()
-    
 
 class TrueNoneFalse(Input, VBox):
     text = StringProperty('')
     input_id = StringProperty()
 
-    #def on_send_start(self, event):
-        #self.ids['send_status'].text = 'отправляется'
+    def on_send_start(self, event):
+        self.ids.send_status.text = 'отправляется'
     
     def on_send_success(self, event):
-        self.ids['send_status'].text = ''
+        self.ids.send_status.text = ''
 
     def on_send_error(self, event):
-        self.ids['send_status'].text = 'отправляется (error)'
+        self.ids.send_status.text = 'отправляется (error)'
 
     #def on_send_fatal_error(self, event, request, error_data):
-        #self.ids['send_status'].text = 'ошибка'
+        #self.ids.send_status.text = 'ошибка'
     
+    def on_save_success(self, event):
+        super().on_save_success(event)
+        self.ids.send_status.text = 'отправляется'
+        self.on_event(event)
+        
     def on_input(self, button):
-        if super().on_input(button.value):
-            self.ids['send_status'].text = 'отправляется'
-        else:
-            button.state = 'normal'
-            self.ids.neizvestno.state = 'down'
+        super().on_input(button.value)
         
     def set_past_events(self, events):
         if events:
             #print('set past', events[-1].get_value())
-            for button in self.ids.buttons.children:
-                if button.value == events[-1].get_value():
-                    button.state = 'down'
-                else:
-                    button.state = 'normal'
+            self.on_event(events[-1])
+        else:
+            self.set_state(None)
+            
         super().set_past_events(events)
+
+    def on_event(self, event):
+        if event.revoked:
+            self.set_state(None)
+        else:
+            self.set_state(event.get_value())
+            
+    def set_state(self, value):
+        for button in self.ids.buttons.children:
+            if button.value == value:
+                button.state = 'down'
+            else:
+                button.state = 'normal'
+                

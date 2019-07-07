@@ -128,10 +128,10 @@ async def _put_image(image):
             #'filename': image.md5 + basename(image.filepath),
         })
     except Exception as e:
-        image.update(send_status='update_exception')
+        image.update(send_status='put_exception')
         return
     if not response.status_code == 200:
-        image.update(send_status=f'update_http_{response.status_code}')
+        image.update(send_status=f'put_http_{response.status_code}')
         return
     
     image.update(send_status='sent', time_sent=now())
@@ -188,10 +188,10 @@ async def event_image_send_loop():
                     'filename': image.md5 + basename(image.filepath),
                 })
             except Exception as e:
-                image.update(send_status='create_exception')
+                image.update(send_status='post_exception')
                 continue
             if not response.status_code == 200:
-                image.update(send_status=f'create_http_{response.status_code}')
+                image.update(send_status=f'post_http_{response.status_code}')
                 continue
             
             image.update(send_status='sent', time_sent=now())
@@ -200,29 +200,57 @@ async def event_image_send_loop():
         await sleep(50)
             
             
+async def _put_event(event):
+    try:
+        response = await api_request('PUT', f'/input_events/{event.id}', {
+            'revoked': event.revoked,
+        })
+    except Exception as e:
+        event.update(send_status='put_exception')
+        return
+    if not response.status_code == 200:
+        event.update(send_status=f'put_http_{response.status_code}')
+        return
+    
+    event.update(send_status='sent', time_sent=now())
+
+
 async def event_send_loop():
     while True:
-        tosend = Q(time_sent__isnull=True) | Q(time_sent__lt=F('time_updated'))
-        tosend = InputEvent.objects.filter(tosend)
-        logger.info(f'{tosend.count()} events to send.')
-        for event in tosend:
+        toput = InputEvent.objects.filter(time_sent__isnull=False, time_sent__lt=F('time_updated'))
+        topost = InputEvent.objects.filter(time_sent__isnull=True)
+        logger.info(f'{topost.count()} events to post. {toput.count()} events to put.')
+        
+        for event in chain(topost, toput):
+            uix_inputs = uix.Input.instances.filter(input_id=event.input_id)
+            uix_inputs.on_send_start(event)
+            await sleep(0.1)
+            
+        for event in toput:
+            uix_inputs = uix.Input.instances.filter(input_id=event.input_id)
+            await _put_event(event)
+            uix_inputs.on_send_success(event)
+            
+        for event in topost:
             uix_inputs = uix.Input.instances.filter(input_id=event.input_id)
             try:
                 response = await api_request('POST', '/input_events/', {
+                    'id': event.id,
                     'iid': event.input_id,
                     'value': event.get_value(),
                     'uik_complaint_status': event.uik_complaint_status,
                     'region': event.region,
                     'uik': event.uik,
                     'role': event.role,
+                    'revoked': event.revoked,
                     'timestamp': event.time_created,
                 })
             except Exception as e:
-                event.update(send_status='exception')
+                event.update(send_status='post_exception')
                 uix_inputs.on_send_error(event)
                 continue
             if not response.status_code == 200:
-                event.update(send_status=f'http_{response.status_code}')
+                event.update(send_status=f'post_http_{response.status_code}')
                 uix_inputs.on_send_error(event)
                 continue
             event.update(send_status='sent', time_sent=now())
@@ -369,7 +397,6 @@ async def update_campaigns():
 @on('state.uik')
 @lock_or_exit()
 async def update_elect_flags():
-    logger.debug('11')
     await sleep(0.5)
     campaigns = Campaign.objects.positional().current().filter(elect_flags__isnull=False)
     state.elect_flags = set(chain(*(x.elect_flags.split(',') for x in campaigns)))

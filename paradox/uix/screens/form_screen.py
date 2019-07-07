@@ -33,7 +33,6 @@ Builder.load_string('''
 
 <FormScreen>:
     ScrollView:
-        effect_y: DampedScrollEffect(min_velocity=dp(40), friction=dp(0.09))
         VBox:
             VBox:
                 spacing: dp(4)

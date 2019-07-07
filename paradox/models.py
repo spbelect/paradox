@@ -45,12 +45,13 @@ def FK(*args, **kw):
 
 
 class InputEvent(Model):
-    #coordinators
+    id = CharField(max_length=40, default=uuid4, primary_key=True)
     
     time_created = DateTimeField(default=now)
-    send_status = CharField(max_length=20, default='pending')  # sent/pending/exception/http_{NNN}
+    send_status = CharField(max_length=40, default='pending')  # sent/pending/exception/http_{NNN}
     time_sent = DateTimeField(null=True)
     time_updated = DateTimeField()
+    revoked = BooleanField(default=False)
     
     input_id = CharField(max_length=40)  # UUID
     input_label = TextField()

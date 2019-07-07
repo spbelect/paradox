@@ -116,6 +116,8 @@ class ParadoxApp(App):
             ####state._nursery.start_soon(on_start)
             asyncio.create_task(on_start(self))
             
+            Window.bind(on_keyboard=uix.screenmgr.hook_keyboard)
+            
             from paradox.uix.main_widget import MainWidget
             return MainWidget()
         

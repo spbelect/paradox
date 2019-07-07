@@ -16,7 +16,7 @@ Kivy==1.11.0rc1
 Kivy-Garden==0.1.4
 lockorator==0.1
 loguru==0.2.5
-minidjango==2.2.dev20181110142024
+minidjango==2.2.3.dev20190701035504
 plyer==1.4.0
 Pygments==2.4.2
 python-dateutil==2.8.0

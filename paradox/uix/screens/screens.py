@@ -70,7 +70,6 @@ class Screens(ScreenManager):
     def __init__(self, *args, **kwargs):
         super(Screens, self).__init__(*args, **kwargs)
         #Clock.schedule_once(self.build_screens)
-        EventLoop.window.bind(on_keyboard=self.hook_keyboard)
         #Window.bind(on_keyboard=self.hook_keyboard2)
             #self.init()
             

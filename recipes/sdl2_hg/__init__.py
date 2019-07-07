@@ -31,11 +31,8 @@ class LibSDL2Recipe(BootstrapNDKRecipe):
                 '../..',
                 'libs', arch.arch
             )
-        libs = 'libhidapi.so libmain.so libSDL2_image.so libSDL2_mixer.so libSDL2.so libSDL2_ttf.so'.split()
-        for x in libs:
-            if not exists(join(libdir, x)):
-                print(f'{join(libdir, x)} does not exist')
-        #input('hit')
+        libs = [
+            'libhidapi.so libmain.so libSDL2_image.so libSDL2_mixer.so libSDL2.so libSDL2_ttf.so'.split()
         return not all(exists(join(libdir, x)) for x in libs)
     
     

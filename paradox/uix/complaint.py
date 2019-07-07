@@ -118,6 +118,7 @@ Builder.load_string('''
         #halign: 'left'
         
     Choices:
+        id: uik_complaint_status
         height: dp(18)
         font_size: dp(18)
         height: self.texture_size[1]
@@ -181,6 +182,10 @@ Builder.load_string('''
 
 ''')
 
+class ComplaintStatusChoice(Choice):
+    instances = InstanceManager()
+    
+    
 class ComplaintPhotoPicker(ImagePicker):
     type = StringProperty()
     input = ObjectProperty()
@@ -204,8 +209,8 @@ class ComplaintPhotoPicker(ImagePicker):
             uxitem = self.add_image(filepath)
             uxitem.dbid = dbimage.id
         
-    def del_image(self, cross):
-        super().del_image(cross)
+    def on_cross_click(self, cross):
+        super().on_cross_click(cross)
         InputEventImage.objects.get(id=cross.parent.dbid).update(
             deleted=True,
             time_updated=now()
@@ -213,25 +218,39 @@ class ComplaintPhotoPicker(ImagePicker):
 
 class Complaint(VBox):
     input = ObjectProperty()
+    #event = ObjectProperty(None, allow_none=True)
     
     @utils.asynced
-    async def set_past_events(self, events):
+    async def on_event(self, event):
+        #logger.debug(event, event.revoked)
+        if event is None:
+            self.visible = False
+            return
         
+        if event.revoked or not event.alarm:
+            self.visible = False
+            return
+            
+        self.visible = True
         self.ids.loader.opacity = 1
-        await sleep(0.1)
-        last_event = events[-1]
+        self.ids.uik_complaint_status = ComplaintStatusChoice.instances.get(value=event.uik_complaint_status)
         
-        self.visible = last_event.alarm
-        logger.debug(f'{self.input.json["label"]}: restore {last_event.images.count()} images for event {last_event.id}')
-        for dbimage in last_event.images.all():
+        await sleep(0.1)
+        
+        self.ids.uik_complaint_images.del_images()
+        self.ids.uik_reply_images.del_images()
+        
+        logger.debug(f'{self.input.json["label"]}: restore {event.images.count()} images for event {event.id}')
+        for dbimage in event.images.all():
             if dbimage.deleted:
                 logger.debug(f'image {dbimage.filepath} was deleted by user')
                 continue
+            
             if dbimage.type == 'uik_complaint':
                 uxitem = self.ids.uik_complaint_images.add_image(dbimage.filepath)
-                
             elif dbimage.type == 'uik_reply':
                 uxitem = self.ids.uik_reply_images.add_image(dbimage.filepath)
+                
             uxitem.dbid = dbimage.id
             await sleep(0.1)
                 #('tik_complaint', 'Подаваемые в ТИК жалобы'),

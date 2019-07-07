@@ -156,8 +156,12 @@ class ImagePicker(VBox):
     def on_image_picked(self, filepath):
         self.add_image(filepath)
     
-    def del_image(self, cross):
+    def on_cross_clik(self, cross):
         self.ids.images.remove_widget(cross.parent)
+        
+    def del_images(self):
+        for item in self.ids.images.children[:]:
+            self.ids.images.remove_widget(item)
         
     def add_image(self, filepath):
         i = ImageItem(
@@ -165,7 +169,7 @@ class ImagePicker(VBox):
             label=basename(filepath),
             #uuid=str(uuid or uuid4())
         )
-        i.ids.cross.bind(on_release=self.del_image)
+        i.ids.cross.bind(on_release=self.on_cross_clik)
         self.ids.images.add_widget(i)
         return i
     

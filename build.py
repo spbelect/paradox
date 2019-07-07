@@ -82,7 +82,7 @@ def build(ctx):
 
     args = f'--private /home/z/pproj/kvbugtest --version={version} --bootstrap=sdl2 --window --local-recipes="./recipes" --requirements=python3,kivy_myasync,openssl,sqlite3,pillow,pytz,sdl2_hg --orientation=portrait --dist-name {state.dist}'
     
-    args = f'--private {dirname(__file__)} --version={version} --bootstrap=sdl2_hg --window --local-recipes="./recipes" --requirements=python3,kivy_myasync,openssl,sqlite3,pillow,pytz,sdl2_hg,{requirements} --whitelist=./whitelist.txt --permission=CALL_PHONE --permission=INTERNET --permission=WRITE_EXTERNAL_STORAGE --permission=READ_EXTERNAL_STORAGE --orientation=portrait --dist-name {state.dist}'
+    args = f'--private {dirname(__file__)} --version={version} --bootstrap=sdl2 --window --local-recipes="./recipes" --requirements=python3,kivy_myasync,openssl,sqlite3,pillow,pytz,sdl2,{requirements} --whitelist=./whitelist.txt --permission=CALL_PHONE --permission=INTERNET --permission=WRITE_EXTERNAL_STORAGE --permission=READ_EXTERNAL_STORAGE --orientation=portrait --dist-name {state.dist}'
 
     print(args)
     input('hit enter')

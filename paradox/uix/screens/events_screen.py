@@ -2,8 +2,6 @@
 
 from __future__ import unicode_literals
 
-import time
-
 from app_state import state, on
 from datetime import datetime
 from getinstance import InstanceManager
@@ -80,7 +78,7 @@ class EventsScreen(Screen):
             self.add_event(event)
 
     def add_event(self, event):
-        time = event.time_created.astimezone()
+        uptime = event.time_updated.astimezone()
         if self.last_uik != event.uik or self.last_region != event.region:
             region = state.regions.get(event.region, {}).get('name')
             self.ids['content'].add_widget(EventLogItem(
@@ -89,20 +87,23 @@ class EventsScreen(Screen):
             ))
             self.last_uik, self.last_region = event.uik, event.region
 
-        if self.last_date != time.date():
+        if self.last_date != uptime.date():
             self.ids['content'].add_widget(EventLogItem(
-                text=f'[color=#444]{time.strftime("%d.%m.%Y")}[/color]'
+                text=f'[color=#444]{uptime.strftime("%d.%m.%Y")}[/color]'
             ))
-            self.last_date = time.date()
+            self.last_date = uptime.date()
 
         #if isinstance(event['value'], bool):
             #event['value'] = 'Да' if event['value'] else 'Нет'
 
-        time = time.strftime("%H:%M")
-        item = EventLogItem(
-            input_json = state.inputs[event.input_id],
-            text = f'[color=#444]{time}[/color] {event.input_label}: {event.get_value()}'
-        )
+        uptime = uptime.strftime("%H:%M")
+        ctime = event.time_created.astimezone().strftime("%H:%M")
+        
+        if event.revoked:
+            text = f'[color=#444]{uptime}[/color] отозвано: [s]{ctime} {event.input_label}: {event.get_value()}[/s]'
+        else:
+            text = f'[color=#444]{uptime}[/color] {event.input_label}: {event.get_value()}'
+        item = EventLogItem(input_json=state.inputs[event.input_id], text=text)
         self.ids['content'].add_widget(item)
         item.bind(on_long_press=self.on_event_press)
 

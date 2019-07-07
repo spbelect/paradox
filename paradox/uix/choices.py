@@ -151,8 +151,8 @@ class ChoicesModal(ModalView):
             #on_resize=self._align_center,
             #on_keyboard=self._handle_keyboard)
 
-    def __init__(self, *args, **kwargs):
-        super(ChoicesModal, self).__init__(*args, **kwargs)
+    #def __init__(self, *args, **kwargs):
+        #super(ChoicesModal, self).__init__(*args, **kwargs)
         #if self._window is not None:
             ##Logger.warning('ModalView: you can only open once.')
             #return

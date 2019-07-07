@@ -24,3 +24,6 @@
     use_handles: False  # TODO: kivy bug with handles
     #background_color: 1,0,0,1
     #foreground_color: 1,1,0,1
+
+<ScrollView>:
+    effect_y: DampedScrollEffect(min_velocity=dp(80), friction=dp(0.09))

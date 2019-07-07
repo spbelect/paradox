@@ -208,7 +208,7 @@ class PositionScreen(Screen):
     @on('state.role')
     def set_role(self):
         if state.get('role'):
-            self.ids['status_choices'].choice = StatusChoice.instances.get(value=state.role)
+            self.ids.status_choices.choice = StatusChoice.instances.get(value=state.role)
             
     @on('state.uik')
     def set_uik(self):
