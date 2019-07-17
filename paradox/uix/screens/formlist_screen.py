@@ -91,28 +91,28 @@ Builder.load_string('''
                             height: dp(60)
                             size_hint: 1, None
 
-                    VBox:
-                        padding: 0, dp(10)
+                    #VBox:
+                        #padding: 0, dp(10)
 
-                        background_color: lightgray
+                        #background_color: lightgray
 
-                        Label:
-                            height: dp(20)
-                            text_size: self.size
-                            text: 'Итоговые протоколы'
-                            font_size: sp(18)
-                            color: white
-                            background_color: lightgray
+                        #Label:
+                            #height: dp(20)
+                            #text_size: self.size
+                            #text: 'Итоговые протоколы'
+                            #font_size: sp(18)
+                            #color: white
+                            #background_color: lightgray
 
-                        VBox:
-                            id: federal_forms
-                            background_color: lightgray
-                        VBox:
-                            id: regional_forms
-                            background_color: lightgray
-                        VBox:
-                            id: local_forms
-                            background_color: lightgray
+                        #VBox:
+                            #id: federal_forms
+                            #background_color: lightgray
+                        #VBox:
+                            #id: regional_forms
+                            #background_color: lightgray
+                        #VBox:
+                            #id: local_forms
+                            #background_color: lightgray
 
             #Widget:  # spacer
 

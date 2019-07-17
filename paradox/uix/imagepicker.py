@@ -22,6 +22,7 @@ from plyer import filechooser, camera
 from button import Button
 from paradox import utils
 from paradox.gallery import user_select_image
+from paradox.camera import take_picture
 from paradox.uix.vbox import VBox
 from paradox.uix.hbox import HBox
 from paradox.uix.imagebutton import ImageButton
@@ -104,10 +105,18 @@ Builder.load_string('''
     pos_hint: {'center_x': .5, 'center_y': .5}
     spacing: dp(8)
    
-    ImageButton:
-        image: root.image
-        label: root.label
+    Button:
+        #image: root.image
+        text: root.label
         size_hint_x: 1
+        height: dp(32)
+        color: lightgray
+        text_size: self.width, self.height
+        shorten: True
+        #width: self.texture_size[0]
+        #width: 200
+        #halign: 'left'
+        font_size: dp(16)
         #width: dp(190)
         on_release: root.on_release()
         #on_click
@@ -192,10 +201,15 @@ class ImageAddButton(ImageButton):
         user_select_image(self.on_file_picked)
         
     def on_file_picked(self, file):
+        from paradox import client
+        client.send_debug(f'on_file_picked {file}')
         if file:
             if file.startswith('file://'):
-                self.parent.dispatch('on_image_picked', file[7:])
-            #else:
+                file = file[7:]
+            elif file.startswith('content:') or file.startswith('media:'):
+                raise Exception(f"Can't handle {file}")
+            self.parent.dispatch('on_image_picked', file)
+            
             logger.debug(f'111, {file}')
             
         
@@ -210,19 +224,30 @@ class ImageAddButton(ImageButton):
             dir = env.getExternalStoragePublicDirectory(env.DIRECTORY_DCIM).getPath()
             fpath = f'{dir}/{uuid4()}.jpg'
             logger.debug(fpath)
-            camera.take_picture(fpath, on_complete=self.on_photo_taken)
+            take_picture(fpath, on_complete=self.on_photo_taken)
         else:
             filepath = filechooser.open_file()
             if filepath:
                 self.parent.dispatch('on_image_picked', filepath[0])
 
-    #@utils.asynced
-    def on_photo_taken(self, filepath):
+    @utils.asynced
+    async def on_photo_taken(self, file):
+        from paradox import client
+        client.send_debug(f'on_photo_taken {file}')
         #move(filename, state.user_data_dir + '/')
-        logger.debug(f'aaa {filepath}')
+        logger.debug(f'aaa {file}')
         #await sleep(0.5)
-        if exists(filepath):
-            Clock.schedule_once(lambda dt: self.parent.dispatch('on_image_picked', filepath), 0.5)
+        
+        if file.startswith('file://'):
+            file = file[7:]
+        elif file.startswith('content:') or file.startswith('media:'):
+            raise Exception(f"Can't handle {file}")
+        #for x in range(10):
+            
+        if exists(file):
+            Clock.schedule_once(lambda dt: self.parent.dispatch('on_image_picked', file), 0.5)
+        else:
+            raise Exception(f'File {file} does not exist.')
         #self.parent.dispatch('on_image_picked', filename) #join(state.user_data_dir, filename))
 
 

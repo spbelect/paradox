@@ -12,8 +12,8 @@ import time
 import traceback
 
 from kivy.config import Config
-#Config.set('graphics', 'multisamples', '0')
-Config.set('kivy', 'log_level', 'debug')
+Config.set('graphics', 'multisamples', '1')
+#Config.set('kivy', 'log_level', 'debug')
 
 os.environ['KIVY_EVENTLOOP'] = 'async'
 
@@ -95,6 +95,52 @@ Builder.load_file('base.kv')
 state._config = config
 
 
+
+    
+    
+def handle_traceback(err):
+    from requests import post
+    from os.path import join
+    _traceback = traceback.format_tb(err.__traceback__)
+    message = u''.join(_traceback) + '\n' + str(err)
+    logger.error(message)
+    try:
+        server = state.get('server', config.SERVER_ADDRESS)
+        post(join(server, 'api/v2/errors/'), json={
+            'app_id': state.get('app_id', '666'),
+            #'hash': md5(_traceback.encode('utf-8')).hexdigest(),
+            'timestamp': datetime.utcnow().isoformat(),
+            'traceback': message
+        })
+    except:
+        pass
+    uix.screenmgr.show_error_screen(message)
+    
+    
+def exchook(type, err, traceback):
+    #import ipdb; ipdb.sset_trace()
+    if str(err) == 'Event loop stopped before Future completed.':
+        return
+    handle_traceback(err)
+    
+def aexc_handler(loop, context):
+    #‘message’: Error message;
+    #‘exception’ (optional): Exception object;
+    #‘future’ (optional): asyncio.Future instance;
+    #‘handle’ (optional): asyncio.Handle instance;
+    #‘protocol’ (optional): Protocol instance;
+    #‘transport’ (optional): Transport instance;
+    #‘socket’ (optional): socket.socket instance.
+    logger.info(context['message'])
+    if context['message'] in [
+        'Event loop stopped before Future completed.',
+        'Task was destroyed but it is pending!']:
+        return
+    handle_traceback(context['exception'])
+    
+    
+sys.excepthook = exchook
+
 class ParadoxApp(App):
     errors = ListProperty([])
 
@@ -103,7 +149,13 @@ class ParadoxApp(App):
 
     def build(self):
         ExceptionManager.add_handler(self)
+        if platform == 'android':
+            from jnius import autoclass
+            autoclass('org.kivy.android.PythonActivity').mActivity.removeLoadingScreen()
+            
         try:
+            loop = asyncio.get_running_loop()
+            loop.set_exception_handler(aexc_handler)
 
             logger.info('Build started')
             state.user_data_dir = self.user_data_dir
@@ -138,25 +190,13 @@ class ParadoxApp(App):
             ##raise Exception('00')
             #return Button(text='lol')
             #return self.label
+
         except Exception as e:
-            _traceback = traceback.format_exc()
-            if config.DEBUG:
-                print(_traceback)
-            if isinstance(_traceback, bytes):
-                _traceback = _traceback.decode('utf-8')
-
             try:
-                app_store = shelve.open(join(self.user_data_dir, 'app_store.db.shelve'))
-                app_id = app_store['app_id']
+                handle_traceback(e)
             except:
-                app_id = 'xz'
+                pass
 
-            #post('https://xz.herokuapp.com/errors/', json={
-                #'app_id': app_id,
-                #'hash': md5(_traceback.encode('utf-8')).hexdigest(),
-                #'timestamp': datetime.utcnow().isoformat(),
-                #'traceback': _traceback
-            #})
             from kivy.uix.label import Label
 
             if platform in ['linux', 'windows']:
@@ -165,6 +205,7 @@ class ParadoxApp(App):
             self.label = Label()
             self.label.text_size = Window.width - 20, None
             self.label.halign = 'center'
+            self.label.color = (155,55,55,1)
             self.label.text = u'Произошла ошибка. Разработчики были уведомлены об этом.'
             return self.label
 
@@ -187,27 +228,9 @@ class ParadoxApp(App):
         #pass
 
     def handle_exception(self, err):
-        #import ipdb; ipdb.sset_trace()
-        _traceback = traceback.format_exc()
-        if config.DEBUG:
-            print(_traceback)
-        if isinstance(_traceback, bytes):
-            _traceback = _traceback.decode('utf-8')
-        self.errors.append(_traceback)
-        message = u'\n-----\n'.join(self.errors)
-        
-        uix.screenmgr.show_error_screen(message)
-        #if config.SENTRY and hasattr(App, 'send_queue_sentry'):
-            #App.send_queue_sentry.add_trace(message)
+        handle_traceback(err)
         return ExceptionManager.PASS
 
-    #def excepthook(self, type, value, tb):
-        #''' if you set sys.excepthook to this function - it will log all exceptions
-            #to log only some functions you may use log_trace decorator instead
-        #'''
-        #_traceback = "".join(traceback.format_exception(type, value, tb))
-        #self.root.switch_to(ErrorScreen(message=_traceback, name='error'))
-        ##log_exception(value, tb_msg)
         
     def run(self):
         '''Launches the app in standalone mode.
@@ -228,7 +251,7 @@ class ParadoxApp(App):
         self.stop()
         logger.info('App stopped')
         
-        #asyncio.get_running_loop().stop()
+        asyncio.get_running_loop().stop()
 
 
 from paradox import uix
@@ -264,6 +287,7 @@ mock_forms = {'ru': [{
       
 @uix.formlist.show_loader
 async def on_start(app):
+    #raise Exception('bb')
     logger.info('Start migration.')
     call_command('migrate')
     logger.info('Finished migration.')
@@ -275,9 +299,10 @@ async def on_start(app):
     state.setdefault('app_id', randint(10 ** 19, 10 ** 20 - 1))
     state.setdefault('profile', {})
     
-    #formdata = await client.recv_loop(f'/forms/general/')
+    formdata = (await client.recv_loop(f'forms/')).json()
+    #logger.info(formdata)
     #formdata = {'ru': json.load(open('forms_general.json'))}
-    formdata = mock_forms
+    #formdata = mock_forms
     
     state.setdefault('country', 'ru')
     state.setdefault('inputs', {})
@@ -298,8 +323,8 @@ async def on_start(app):
     
     logger.info('Restored past events.')
     await client.update_campaigns()
-    await client.send_position()
-    ##await client.send_userprofile()
+    await client.send_userprofile()
+    #await client.send_position()
     asyncio.create_task(client.event_send_loop())
     asyncio.create_task(client.event_image_send_loop())
     logger.info('Startup finished.')
@@ -345,25 +370,35 @@ async def x():
     print('ok')
     
 async def xb():
+    from os.path import basename
     import paradox.utils
     import requests_async as requests
+    
+    from paradox.models import InputEventImage
+    #import paradox.utils
+    #import requests_async as requests
+    
+    #state.app_id='123'
+    image = InputEventImage.objects.first()
     md5 = paradox.utils.md5_file('4.jpg')
     try:
-        response = await requests.post('http://8.8.8.8:8000/api/v1/upload_request/', timeout=0.1, json={
-            'filename': md5 + '-4.jpeg',
-            'md5': md5,
+        response = await requests.post('http://127.0.0.1:8000/api/v2/upload_request/', timeout=0.1, json={
+            'filename': image.md5 + '-4.jpeg',
+            'md5': image.md5,
             'content-type': 'image/jpeg'
         })
     except requests.Timeout as e:
         logger.debug(repr(e))
-        #get_server()
+        return
     except (requests.ProxyError, requests.SSLError) as e:
         logger.debug(repr(e))
+        return
     except requests.ConnectionError as e:
         #import ipdb; ipdb.sset_trace()
         #if e.args and isinstance(e.args[0], OSError):
             #if e.args[0].errno
         logger.debug(repr(e))
+        return
     except Exception as e:
         logger.debug(repr(e))
         return
@@ -373,14 +408,65 @@ async def xb():
     response = response.json()
     #import requests
     res = await requests.post(response['url'], data=response['fields'], 
-                  files={'file': ('4.jpeg', open('4.jpg', 'rb'))})
+                  files={'file': ('unused.jpeg', open(image.filepath, 'rb'))})
     print(res.content)
     res.raise_for_status()
     print('ok')
 
+
+async def upl():
+    from os.path import basename
+    from paradox.models import InputEventImage
+    import paradox.utils
+    import requests_async as requests
+    
+    state.app_id='123'
+    image = InputEventImage.objects.first()
+    
+    #md5 = paradox.utils.md5_file(image.filepath)
+    #logger.info(f'{image.md5}, {md5}')
+    try:
+        response = await client.api_request('POST', 'upload_request/', {
+            'filename': image.md5 + basename(image.filepath),
+            'md5': image.md5,
+            'content-type': 'image/jpeg'
+        })
+    except Exception as e:
+        logger.error(repr(e))
+        #image.update(send_status='req_exception')
+        return
+    if not response.status_code == 200:
+        logger.error(repr(response))
+        #image.update(send_status=f'req_http_{response.status_code}')
+        return
+    
+    response = s3params = response.json()
+    #res = await requests.post(response['url'], data=response['fields'], 
+                  #files={'file': ('unused.jpeg', open(image.filepath, 'rb'))})
+    #print(res.content)
+    #res.raise_for_status()
+    #print('ok')
+    print(s3params)
+    try:
+        response = await client.client.post(
+            s3params['url'], data=s3params['fields'], 
+            files={'file': open(image.filepath, 'rb')}
+        )
+    except Exception as e:
+        logger.error(repr(e))
+        #image.update(send_status='upload_exception')
+        return
+    if not response.status_code == 204:
+        logger.error(repr(response))
+        logger.error(response.text)
+        import ipdb; ipdb.sset_trace()
+        #image.update(send_status=f'upload_http_{response.status_code}')
+        return
+    
 if __name__ == '__main__':
     app = ParadoxApp()
     asyncio.run(app.async_run())
     #app.run()
     #trio.run(ParadoxApp().async_run)
+    #asyncio.run(upl())
     #asyncio.run(xb())

@@ -41,7 +41,7 @@ class Button(kivy.uix.button.Button):
     def ontouchdown(self, s, touch):
         if not self.collide_point(touch.x, touch.y):
             return False
-        Clock.schedule_once(self.set_long_touch, 0.1),
+        Clock.schedule_once(self.set_long_touch, 0.6),
 
     def set_long_touch(self, *a):
         self.long_touch = True

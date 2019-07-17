@@ -13,13 +13,12 @@ from kivy.properties import StringProperty, BooleanProperty, ObjectProperty, Pro
 from loguru import logger
 
 from .vbox import VBox
-from .base_input import Input
 from label import Label
 from button import Button
 from .choices import Choice
 from paradox import utils
 from .imagepicker import ImagePicker
-from paradox.models import InputEventImage
+from paradox.models import InputEventImage, InputEvent
 
 Builder.load_string('''
 #:include constants.kv
@@ -261,4 +260,9 @@ class Complaint(VBox):
         #super().__init__(*args, **kwargs)
         
     def on_uik_complaint_status_input(self, value):
-        self.input.last_event.update(uik_complaint_status=value, time_updated=now())
+        logger.debug(f'{self.input.last_event.id}, {value}')
+        InputEvent.objects.filter(id=self.input.last_event.id).update(
+            uik_complaint_status=value, time_updated=now()
+        )
+        
+        

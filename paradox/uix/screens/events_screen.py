@@ -108,4 +108,4 @@ class EventsScreen(Screen):
         item.bind(on_long_press=self.on_event_press)
 
     def on_event_press(self, item):
-        self.manager.show_handbook(input_data=item.input_json)
+        self.manager.show_handbook(item.input_json['label'], item.input_json['fz67_text'])

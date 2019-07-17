@@ -68,7 +68,8 @@ class InputEvent(Model):
         ('got_unfair_reply', 'получено неудовлетворительное решение'),
         ('got_fair_reply', 'получено удовлетворительное решение'),
     ]
-    uik_complaint_status = CharField(max_length=20, choices=COMPLAINT_STATUS)
+    uik_complaint_status = CharField(max_length=20, choices=COMPLAINT_STATUS, default='none')
+    tik_complaint_status = CharField(max_length=20, choices=COMPLAINT_STATUS, default='none')
     
     def get_value(self):
         if hasattr(self, 'integerinputevent'):

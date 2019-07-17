@@ -32,7 +32,13 @@ class LibSDL2Recipe(BootstrapNDKRecipe):
                 'libs', arch.arch
             )
         libs = [
-            'libhidapi.so libmain.so libSDL2_image.so libSDL2_mixer.so libSDL2.so libSDL2_ttf.so'.split()
+            'libhidapi.so', 
+            'libmain.so', 
+            'libSDL2_image.so', 
+            'libSDL2_mixer.so', 
+            'libSDL2.so', 
+            'libSDL2_ttf.so'
+        ]
         return not all(exists(join(libdir, x)) for x in libs)
     
     

@@ -17,6 +17,8 @@
 #ContentResolver = PythonActivity.mActivity.getContentResolver()
 #Version = autoclass('android.os.Build$VERSION')
 
+from loguru import logger
+
 
 class AndroidGallery():
 
@@ -95,6 +97,33 @@ class AndroidGallery():
 
 
 
+def resolve(uri):
+    from jnius import autoclass
+    from jnius import cast
+
+    PythonActivity = autoclass('org.kivy.android.PythonActivity')
+    ContentResolver = PythonActivity.mActivity.getContentResolver()
+    Uri = autoclass('android.net.Uri')
+    
+    if uri.getScheme() == 'content':
+            #PythonActivity.toastError('Loading file {}'.format(count + 1))
+        cursor = ContentResolver.query(uri, None, None, None, None)
+        if cursor.moveToFirst():
+            index = cursor.getColumnIndexOrThrow('_data')
+            result_uri = Uri.parse(cursor.getString(index))
+            return result_uri.getPath()
+        else:
+            raise Exception(f"Can't resolve {uri.toString()}")
+    else:
+        return uri.toString()
+                        
+    #Cursor cursor = context.getContentResolver().query(uri, null, null, null, null);
+        #if (cursor.moveToFirst()):
+        #{
+            #int column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);//Instead of "MediaStore.Images.Media.DATA" can be used "_data"
+            #filePathUri = Uri.parse(cursor.getString(column_index));
+            #fileName = filePathUri.getLastPathSegment().toString();
+        #}
 
 
 from kivy.logger import Logger
@@ -154,8 +183,9 @@ def user_select_image(callback):
             # This may just go into the void...
             raise NotImplementedError('Unknown result_code "{}"'.format(result_code))
 
-        selectedImage = intent.getData();  # Uri
-        print(selectedImage.toString())
+        uri = intent.getData();  
+        logger.info(uri.toString())
+        
         #filePathColumn = [MediaStore_Images_Media_DATA]; # String[]
         ## Cursor
         #cursor = currentActivity.getContentResolver().query(
@@ -170,7 +200,7 @@ def user_select_image(callback):
         #Logger.info('android_ui: user_select_image() selected %s', picturePath)
 
         # This is possibly in a different thread?
-        Clock.schedule_once(lambda dt: callback(selectedImage.toString()), 0)
+        Clock.schedule_once(lambda dt: callback(resolve(uri)), 0)
 
     # See: http://pyjnius.readthedocs.org/en/latest/android.html
     activity.bind(on_activity_result=on_activity_result)

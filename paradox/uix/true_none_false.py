@@ -40,7 +40,7 @@ Builder.load_string('''
         height: self.texture_size[1] + dp(10)
         text: self.parent.json['label']
         color: black
-        on_long_press: uix.screenmgr.show_handbook(root.json['label'], root.json['help_text'])
+        on_long_press: root.show_help()
 
     BoxLayout:
         size_hint: None, None
@@ -76,9 +76,6 @@ Builder.load_string('''
         height: dp(16)
         #text: '124'
 
-    Complaint:
-        id: complaint
-        input: root
         
 <TNFButton@ToggleButton>:
     height: self.parent.height - 10

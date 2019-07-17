@@ -10,11 +10,13 @@ from itertools import groupby
 
 from app_state import state, on
 from django.db.models import Q
+from kivy.animation import Animation
 from kivy.clock import Clock
 from kivy.lang import Builder
 from kivy.properties import ObjectProperty
 from kivy.uix.screenmanager import Screen
 from kivy.uix.widget import Widget
+from kivy.core.window import Window
 from kivy.effects.dampedscroll import DampedScrollEffect
 from loguru import logger
 
@@ -24,6 +26,7 @@ from ..true_none_false import TrueNoneFalse
 from ..numeric_input import NumericInput
 from ..vbox import VBox
 from paradox.models import InputEvent, Campaign
+from paradox.uix import top_loader
 from paradox import uix
 
 
@@ -79,8 +82,9 @@ Builder.load_string('''
                 id: trailing_spacer
                 height: height1 * 8
                 size_hint_y: None
-
+        
 ''')
+
 
 
 class FormScreen(Screen):
@@ -100,6 +104,7 @@ class FormScreen(Screen):
         asyncio.create_task(self.build())
         #Clock.schedule_once(lambda *a: self.build(), 0.5)
     
+    @uix.top_loader.show
     async def build(self):
         await sleep(0.5)
         logger.debug(f'building form {self.json["name"]}')
@@ -108,10 +113,9 @@ class FormScreen(Screen):
                 #input_data['help_text'] = txt
             
             self.add_input(input)
-            await sleep(0.1)
+            await sleep(0.05)
 
-        if self.json['form_type'] == 'GENERAL':
-            self.remove_widget(self.ids['trailing_spacer'])
+        self.remove_widget(self.ids['trailing_spacer'])
         
         logger.debug(f'building form {self.json["name"]} inputs added')
         uix.base_input.restore_past_events()

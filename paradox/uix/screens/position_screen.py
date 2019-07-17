@@ -135,6 +135,11 @@ Builder.load_string('''
                         text: 'Мимо проходил (это не ваш участок для голосования)'
                         short_text: 'Мимо проходил'
                         value: 'other'
+                        
+                    StatusChoice:
+                        text: 'Видео-наблюдатель'
+                        short_text: 'Видео-наблюдатель'
+                        value: 'videonabl'
 
             Label:
                 #id: mokrug

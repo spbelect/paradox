@@ -1,6 +1,8 @@
 import asyncio
 import json
+from os.path import join, basename
 from asyncio import sleep, create_task
+from datetime import datetime
 from itertools import chain
 from urllib.parse import urljoin
 
@@ -14,11 +16,15 @@ from lockorator.asyncio import lock_or_exit
 from loguru import logger
 #from trio import sleep
 import requests_async as requests
+import http3
 
 from paradox import uix
 from .models import Campaign, Coordinator, InputEvent, InputEventImage, InputEventUserComment
 from . import config
 from . import utils
+
+
+client = http3.AsyncClient()
 
 state.server = config.SERVER_ADDRESS
 try:
@@ -29,11 +35,26 @@ except ImportError:
         state.server = config.SERVER_ADDRESS
 
 
+
+def send_debug(msg):
+    from requests import post
+    from os.path import join
+    try:
+        server = state.get('server', config.SERVER_ADDRESS)
+        post(join(server, 'api/v2/errors/'), json={
+            'app_id': state.get('app_id', '666'),
+            #'hash': md5(_traceback.encode('utf-8')).hexdigest(),
+            'timestamp': datetime.utcnow().isoformat(),
+            'msg': msg
+        })
+    except:
+        pass
+    
 async def ping_loop():
     while True:
         try:
-            return await requests.get(urljon(state.server, '/ping'), timeout=10)
-        except requests.Timeout as e:
+            return await client.get(state.server, timeout=10)
+        except http3.Timeout as e:
             pass
         except Exception as e:
             raise
@@ -51,28 +72,33 @@ async def check_server():
         await get_server()
     except Exception as e:
         logger.info(e)
+        await get_server()
     else:
         logger.info('Server connection ok.')
 
 
-async def api_request(method, url, data):
+async def api_request(method, url, data=None):
     while True:
         if 'server' in state:
             break
         await get_server()
         await sleep(5)
         
+    #import ipdb; ipdb.sset_trace()
+    url = urljoin(state.server, join('/api/v2', url))
+    logger.debug(url)
     try:
         #state.server = 'http://8.8.8.8'
-        return await requests.request(
-            method, urljoin(state.server, '/api/v2/', url), timeout=10,
-            data=dict(data, app_id=state.app_id)
+        return await client.request(
+            method, url, timeout=10,
+            json=dict(data, app_id=state.app_id) if data else None
         )
-    except requests.Timeout as e:
+    except http3.Timeout as e:
         logger.debug(repr(e))
         create_task(check_server())
         raise
     except Exception as e:
+        create_task(check_server())
         
         #import ipdb; ipdb.sset_trace()
         #raise
@@ -86,6 +112,46 @@ async def api_request(method, url, data):
         
 @on('state.region', 'state.country', 'state.uik', 'state.role')
 @lock_or_exit()
+async def send_userprofile():
+    logger.debug('Sending profile.')
+    fields = 'email last_name first_name phone telegram'.split()
+    await sleep(1)
+    while True:
+        logger.debug('Sending profile loop.')
+        prev = tuple(state.profile.get(x, None) for x in fields)
+        if not all(prev):
+            await sleep(10)
+            continue
+        
+        try:
+            response = await api_request('POST', f'userprofile/', {
+                'first_name': state.profile.first_name,
+                'last_name': state.profile.last_name,
+                'middle_name ': state.profile.get('middle_name', None),
+                'email': state.profile.email,
+                'phone': state.profile.phone,
+                'telegram': state.profile.telegram,
+            })
+        except Exception as e:
+            logger.info(f'{repr(e)}')
+        else:
+            if response.status_code == 200:
+                if prev == tuple(state.profile.get(x, None) for x in fields):
+                    # Пока ожидали http ответ, профиль не изменился
+                    logger.info('Profile sent.')
+                    return
+                else:
+                    # Пока ожидали http ответ, профиль изменился, пошлем новые
+                    logger.info('Profile changed, will send again.') 
+            else:
+                logger.info(repr(response))
+                return
+                #uix.sidepanel.http_error(response)
+        await sleep(50)
+
+
+@on('state.region', 'state.country', 'state.uik', 'state.role')
+@lock_or_exit()
 async def send_position():
     await sleep(1)
     while True:
@@ -95,7 +161,7 @@ async def send_position():
         except AttributeError:
             return
         try:
-            response = await api_request('POST', f'/position/', {
+            response = await api_request('POST', f'position/', {
                 'uik': state.uik,
                 'region': state.region.id,
                 'country': state.country,
@@ -121,7 +187,7 @@ async def send_position():
 
 async def _put_image(image):
     try:
-        response = await api_request('PUT', f'/input_events/{image.event_id}/images/{image.md5}', {
+        response = await api_request('PUT', f'input_events/{image.event_id}/images/{image.md5}', {
             #'type': image.type,
             #'time_created': image.time_created,
             'deleted': image.deleted,
@@ -151,64 +217,80 @@ async def event_image_send_loop():
         
         #logger.debug(list(topost.values_list('filepath')))
         for image in toput:
+            await sleep(0.2)
             await _put_image(image)
             
         for image in topost:
+            await sleep(0.2)
             try:
-                response = await api_request('POST', '/upload_request/', {
+                response = await api_request('POST', 'upload_request/', {
                     'filename': image.md5 + basename(image.filepath),
                     'md5': image.md5,
                     'content-type': 'image/jpeg'
                 })
             except Exception as e:
+                logger.error(repr(e))
                 image.update(send_status='req_exception')
                 continue
             if not response.status_code == 200:
+                logger.error(repr(response))
                 image.update(send_status=f'req_http_{response.status_code}')
                 continue
             
             s3params = response.json()
             try:
-                response = await requests.post(
+                response = await client.post(
                     s3params['url'], data=s3params['fields'], 
-                    files={'file': ('unused.jpeg', open(image.filepath, 'rb'))}
+                    files={'file': open(image.filepath, 'rb')}
                 )
             except Exception as e:
+                logger.error(repr(e))
                 image.update(send_status='upload_exception')
                 continue
-            if not response.status_code == 200:
+            if not response.status_code in (200, 201, 204):
+                logger.error(repr(response))
+                logger.error(response.text)
                 image.update(send_status=f'upload_http_{response.status_code}')
                 continue
             
             try:
-                response = await api_request('POST', f'/input_events/{image.event_id}/images/', {
+                response = await api_request('POST', f'input_events/{image.event_id}/images/', {
                     'type': image.type,
-                    'timestamp': image.time_created,
+                    'timestamp': image.time_created.isoformat(),
                     'deleted': image.deleted,
                     'filename': image.md5 + basename(image.filepath),
                 })
             except Exception as e:
+                logger.error(repr(e))
                 image.update(send_status='post_exception')
                 continue
             if not response.status_code == 200:
+                logger.error(repr(response))
                 image.update(send_status=f'post_http_{response.status_code}')
                 continue
             
             image.update(send_status='sent', time_sent=now())
             #print(res.content)
             #print('ok')
-        await sleep(50)
+        await sleep(10)
             
             
 async def _put_event(event):
     try:
-        response = await api_request('PUT', f'/input_events/{event.id}', {
+        response = await api_request('PUT', f'input_events/{event.id}/', {
             'revoked': event.revoked,
+            'uik_complaint_status': event.uik_complaint_status,
+            'tik_complaint_status': event.tik_complaint_status,
         })
     except Exception as e:
         event.update(send_status='put_exception')
         return
-    if not response.status_code == 200:
+    if response.status_code == 404:
+        # No such input
+        logger.info(f'404, {response.json()}')
+        event.update(send_status='sent', time_sent=now())
+        return
+    elif not response.status_code == 200:
         event.update(send_status=f'put_http_{response.status_code}')
         return
     
@@ -227,6 +309,7 @@ async def event_send_loop():
             await sleep(0.1)
             
         for event in toput:
+            await sleep(0.2)
             uix_inputs = uix.Input.instances.filter(input_id=event.input_id)
             await _put_event(event)
             uix_inputs.on_send_success(event)
@@ -234,41 +317,40 @@ async def event_send_loop():
         for event in topost:
             uix_inputs = uix.Input.instances.filter(input_id=event.input_id)
             try:
-                response = await api_request('POST', '/input_events/', {
+                response = await api_request('POST', 'input_events/', {
                     'id': event.id,
-                    'iid': event.input_id,
+                    'input_id': event.input_id,
                     'value': event.get_value(),
                     'uik_complaint_status': event.uik_complaint_status,
+                    'tik_complaint_status': event.tik_complaint_status,
                     'region': event.region,
                     'uik': event.uik,
                     'role': event.role,
+                    'alarm': event.alarm,
                     'revoked': event.revoked,
-                    'timestamp': event.time_created,
+                    'timestamp': event.time_created.isoformat(),
                 })
             except Exception as e:
+                logger.error(repr(e))
                 event.update(send_status='post_exception')
                 uix_inputs.on_send_error(event)
                 continue
-            if not response.status_code == 200:
+            if response.status_code == 404:
+                # No such input
+                logger.info(f'404, {response.json()}')
+                event.update(send_status='sent', time_sent=now())
+                uix_inputs.on_send_success(event)
+                continue
+            if not response.status_code == 201:
+                logger.info(repr(response))
                 event.update(send_status=f'post_http_{response.status_code}')
                 uix_inputs.on_send_error(event)
                 continue
             event.update(send_status='sent', time_sent=now())
             uix_inputs.on_send_success(event)
-        await sleep(50)
+            await sleep(0.1)
+        await sleep(10)
         
-        
-async def recv_loop(url):
-    while True:
-        try:
-            response = await api_request('GET', url)
-        except Exception as e:
-            raise  # TODO
-            await sleep(50)
-        else:
-            return response
-            
-
 mock_campaigns = {
     'campaigns': {
         '8446': {
@@ -473,3 +555,18 @@ async def update_elect_flags():
     #Coordinator.objects.filter(id=id).update(subscription='no')
     
     
+
+        
+async def recv_loop(url):
+    while True:
+        try:
+            response = await api_request('GET', url)
+        except Exception as e:
+            logger.error(repr(e))
+            await sleep(5)
+        else:
+            if response.status_code == 200:
+                return response
+            logger.info(repr(response))
+            await sleep(5)
+            

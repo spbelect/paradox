@@ -22,18 +22,21 @@ Builder.load_string('''
     yes: 'OK'
     no: 'Отмена'
     #header: ''
+    hparent: getattr(self.parent, 'height', 10) * 0.9
     size_hint: 0.9, None
-    height: getattr(self.parent, 'height', 10) * 0.9
-    #height: 
-        #content.height if content.height < self.hparent else self.hparent
+    #height: getattr(self.parent, 'height', 10) * 0.9
+    height: 
+        content.height if content.height < self.hparent else self.hparent
     #height:
         
     _anim_duration: 0
     _anim_alpha: 1
     #_window: app.root_window
 
-    BoxLayout:
+    VBox:
+        id: content
         orientation: 'vertical'
+        height: message.height + buttons.height
         #padding: '12dp'
         ##cols: 1
         ##size_hint: None, None
@@ -41,9 +44,12 @@ Builder.load_string('''
         ##size: root.size
 
         ScrollView:
+            
             pos_hint: {'center_y': 0.5}
             id: scrollview
             scroll_distance: dp(30)
+            size_hint_y: None
+            height: message.height
 
             #VBox:
                 #id: content
@@ -51,10 +57,15 @@ Builder.load_string('''
 
             Label:
                 #background_color: teal
+                id: message
                 pos_hint: {'center_y': 0.5}
                 text: root.text
+                split_str: ' '
+                text_size: self.width, None
+                height: self.texture_size[1] + dp(10)
                 
         BoxLayout:
+            id: buttons
             spacing: dp(4)
             padding: dp(4)
             height: height1

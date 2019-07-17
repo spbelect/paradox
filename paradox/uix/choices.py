@@ -165,7 +165,7 @@ class ChoicesModal(ModalView):
         #self.fbind('size', self._align_center)
 
     def on_touch_down(self, touch):
-        if self.ids['scrollview'].effect_y.velocity > 80:
+        if self.ids['scrollview'].effect_y.velocity > 0:
             # The touch stops scrolling
             touch.ud['sv.stopped'] = True
         return super(ChoicesModal, self).on_touch_down(touch)

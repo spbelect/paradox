@@ -64,6 +64,9 @@ Builder.load_string('''
         width: dp(300)
         font_size: sp(16)
 
+    #Complaint:
+        #id: complaint
+        #input: root
 
 ''')
 
@@ -119,18 +122,18 @@ class NumericInput(Input, VBox):
     #def on_value(self, *args):
         #schedule('core.new_input_event', self, self.value)
 
-    def on_save_success(self, eid, timestamp, value):
-        self.ids['loader'].timestamp = timestamp.isoformat()
+    def on_save_success(self, event):
+        #self.ids['loader'].timestamp = timestamp.isoformat()
         self.ids['loader'].text = 'отправляется'
 
     def on_send_success(self, event):
-        if self.ids['loader'].timestamp == event['timestamp']:
-            self.ids['loader'].text = ''
+        #if self.ids['loader'].timestamp == event['timestamp']:
+        self.ids['loader'].text = ''
 
-    def on_send_error(self, event, request, error_data):
-        if self.ids['loader'].timestamp == event['timestamp']:
-            self.ids['loader'].text = 'отправляется (err)'
+    def on_send_error(self, event):
+        #if self.ids['loader'].timestamp == event['timestamp']:
+        self.ids['loader'].text = 'отправляется (err)'
 
-    def on_send_fatal_error(self, event, request, error_data):
-        if self.ids['loader'].timestamp == event['timestamp']:
-            self.ids['loader'].text = 'отправляется (err)'
+    #def on_send_fatal_error(self, event, request, error_data):
+        #if self.ids['loader'].timestamp == event['timestamp']:
+            #self.ids['loader'].text = 'отправляется (err)'

@@ -40,7 +40,6 @@ Builder.load_string('''
                 id: email
                 hint_text: 'Email'
                 on_focus: state.profile.email = self.text
-                #text: root.email
 
             NiceTextInput:
                 id: last_name
@@ -60,6 +59,11 @@ Builder.load_string('''
                 on_focus: state.profile.middle_name = self.text
                 #text: root.middle_name
 
+            NiceTextInput:
+                id: telegram
+                hint_text: 'telegram'
+                on_focus: state.profile.telegram = self.text
+                
             BoxLayout:
                 height: height1
 
@@ -86,7 +90,7 @@ Builder.load_string('''
 
 
 class UserProfileScreen(Screen):
-    inputs = 'email last_name first_name middle_name phone'.split()
+    inputs = 'email last_name first_name middle_name phone telegram'.split()
     #email = Ob last_name first_name middle_name phone
 
     def __init__(self, *args, **kwargs):

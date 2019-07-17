@@ -76,13 +76,14 @@ def build(ctx):
 
     requirements = ','.join(getrequirements())
         
-    name = 'paradox2dbg' if state.debug else 'paradox2'
+    #name = 'paradox2dbg' if state.debug else 'paradox2'
+    name = f'{state.dist}2dbg' if state.debug else f'{state.dist}2'
 
     #distdir = '/home/u1/.local/share/python-for-android/dists/%s' % dist
 
-    args = f'--private /home/z/pproj/kvbugtest --version={version} --bootstrap=sdl2 --window --local-recipes="./recipes" --requirements=python3,kivy_myasync,openssl,sqlite3,pillow,pytz,sdl2_hg --orientation=portrait --dist-name {state.dist}'
+    #args = f'--private /home/z/pproj/kvbugtest --version={version} --bootstrap=sdl2 --window --whitelist=./whitelist.txt --local-recipes="./recipes" --requirements=python3,kivy_myasync,openssl,sqlite3,pillow,pytz,sdl2 --orientation=portrait --dist-name {state.dist} --permission=WRITE_EXTERNAL_STORAGE --permission=READ_EXTERNAL_STORAGE --fileprovider-paths=./fileprovider_paths.xml'
     
-    args = f'--private {dirname(__file__)} --version={version} --bootstrap=sdl2 --window --local-recipes="./recipes" --requirements=python3,kivy_myasync,openssl,sqlite3,pillow,pytz,sdl2,{requirements} --whitelist=./whitelist.txt --permission=CALL_PHONE --permission=INTERNET --permission=WRITE_EXTERNAL_STORAGE --permission=READ_EXTERNAL_STORAGE --orientation=portrait --dist-name {state.dist}'
+    args = f'--private {dirname(__file__)} --version={version} --bootstrap=sdl2 --window --local-recipes="./recipes" --requirements=python3,kivy_myasync,openssl,sqlite3,pillow,pytz,sdl2,{requirements} --whitelist=./whitelist.txt --permission=CALL_PHONE --permission=INTERNET --permission=WRITE_EXTERNAL_STORAGE --permission=READ_EXTERNAL_STORAGE --orientation=portrait --dist-name {state.dist} --fileprovider-paths=./fileprovider_paths.xml'
 
     print(args)
     input('hit enter')

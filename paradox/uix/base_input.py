@@ -14,6 +14,7 @@ from paradox.models import InputEvent, BoolInputEvent, IntegerInputEvent, InputE
 from paradox import uix
 from paradox import utils
 from paradox.uix import confirm
+from paradox.uix.complaint import Complaint
 
 
 class Input(Widget):
@@ -24,6 +25,7 @@ class Input(Widget):
     instances = InstanceManager()
     
     def __init__(self, *args, **kwargs):
+        self.complaint = None
         super(Input, self).__init__(*args, **kwargs)
         self.input_id = self.json['input_id']
         self.apply_flags()
@@ -47,12 +49,20 @@ class Input(Widget):
                 self.value = None
             else:
                 self.value = self.last_event.get_value()
-            #self.ids.complaint.event = self.last_event
-            self.ids.complaint.on_event(self.last_event)
-            #Clock.schedule_once(lambda *a: self.ids.complaint.set_past_events(events), 0.5)
+                
+            if self.last_event.alarm and not self.last_event.revoked:
+                if not self.complaint:
+                    self.complaint = Complaint(input=self)
+                    self.add_widget(self.complaint)
+                self.complaint.on_event(self.last_event)
+            elif self.complaint:
+                self.remove_widget(self.complaint)
+                self.complaint = None
         else:
             self.value = None
-            self.ids.complaint.on_event(None)
+            if self.complaint:
+                self.remove_widget(self.complaint)
+                self.complaint = None
         self.show_dependants()
 
     def show_dependants(self):
@@ -68,6 +78,9 @@ class Input(Widget):
             for input in Input.instances.filter(input_id=dep['iid']):
                 input.hide()
                 
+    def show_help(self):
+        uix.screenmgr.show_handbook(self.json['label'], self.json['fz67_text'])
+        
     @utils.asynced
     async def on_input(self, value):
         if uix.position.show_errors():
@@ -92,13 +105,15 @@ class Input(Widget):
                 self.set_state(self.last_event.get_value())
                 return False
             
-            event = self.last_event
+            event = InputEvent.objects.get(id=self.last_event.id)
             event.update(revoked=True, time_updated=now())
             uix.events_screen.add_event(event)
+            logger.info('revoke event')
             
         if value is not None:
+            logger.info('new event')
             alarm = False
-            if 'alarm' in self.json:
+            if self.json.get('alarm', None):
                 #print(self.json['alarm'])
                 if 'eq' in self.json['alarm']:
                     alarm = bool(value == self.json['alarm'].get('eq'))
@@ -114,8 +129,11 @@ class Input(Widget):
                 alarm=alarm,
                 region=state.region.id,
                 uik=state.uik,
+                role=state.role,
                 time_updated=now()
             )
+            
+            uix.events_screen.add_event(event)
         
         #campaigns = Campaign.objects.positional().filter(active=True, subscription='yes')
         #event.coordinators = [x.coordinator.id for x in campaigns]
@@ -124,8 +142,15 @@ class Input(Widget):
 
         for input in Input.instances.filter(input_id=self.input_id):
             input.on_save_success(event)
-        uix.events_screen.add_event(event)
-        self.ids.complaint.on_event(event)
+            
+        if event.alarm and not event.revoked:
+            if not self.complaint:
+                self.complaint = Complaint(input=self)
+                self.add_widget(self.complaint)
+            self.complaint.on_event(event)
+        elif self.complaint:
+            self.remove_widget(self.complaint)
+            self.complaint = None
         return True
 
     def show(self):
