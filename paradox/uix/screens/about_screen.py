@@ -9,6 +9,7 @@ from kivy.uix.screenmanager import Screen
 from kivy.uix.widget import Widget
 
 from label import Label
+from ..click_label import ClickLabel
 
 
 Builder.load_string('''
@@ -48,6 +49,7 @@ Builder.load_string('''
 
                 ClickLabel:
                     text: '[color=#4AABFF][ref=https://telegram.me/spbelect_mobile]@spbelect_mobile[/ref][/color]'
+                    on_ref_press: open_url(args[1])
 
             BoxLayout:
                 height: height1 * 2
@@ -60,6 +62,7 @@ Builder.load_string('''
 
                 ClickLabel:
                     text: '[color=#4AABFF][ref=https://www.facebook.com/groups/npmobile/]npmobile[/ref][/color]'
+                    on_ref_press: open_url(args[1])
 
             BoxLayout:
                 height: height1 * 2
@@ -72,17 +75,8 @@ Builder.load_string('''
 
                 ClickLabel:
                     text: '[color=#4AABFF][ref=https://vk.com/spbelect_mobile]spbelect_mobile[/ref][/color]'
+                    on_ref_press: open_url(args[1])
 
-
-<ClickLabel@Label>:
-    height: height1
-    size_hint_y: None
-    on_ref_press: open_url(args[1])
-    markup: True
-    color: black
-    text_size: self.width, None
-    halign: 'left'
-    pos_hint: {'center_y':.5}
 
 #<Icon>:
     #scale: 1

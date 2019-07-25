@@ -130,7 +130,7 @@ class FormScreen(Screen):
         else:
             return
         #input.ids['input_label'].bind(on_long_press=self.on_input_label_press)
-        self.ids['content'].add_widget(input)
+        self.ids.content.add_widget(input)
 
     def on_input_label_press(self, input_label):
         self.manager.show_handbook(input_data=input_label.parent.json)

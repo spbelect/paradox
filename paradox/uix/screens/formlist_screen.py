@@ -6,6 +6,7 @@ from app_state import state
 from getinstance import InstanceManager
 from kivy.clock import Clock
 from kivy.lang import Builder
+from kivy.metrics import dp
 from kivy.properties import ObjectProperty
 from kivy.uix.screenmanager import Screen
 from kivy.uix.behaviors.button import ButtonBehavior
@@ -228,15 +229,16 @@ class FormListScreen(Screen):
 
     def show_loader(self, f):
         async def wrapped(*a, **kw):
-            self.ids['forms_loader'].height = 40
-            self.ids['forms_loader'].opacity = 1
+            self.ids.forms_loader.height = dp(20)
+            self.ids.forms_loader.opacity = 1
             try:
                 return await f(*a, **kw)
             finally:
-                logger.debug('hide loader')
-                self.ids['forms_loader'].height = 0
-                self.ids['forms_loader'].opacity = 0
+                #logger.debug('hide loader')
+                self.ids.forms_loader.height = 0
+                self.ids.forms_loader.opacity = 0
         return wrapped
+
 
     #def show_campaign_forms(self):
         #pass

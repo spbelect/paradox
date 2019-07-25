@@ -196,6 +196,14 @@ class ImageAddButton(ImageButton):
         self.modal.ids.take_photo.bind(on_release=self.take_photo)
         self.modal.open()
         
+    #def request_permissions(self):
+        #from android.permissions import request_permissions, Permission
+        #logger.debug('request_permissions')
+        #request_permissions([
+            #Permission.WRITE_EXTERNAL_STORAGE,
+            #Permission.READ_EXTERNAL_STORAGE
+        #])
+        
     def pick_file(self, *a):
         self.modal.dismiss()
         user_select_image(self.on_file_picked)

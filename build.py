@@ -38,6 +38,8 @@ print(version)
 @group('builder', chain=True)
 #@option('--loglevel', '-l', default='INFO',
         #type=click.Choice(list(logging._nameToLevel), case_sensitive=False))
+@option('--arch', default='armeabi-v7a', envvar='ANDROID_ARCH',
+        type=click.Choice(['armeabi-v7a', 'x86']))
 @option('--java_home', envvar='JAVA_HOME')
 @option('--keypassword', envvar='KEYSTORE_PASSWORD')
 @option('--sdk_dir', envvar='ANDROIDSDK')
@@ -50,12 +52,19 @@ def cli(**kwargs):
     state.adb = f'{state.sdk_dir}/platform-tools/adb'
     state.adb = 'adb'
     
-    state.dist = 'paradox'
-    #state.dist = 'tst'
+    
+    #state.arch = 'armeabi-v7a'
+    #state.arch = 'x86'
+    
+    name = 'paradox'
+    #name = 'tst'
+    state.dist = f'{name}-{state.arch}'
+    #state.package = f'paradox-{state.arch}'
+    state.package = f'{name}2dbg' if state.debug else f'{name}2'
     if state.debug:
-        state.apk = f'{state.dist}-{version}-debug.apk'
+        state.apk = f'{name}-{version}-{state.arch}-debug.apk'
     else:
-        state.apk = f'{state.dist}-{version}-release-unsigned.apk'
+        state.apk = f'{name}-{version}-{state.arch}-release-unsigned.apk'
     
 
 def getrequirements():
@@ -77,19 +86,19 @@ def build(ctx):
     requirements = ','.join(getrequirements())
         
     #name = 'paradox2dbg' if state.debug else 'paradox2'
-    name = f'{state.dist}2dbg' if state.debug else f'{state.dist}2'
 
     #distdir = '/home/u1/.local/share/python-for-android/dists/%s' % dist
 
     #args = f'--private /home/z/pproj/kvbugtest --version={version} --bootstrap=sdl2 --window --whitelist=./whitelist.txt --local-recipes="./recipes" --requirements=python3,kivy_myasync,openssl,sqlite3,pillow,pytz,sdl2 --orientation=portrait --dist-name {state.dist} --permission=WRITE_EXTERNAL_STORAGE --permission=READ_EXTERNAL_STORAGE --fileprovider-paths=./fileprovider_paths.xml'
     
-    args = f'--private {dirname(__file__)} --version={version} --bootstrap=sdl2 --window --local-recipes="./recipes" --requirements=python3,kivy_myasync,openssl,sqlite3,pillow,pytz,sdl2,{requirements} --whitelist=./whitelist.txt --permission=CALL_PHONE --permission=INTERNET --permission=WRITE_EXTERNAL_STORAGE --permission=READ_EXTERNAL_STORAGE --orientation=portrait --dist-name {state.dist} --fileprovider-paths=./fileprovider_paths.xml'
+    
+    args = f'--private {dirname(__file__)} --version={version} --bootstrap=sdl2 --window --local-recipes="./recipes" --requirements=python3,kivy_myasync,openssl,sqlite3,pillow,pytz,sdl2,{requirements} --whitelist=./whitelist.txt --permission=CALL_PHONE --permission=INTERNET --permission=WRITE_EXTERNAL_STORAGE --permission=READ_EXTERNAL_STORAGE --orientation=portrait --dist-name {state.dist} --fileprovider-paths=./fileprovider_paths.xml --arch={state.arch}'
 
     print(args)
     input('hit enter')
 
     debug = '--debug' if state.debug else '--release'
-    sh(f'p4a apk {args} --package=org.spbelect.{name} --name="{name}" {debug}')
+    sh(f'p4a apk {args} --package=org.spbelect.{state.package} --name="{state.package}" {debug}')
     
     # debug build is already signed by p4a
     if not state.debug:
@@ -114,7 +123,7 @@ def sign():
 @cli.command()
 @click.pass_context
 def install(ctx):
-    sh(f'{state.adb} -d install -r {state.apk}')
+    sh(f'{state.adb} install -r {state.apk}')
     
     input('hit enter')
     ctx.invoke(logcat)
@@ -122,7 +131,7 @@ def install(ctx):
 
 @cli.command()
 def logcat():
-    sh(f'{state.adb} -d logcat -v time | grep --line-buffered -E "SDL|[pP]ython|linker|spbelect|dlopen" | grep --line-buffered -vE "extracting|unused"')
+    sh(f'{state.adb} logcat -v time | grep --line-buffered -E "SDL|[pP]ython|linker|spbelect|dlopen" | grep --line-buffered -vE "extracting|unused"')
     #sh(f'{state.adb} -d logcat -v time | grep --line-buffered -vE "WordingCode|RATE_LIMITED_API_CALLS|ResourcesManager|Finsky|StatusBar|LocationController|ServiceManager|PowerManagerService|VideoCapabilities|ActivityManager|SoLoader|SwipeUpService|wpa_supplicant|GoogleSignatureVerifier|ResourceType|DefaultAppManager|AccountTypeManager|SendRegistrationId|FingerGoodix|GetSettingsFromServerCm|W\/Resources|NetworkResolver|AlarmManager|PathParser|NetworkManagementService|FingerService|AmSmartShowFuncsImpl|extracting|PackageManager|Icing|CalendarSyncAdapter|RuntimeConfig|TaskManager|RecentTasksLoader|tnet-jni|WifiHAL|Plume|WifiService|vigi_ZteDrm|InputDispatcher|unused"')
 
 
@@ -137,5 +146,4 @@ if __name__ == '__main__':
     #signal(SIGINT, utils.sigint_handler)    
     
     cli(auto_envvar_prefix='PARADOX')
-    
     

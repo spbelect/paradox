@@ -133,7 +133,12 @@ def user_select_image(callback):
     """Open Gallery Activity and call callback with absolute image filepath of image user selected.
     None if user canceled.
     """
-
+    from android.permissions import request_permissions, Permission
+    logger.debug('request_permissions')
+    request_permissions([
+        Permission.WRITE_EXTERNAL_STORAGE,
+        Permission.READ_EXTERNAL_STORAGE
+    ])
 
     from jnius import autoclass
     from jnius import cast

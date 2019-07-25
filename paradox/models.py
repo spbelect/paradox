@@ -141,7 +141,7 @@ class Campaign(Model):
     objects = CampaignQuerySet.as_manager()
     
     id = CharField(primary_key=True, max_length=40)  # UUID
-    coordinator = FK(Coordinator)
+    coordinator = FK(Coordinator, related_name='campaigns')
     #subscription = CharField() # yes/no/subing/unsubing
     #active = BooleanField()  # shortcut for filtering current timerange
     fromtime = DateTimeField()

@@ -251,6 +251,8 @@ class ParadoxApp(App):
         self.stop()
         logger.info('App stopped')
         
+        # TODO: https://bugs.python.org/issue36709
+        # Asyncio SSL keep-alive connections raise errors after loop close.
         asyncio.get_running_loop().stop()
 
 
@@ -288,6 +290,7 @@ mock_forms = {'ru': [{
 @uix.formlist.show_loader
 async def on_start(app):
     #raise Exception('bb')
+    
     logger.info('Start migration.')
     call_command('migrate')
     logger.info('Finished migration.')
@@ -295,17 +298,23 @@ async def on_start(app):
     statefile = join(app.user_data_dir, 'state.db.shelve')
     logger.info(f'Reading state from {statefile}')
     state.autopersist(statefile)
+    
+    await client.get_server()
 
     state.setdefault('app_id', randint(10 ** 19, 10 ** 20 - 1))
     state.setdefault('profile', {})
+    
+    state.setdefault('country', 'ru')
+    state.setdefault('inputs', {})
+    
+    uix.formlist.build_general()
+    uix.events_screen.restore_past_events()
     
     formdata = (await client.recv_loop(f'forms/')).json()
     #logger.info(formdata)
     #formdata = {'ru': json.load(open('forms_general.json'))}
     #formdata = mock_forms
     
-    state.setdefault('country', 'ru')
-    state.setdefault('inputs', {})
     for country in formdata:
         for form in formdata[country]:
             for input in form['inputs']:
@@ -314,12 +323,10 @@ async def on_start(app):
     state.setdefault('forms', {})
     if not state.forms.get('general') == formdata:
         state.forms.general = formdata
-    uix.formlist.build_general()
+        uix.formlist.build_general()
     
     #state.regions = await client.recv_loop('/regions/')
     state.regions = {f'ru_{x["id"]}': dict(x, id=f'ru_{x["id"]}') for x in json.load(open('regions.json'))}
-    
-    uix.events_screen.restore_past_events()
     
     logger.info('Restored past events.')
     await client.update_campaigns()

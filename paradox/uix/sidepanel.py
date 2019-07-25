@@ -57,8 +57,9 @@ Builder.load_string('''
     Button:
         text: 'Координаторы'
         on_release: root.on_click('coordinators')
-        background_color: transparent
-        disabled: True
+        #background_color: transparent
+        background_color: teal
+        #disabled: True
 
     #Button:
         #text: 'Сообщения'

@@ -11,9 +11,15 @@ def take_picture(filepath, on_complete):
     from android import activity
     from paradox import client
     
+    from android.permissions import request_permissions, Permission
+    logger.debug('request_permissions')
+    request_permissions([
+        Permission.WRITE_EXTERNAL_STORAGE,
+        Permission.READ_EXTERNAL_STORAGE
+    ])
     
     Intent = autoclass('android.content.Intent')
-    PythonActivity = autoclass('org.renpy.android.PythonActivity')
+    PythonActivity = autoclass('org.kivy.android.PythonActivity')
     currentActivity = cast('android.app.Activity', PythonActivity.mActivity)
     MediaStore = autoclass('android.provider.MediaStore')
     FileProvider = autoclass('android.support.v4.content.FileProvider')
@@ -39,8 +45,8 @@ def take_picture(filepath, on_complete):
     activity.unbind(on_activity_result=on_activity_result)
     activity.bind(on_activity_result=on_activity_result)
     intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-    file = File('file://' + filepath)
-    #print(file)
+    file = File(filepath)
+    logger.debug(file)
     #uri = Uri.parse('file://' + filepath)
     photoURI = FileProvider.getUriForFile(
         currentActivity, "org.spbelect.paradox2.fileprovider", file

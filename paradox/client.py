@@ -33,6 +33,8 @@ except ImportError:
     @lock_or_exit()
     async def get_server():
         state.server = config.SERVER_ADDRESS
+        #import ipdb; ipdb.sset_trace()
+        #logger.debug(state.server)
 
 
 
@@ -354,16 +356,16 @@ async def event_send_loop():
 mock_campaigns = {
     'campaigns': {
         '8446': {
-            'election': '6b26',
+            'elections': '6b26',
             'coordinator': '724',
             'fromtime': '2018.07.22T00:00',
             'totime': '2019.12.22T00:00',
-            'channels': [
-                {'type': 'readonly', 'uuid': '51', 'name': 'НП NEWS МО Дачное', 'icon': 'http://'},
-                {'type': 'groupchat', 'uuid':'724', 'name': 'НП чат МО Дачное', 'icon': 'http://'},
-            ],
+            #'channels': [
+                #{'type': 'readonly', 'uuid': '51', 'name': 'НП NEWS МО Дачное', 'icon': 'http://'},
+                #{'type': 'groupchat', 'uuid':'724', 'name': 'НП чат МО Дачное', 'icon': 'http://'},
+            #],
             'external_channels': [{
-                'type': 'tg', 'name': 'НП чат Кировский рн', 'link': 'https://t.me/mobile_kir',
+                'type': 'tg', 'name': 'НП чат Кировский рн', 'url': 'https://t.me/mobile_kir',
             }],
             'phones': [{'name': 'НП Кировский', 'number': '88121111'}],
         },
@@ -384,43 +386,43 @@ mock_campaigns = {
         'external_channels': [{
             'type': 'tg', 
             'name': 'Общий чат СПб и ЛО', 
-            'link': 'https://t.me/mobile_spb_lo',
+            'url': 'https://t.me/mobile_spb_lo',
             'region': '78',
         }],
-        'phones': [{'name': 'НП Коллцентр', 'number': '88129535326'}],
-        'channels': [
-                {
-                    'uuid': '7246',
-                    'type': 'readonly',
-                    'name': 'НП NEWS Спб',
-                    'region': '78',
-                    'icon': 'http://'
-                },
-                {
-                    'uuid': '886',
-                    'type': 'groupchat',
-                    'name': 'НП чат Спб',
-                    'region': '78',
-                    'icon': 'http://'
-                },
-            ]
+        'phones': [{'name': 'НП Коллцентр lasrjaosjrh lwjg alwj', 'number': '88129535326'}],
+        #'channels': [
+                #{
+                    #'uuid': '7246',
+                    #'type': 'readonly',
+                    #'name': 'НП NEWS Спб',
+                    #'region': '78',
+                    #'icon': 'http://'
+                #},
+                #{
+                    #'uuid': '886',
+                    #'type': 'groupchat',
+                    #'name': 'НП чат Спб',
+                    #'region': '78',
+                    #'icon': 'http://'
+                #},
+            #]
         }
     }
 }
  
 @uix.formlist.show_loader
-###@uix.coordinators.show_loader
+@uix.coordinators.show_loader
 @lock_or_exit()
 @on('state.region')
 async def update_campaigns():
-    await sleep(1)
+    await sleep(2)
     while True:
         region, country = state.get('region'), state.get('country')
         logger.info(f'Updating campaigns. Region: {getattr(region, "name", None)}, country: {country}')
         if not region or not country:
             break
-        #data = await recv_loop(f'/region/{region}/campaigns/')
-        data = mock_campaigns
+        data = (await recv_loop(f'regions/{region.id}/campaigns/')).json()
+        #data = mock_campaigns
         
         ##Channel.objects.filter(coordinator__in=data['coordinators']).update(actual=False)
                 
@@ -438,7 +440,8 @@ async def update_campaigns():
                 #})
         
         for id, campaign in data['campaigns'].items():
-            election = data['elections'].get(campaign['election'])
+            election = data['elections'].get(campaign['elections'])
+            logger.debug(election)
             Campaign.objects.update_or_create(id=id, defaults={
                 'country': country,
                 'region': election.get('region'), 
@@ -464,8 +467,8 @@ async def update_campaigns():
         await sleep(5)
     
     create_task(update_elect_flags())
-    logger.debug('Update campaigns finished')
-    #campaigns = Campaign.objects.positional().current()
+    campaigns = Campaign.objects.positional().current()
+    logger.debug(campaigns.values())
     #uix.FormListScreen.delete_campaign_forms()
     #for campaign in campaigns:  #.filter(coordinator__subscription='yes'):
         #uix.formlist.show_campaign_forms(campaign)
@@ -473,8 +476,10 @@ async def update_campaigns():
     #if campaigns.count() == 0:
         #uix.formlist.show_no_campaign_notice()
         
-
-    #uix.coordinators.show(Coordinator.objects.filter(campaign__in=campaigns))
+    uix.coordinators.show(Coordinator.objects.filter(campaigns__in=campaigns))
+    #uix.coordinators.show(Coordinator.objects.all())
+    logger.debug('Update campaigns finished')
+    
     
 @on('state.uik')
 @lock_or_exit()
