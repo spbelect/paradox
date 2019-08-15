@@ -3,11 +3,14 @@
 from __future__ import unicode_literals
 
 import json
+import itertools
+from functools import wraps
 
 from kivy.lang import Builder
 #from kivy.properties import NumericProperty
 #from kivy.properties import StringProperty
 
+from app_state import state, on
 from kivy.metrics import dp
 from kivy.properties import StringProperty, BooleanProperty, ObjectProperty, Property
 from kivy.uix.screenmanager import Screen
@@ -23,6 +26,7 @@ from label import Label
 from ..click_label import ClickLabel
 from ..vbox import VBox
 from paradox import utils
+from paradox.models import Campaign, Coordinator
 
 
 Builder.load_string('''
@@ -43,8 +47,8 @@ Builder.load_string('''
                 #pos: self.parent.pos
                 id: loader
                 text: "Координаторы обновляются..."
-                height: 0
-                opacity: 0
+                height: dp(40)
+                opacity: 1
                 font_size: sp(18)
                 #width: self.parent.width
                 #size_hint_y: None
@@ -96,8 +100,17 @@ class ContactItem(BoxLayout):
         utils.open_url(a[1])
         
     @staticmethod
-    def call(*a):
+    @utils.asynced
+    async def call(*a):
+        
+        #def call_permissionresult(permissions, grants):
+            #logger.debug(f'{permissions} {grants}')
+        #from android.permissions import request_permissions, Permission
+        #logger.debug('request_permissions')
+        if not await utils.ask_permissions('CALL_PHONE'):
+            return
         plyer.call.makecall(a[1])
+    
     
     
 class CoordinatorItem(VBox):
@@ -128,6 +141,9 @@ class CoordinatorItem(VBox):
 
 
 class CoordinatorsScreen(Screen):
+    #def __init__(self, *a, **kw):
+        #super().__init__(*a, **kw)
+        
     def show(self, coordinators):
         for item in self.ids.content.children[:]:
             self.ids.content.remove_widget(item)
@@ -135,15 +151,23 @@ class CoordinatorsScreen(Screen):
         for coord in coordinators:
             self.ids.content.add_widget(CoordinatorItem(coordinator=coord))
             
+    @on('state.region')
+    def show_current(self):
+        #from paradox.models import Campaign, Coordinator
+        campaigns = Campaign.objects.positional().current()
+        logger.debug(f'Active campaigns: {campaigns.values()}')
+        self.show(Coordinator.objects.filter(campaigns__in=campaigns))
     
     def show_loader(self, f):
+        @wraps(f)
         async def wrapped(*a, **kw):
             self.ids.loader.height = dp(40)
             self.ids.loader.opacity = 1
+            logger.debug(f'show coord loader {f}')
             try:
                 return await f(*a, **kw)
             finally:
-                logger.debug('hide coord loader')
+                logger.debug(f'hide coord loader {f}')
                 self.ids.loader.height = 0
                 self.ids.loader.opacity = 0
         return wrapped

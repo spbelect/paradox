@@ -2,13 +2,14 @@ from asyncio import sleep
 from uuid import uuid4
 from os.path import basename, exists
 from shutil import move
+from pathlib import Path
 
 from app_state import state
 from kivy.lang import Builder
 from kivy.clock import Clock
 from kivy.uix.behaviors import ButtonBehavior
 from kivy.uix.boxlayout import BoxLayout
-from kivy.properties import StringProperty
+from kivy.properties import StringProperty, NumericProperty
 from kivy.properties import ObjectProperty
 from kivy.uix.modalview import ModalView
 from kivy.uix.scatter import Scatter
@@ -17,12 +18,13 @@ from kivy.uix.widget import Widget
 from kivy.uix.popup import Popup
 from kivy.utils import platform
 from loguru import logger
-from plyer import filechooser, camera
+from plyer import filechooser
 
+import paradox
 from button import Button
 from paradox import utils
-from paradox.gallery import user_select_image
-from paradox.camera import take_picture
+from paradox import gallery
+from paradox import camera
 from paradox.uix.vbox import VBox
 from paradox.uix.hbox import HBox
 from paradox.uix.imagebutton import ImageButton
@@ -158,11 +160,31 @@ Builder.load_string('''
 
 
 class ImagePicker(VBox):
+    compress_quality = NumericProperty(None, allownone=True)
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.register_event_type('on_image_picked')
 
+    def compress(self, filepath):
+        if self.compress_quality:
+            from PIL import Image
+            img = Image.open(filepath)
+            #fill_color = ''  # your background
+            #image = Image.open(file_path)
+            if not img.mode == 'RGB':
+                #background = Image.new(image.mode[:-1], image.size)
+                #background.paste(image, image.split()[-1])
+                #image = background
+                img = img.convert('RGB')
+            f = Path(filepath)
+            filepath = f.with_name(f'{f.stem}_x.jpg')
+            
+            img.save(str(filepath), optimize=True, quality=self.compress_quality)
+        return str(filepath)
+ 
     def on_image_picked(self, filepath):
+        filepath = self.compress(filepath)
         self.add_image(filepath)
     
     def on_cross_clik(self, cross):
@@ -196,17 +218,12 @@ class ImageAddButton(ImageButton):
         self.modal.ids.take_photo.bind(on_release=self.take_photo)
         self.modal.open()
         
-    #def request_permissions(self):
-        #from android.permissions import request_permissions, Permission
-        #logger.debug('request_permissions')
-        #request_permissions([
-            #Permission.WRITE_EXTERNAL_STORAGE,
-            #Permission.READ_EXTERNAL_STORAGE
-        #])
-        
-    def pick_file(self, *a):
+    @utils.asynced
+    async def pick_file(self, *a):
         self.modal.dismiss()
-        user_select_image(self.on_file_picked)
+        if not await utils.ask_permissions('WRITE_EXTERNAL_STORAGE', 'READ_EXTERNAL_STORAGE'):
+            return
+        paradox.gallery.user_select_image(self.on_file_picked)
         
     def on_file_picked(self, file):
         from paradox import client
@@ -220,26 +237,27 @@ class ImageAddButton(ImageButton):
             
             logger.debug(f'111, {file}')
             
-        
-    def take_photo(self, *a):
+    @utils.asynced
+    async def take_photo(self, *a):
         self.modal.dismiss()
         #TODO: thread
         if platform == 'android':
             #filename = uuid4()
-            
+            if not await utils.ask_permissions('WRITE_EXTERNAL_STORAGE', 'READ_EXTERNAL_STORAGE'):
+                return
             from jnius import autoclass
             env = autoclass('android.os.Environment')
             dir = env.getExternalStoragePublicDirectory(env.DIRECTORY_DCIM).getPath()
             fpath = f'{dir}/{uuid4()}.jpg'
             logger.debug(fpath)
-            take_picture(fpath, on_complete=self.on_photo_taken)
+            paradox.camera.take_picture(fpath, on_complete=self.on_photo_taken)
         else:
             filepath = filechooser.open_file()
             if filepath:
                 self.parent.dispatch('on_image_picked', filepath[0])
 
-    @utils.asynced
-    async def on_photo_taken(self, file):
+    #@utils.asynced
+    def on_photo_taken(self, file):
         from paradox import client
         client.send_debug(f'on_photo_taken {file}')
         #move(filename, state.user_data_dir + '/')
@@ -263,7 +281,7 @@ class ActionModal(ModalView):
     pass
 
 class ImageModal(ButtonBehavior, ModalView):
-    image = ObjectProperty()
+    image = StringProperty()
     def __init__(self, *a, **kw):
         super().__init__(*a, **kw)
         Clock.schedule_once(lambda dt: setattr(self.ids.img, 'source', self.image), 0.1)
@@ -272,7 +290,7 @@ class ImageModal(ButtonBehavior, ModalView):
     
 class ImageItem(BoxLayout):
     #uuid = StringProperty()
-    image = ObjectProperty()
+    image = StringProperty()
     label = StringProperty()
     #value = ObjectProperty(None, allownone=True)
     #fff = 0

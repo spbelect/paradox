@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+import asyncio
 import base64
 import calendar
 import hashlib
@@ -8,9 +9,11 @@ import json
 import re
 import time
 
+from functools import wraps
 from asyncio import create_task, sleep
 from inspect import iscoroutinefunction
 from datetime import datetime
+from loguru import logger
 
 #from kivy.app import App
 from kivy.utils import platform
@@ -76,6 +79,7 @@ def md5_file(file_name, chunk_size=4096):
  
  
 def asynced(f):
+    @wraps(f)
     def wrapper(*a, **kw):
         delay(f, *a, timeout=0, **kw)
     return wrapper
@@ -90,3 +94,21 @@ def delay(f, *a, timeout=0.1, **kw):
             return f(*a, **kw)
     create_task(_delay())
 
+
+async def ask_permissions(*permissions):
+    import android
+    if android.api_version <= 22:
+        return True
+    grantresults = []
+    got_result = asyncio.Event()
+    
+    def permissionresult(permissions, grants):
+        logger.debug(f'{permissions} {grants}')
+        grantresults.extend(grants)
+        got_result.set()
+        
+    from android.permissions import request_permissions, Permission
+    request_permissions([getattr(Permission, x) for x in permissions], callback=permissionresult)
+    await got_result.wait()
+    return all(grantresults)
+    

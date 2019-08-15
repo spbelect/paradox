@@ -98,24 +98,28 @@ class AndroidGallery():
 
 
 def resolve(uri):
+    from paradox import client
     from jnius import autoclass
     from jnius import cast
 
     PythonActivity = autoclass('org.kivy.android.PythonActivity')
     ContentResolver = PythonActivity.mActivity.getContentResolver()
     Uri = autoclass('android.net.Uri')
-    
-    if uri.getScheme() == 'content':
-            #PythonActivity.toastError('Loading file {}'.format(count + 1))
-        cursor = ContentResolver.query(uri, None, None, None, None)
-        if cursor.moveToFirst():
-            index = cursor.getColumnIndexOrThrow('_data')
-            result_uri = Uri.parse(cursor.getString(index))
-            return result_uri.getPath()
+    try:
+        if uri.getScheme() == 'content':
+                #PythonActivity.toastError('Loading file {}'.format(count + 1))
+            cursor = ContentResolver.query(uri, None, None, None, None)
+            if cursor.moveToFirst():
+                index = cursor.getColumnIndexOrThrow('_data')
+                result_uri = Uri.parse(cursor.getString(index))
+                return result_uri.getPath()
+            else:
+                raise Exception(f"Can't resolve {uri.toString()}")
         else:
-            raise Exception(f"Can't resolve {uri.toString()}")
-    else:
-        return uri.toString()
+            return uri.toString()
+    except:
+        client.send_debug(f'resolve {uri}')
+        raise
                         
     #Cursor cursor = context.getContentResolver().query(uri, null, null, null, null);
         #if (cursor.moveToFirst()):
@@ -133,12 +137,6 @@ def user_select_image(callback):
     """Open Gallery Activity and call callback with absolute image filepath of image user selected.
     None if user canceled.
     """
-    from android.permissions import request_permissions, Permission
-    logger.debug('request_permissions')
-    request_permissions([
-        Permission.WRITE_EXTERNAL_STORAGE,
-        Permission.READ_EXTERNAL_STORAGE
-    ])
 
     from jnius import autoclass
     from jnius import cast

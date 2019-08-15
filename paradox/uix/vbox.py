@@ -15,12 +15,12 @@ from kivy.lang import Builder
 Builder.load_string('''
 <VBox>:
     visible: True
-    canvas.before:
-        Color:
-            rgba: self.background_color
-        Rectangle:
-            pos: self.pos
-            size: self.size
+    #canvas.before:
+        #Color:
+            #rgba: self.background_color
+        #Rectangle:
+            #pos: self.pos
+            #size: self.size
 
     orientation: 'vertical'
     size_hint: 1, None
@@ -33,8 +33,15 @@ class VBox(BoxLayout):
     background_color = ListProperty([1, 1, 1, 0])
     visible = BooleanProperty(default=True)
 
+    def __init__(self, *a, **kw):
+        super().__init__(*a, **kw)
+        self.funbind('size', self._trigger_layout)
+        self.fbind('width', self._trigger_layout)
+        
     def do_layout(self, *args):
         #import ipdb; ipdb.sset_trace()
+        #result = super(VBox, self).do_layout(*args)
+        
         if self.visible:
             height = 0
             for child in self.children:
@@ -42,11 +49,13 @@ class VBox(BoxLayout):
 
             # Remove one redundant spacing, add top and bottom padding.
             self.height = height - self.spacing + self.padding[1] + self.padding[3]
-            #print '1  ', self.height
+            #print('1  ', self, self.height)
         else:
+            #print('0  ', self, self.height)
             self.height = 0
-
-        result = super(VBox, self).do_layout(*args)
+            
+        result = super().do_layout(*args)
+        #print(self.height)
         return result
 
 

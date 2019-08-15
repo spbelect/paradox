@@ -11,12 +11,6 @@ def take_picture(filepath, on_complete):
     from android import activity
     from paradox import client
     
-    from android.permissions import request_permissions, Permission
-    logger.debug('request_permissions')
-    request_permissions([
-        Permission.WRITE_EXTERNAL_STORAGE,
-        Permission.READ_EXTERNAL_STORAGE
-    ])
     
     Intent = autoclass('android.content.Intent')
     PythonActivity = autoclass('org.kivy.android.PythonActivity')

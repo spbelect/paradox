@@ -15,16 +15,22 @@ from django.utils.timezone import now
 from lockorator.asyncio import lock_or_exit
 from loguru import logger
 #from trio import sleep
-import requests_async as requests
-import http3
+import httpx
 
 from paradox import uix
 from .models import Campaign, Coordinator, InputEvent, InputEventImage, InputEventUserComment
 from . import config
 from . import utils
 
+#class on:
+    #def __init__(*a):
+        #pass
+    
+    #def __call__(self, f):
+        #return f
 
-client = http3.AsyncClient()
+
+client = httpx.AsyncClient()
 
 state.server = config.SERVER_ADDRESS
 try:
@@ -43,7 +49,7 @@ def send_debug(msg):
     from os.path import join
     try:
         server = state.get('server', config.SERVER_ADDRESS)
-        post(join(server, 'api/v2/errors/'), json={
+        post(join(server, 'api/v2/errors/'), timeout=15, json={
             'app_id': state.get('app_id', '666'),
             #'hash': md5(_traceback.encode('utf-8')).hexdigest(),
             'timestamp': datetime.utcnow().isoformat(),
@@ -55,8 +61,8 @@ def send_debug(msg):
 async def ping_loop():
     while True:
         try:
-            return await client.get(state.server, timeout=10)
-        except http3.Timeout as e:
+            return await client.get(state.server, timeout=15)
+        except httpx.Timeout as e:
             pass
         except Exception as e:
             raise
@@ -79,7 +85,7 @@ async def check_server():
         logger.info('Server connection ok.')
 
 
-async def api_request(method, url, data=None):
+async def api_request(method, url, data=None, timeout=15):
     while True:
         if 'server' in state:
             break
@@ -88,14 +94,14 @@ async def api_request(method, url, data=None):
         
     #import ipdb; ipdb.sset_trace()
     url = urljoin(state.server, join('/api/v2', url))
-    logger.debug(url)
+    logger.debug(f'{method} {url}')
     try:
         #state.server = 'http://8.8.8.8'
         return await client.request(
-            method, url, timeout=10,
+            method, url, timeout=timeout,
             json=dict(data, app_id=state.app_id) if data else None
         )
-    except http3.Timeout as e:
+    except httpx.Timeout as e:
         logger.debug(repr(e))
         create_task(check_server())
         raise
@@ -112,16 +118,19 @@ async def api_request(method, url, data=None):
         raise
         
         
-@on('state.region', 'state.country', 'state.uik', 'state.role')
+@on('state.profile')
 @lock_or_exit()
 async def send_userprofile():
+    if not state.get('profile', None):
+        return
     logger.debug('Sending profile.')
-    fields = 'email last_name first_name phone telegram'.split()
+    fields = 'email last_name first_name phone'.split()
     await sleep(1)
     while True:
         logger.debug('Sending profile loop.')
         prev = tuple(state.profile.get(x, None) for x in fields)
         if not all(prev):
+            logger.debug(f'Waiting for full profile: {dict(zip(fields, prev))}')
             await sleep(10)
             continue
         
@@ -136,6 +145,9 @@ async def send_userprofile():
             })
         except Exception as e:
             logger.info(f'{repr(e)}')
+            
+            if getattr(state, '_raise_all', None):
+                raise e
         else:
             if response.status_code == 200:
                 if prev == tuple(state.profile.get(x, None) for x in fields):
@@ -157,10 +169,11 @@ async def send_userprofile():
 async def send_position():
     await sleep(1)
     while True:
-        logger.debug('Sending position.')
+        logger.debug('Sending position loop.')
         try:
             prev = (state.uik, state.region.id, state.country, state.role)
-        except AttributeError:
+        except AttributeError as e:
+            logger.debug(repr(e))
             return
         try:
             response = await api_request('POST', f'position/', {
@@ -170,7 +183,8 @@ async def send_position():
                 'role': state.role,
             })
         except Exception as e:
-            pass
+            if getattr(state, '_raise_all', None):
+                raise e
         else:
             if response.status_code == 200:
                 if prev == (state.uik, state.region.id, state.country, state.role):
@@ -197,6 +211,8 @@ async def _put_image(image):
         })
     except Exception as e:
         image.update(send_status='put_exception')
+        if getattr(state, '_raise_all', None):
+            raise e
         return
     if not response.status_code == 200:
         image.update(send_status=f'put_http_{response.status_code}')
@@ -233,6 +249,8 @@ async def event_image_send_loop():
             except Exception as e:
                 logger.error(repr(e))
                 image.update(send_status='req_exception')
+                if getattr(state, '_raise_all', None):
+                    raise e
                 continue
             if not response.status_code == 200:
                 logger.error(repr(response))
@@ -243,11 +261,14 @@ async def event_image_send_loop():
             try:
                 response = await client.post(
                     s3params['url'], data=s3params['fields'], 
-                    files={'file': open(image.filepath, 'rb')}
+                    files={'file': open(image.filepath, 'rb')},
+                    timeout=3*60
                 )
             except Exception as e:
                 logger.error(repr(e))
                 image.update(send_status='upload_exception')
+                if getattr(state, '_raise_all', None):
+                    raise e
                 continue
             if not response.status_code in (200, 201, 204):
                 logger.error(repr(response))
@@ -265,6 +286,8 @@ async def event_image_send_loop():
             except Exception as e:
                 logger.error(repr(e))
                 image.update(send_status='post_exception')
+                if getattr(state, '_raise_all', None):
+                    raise e
                 continue
             if not response.status_code == 200:
                 logger.error(repr(response))
@@ -286,6 +309,8 @@ async def _put_event(event):
         })
     except Exception as e:
         event.update(send_status='put_exception')
+        if getattr(state, '_raise_all', None):
+            raise e
         return
     if response.status_code == 404:
         # No such input
@@ -336,6 +361,9 @@ async def event_send_loop():
                 logger.error(repr(e))
                 event.update(send_status='post_exception')
                 uix_inputs.on_send_error(event)
+                #print(state.get('_raise_all'))
+                if getattr(state, '_raise_all', None):
+                    raise e
                 continue
             if response.status_code == 404:
                 # No such input
@@ -410,10 +438,10 @@ mock_campaigns = {
     }
 }
  
+@on('state.region')
+@lock_or_exit()
 @uix.formlist.show_loader
 @uix.coordinators.show_loader
-@lock_or_exit()
-@on('state.region')
 async def update_campaigns():
     await sleep(2)
     while True:
@@ -421,7 +449,7 @@ async def update_campaigns():
         logger.info(f'Updating campaigns. Region: {getattr(region, "name", None)}, country: {country}')
         if not region or not country:
             break
-        data = (await recv_loop(f'regions/{region.id}/campaigns/')).json()
+        data = (await recv_loop(f'{country}/regions/{region.id}/campaigns/')).json()
         #data = mock_campaigns
         
         ##Channel.objects.filter(coordinator__in=data['coordinators']).update(actual=False)
@@ -469,6 +497,10 @@ async def update_campaigns():
     create_task(update_elect_flags())
     campaigns = Campaign.objects.positional().current()
     logger.debug(campaigns.values())
+    if campaigns.filter(mokrug__isnull=True).exists():
+        state.superior_ik = 'TIK'
+    else:
+        state.superior_ik = 'IKMO'
     #uix.FormListScreen.delete_campaign_forms()
     #for campaign in campaigns:  #.filter(coordinator__subscription='yes'):
         #uix.formlist.show_campaign_forms(campaign)
@@ -568,6 +600,8 @@ async def recv_loop(url):
             response = await api_request('GET', url)
         except Exception as e:
             logger.error(repr(e))
+            if getattr(state, '_raise_all', None):
+                raise e
             await sleep(5)
         else:
             if response.status_code == 200:

@@ -4,6 +4,7 @@ from kivy.properties import StringProperty
 from kivy.properties import ObjectProperty
 from kivy.uix.modalview import ModalView
 from kivy.uix.popup import Popup
+from loguru import logger
 
 from button import Button
 
@@ -79,6 +80,11 @@ class Choice(Button):
     value = ObjectProperty(None, allownone=True)
     #fff = 0
 
+    def on_parent(self, selff, parent):
+        if parent is None and hasattr(self, 'instances'):
+            #logger.debug(f'Widget parnet is None, remove {self}.')
+            self._instances_weakset.remove(self)
+            
     #def on_size(self, *args, **kwargs):
         ##super(Choice, self).on_size(*args, **kwargs)
         #Choice.fff += 1
@@ -103,8 +109,12 @@ class Choices(Button):
         pass
         
     def on_choice(self, *a):
-        self.text = self.choice.short_text
-        self.value = self.choice.value
+        if self.choice:
+            self.text = self.choice.short_text
+            self.value = self.choice.value
+        else:
+            self.text = ''
+            self.value = None
 
     def add_widget(self, child):
         self.modal.ids['list'].add_widget(child)
@@ -119,6 +129,7 @@ class Choices(Button):
         return self.modal.ids['list'].children[:]
     
     def do_input(self, choice):
+        logger.debug(f'{choice} value={choice.value}')
         self.choice = choice
         self.dispatch('on_input', choice.value)
         
@@ -183,6 +194,7 @@ class ChoicesModal(ModalView):
         #return res
 
     def on_touch_up(self, touch):
+        #logger.debug(f'{self.choices}, {touch}')
         #res = super(ChoicesModal, self).on_touch_up(touch)
         #sv = self.ids['scrollview']
         scrolled = not touch.ud.get('sv.can_defocus', True)

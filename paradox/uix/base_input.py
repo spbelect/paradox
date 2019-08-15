@@ -1,5 +1,6 @@
 from datetime import timedelta
 from itertools import groupby
+from asyncio import sleep
 
 from app_state import state, on
 from django.db.models import Q
@@ -23,6 +24,7 @@ class Input(Widget):
     value = ObjectProperty(None, allownone=True)
     last_event = ObjectProperty(None, allownone=True)
     instances = InstanceManager()
+    flags_match = BooleanProperty(True)
     
     def __init__(self, *args, **kwargs):
         self.complaint = None
@@ -37,24 +39,32 @@ class Input(Widget):
             return
         if set(flags) & state.get('elect_flags', set()):
             #self.show()
-            self.disabled = False
+            self.flags_match = True
         else:
             #self.hide()
-            self.disabled = True
+            self.flags_match = False
             
-    def set_past_events(self, events):
+    async def set_past_events(self, events):
+        #await sleep(0.02)
         if events:
+            if self.last_event == list(events)[-1]:
+                return
             self.last_event = list(events)[-1]
             if self.last_event.revoked:
                 self.value = None
             else:
                 self.value = self.last_event.get_value()
                 
-            if self.last_event.alarm and not self.last_event.revoked:
+            if self.last_event.alarm and not self.last_event.revoked \
+               and state.get('role') not in ('other', 'videonabl'):
+                #self.form.load_finished = False
+                #await sleep(3)
                 if not self.complaint:
                     self.complaint = Complaint(input=self)
                     self.add_widget(self.complaint)
-                self.complaint.on_event(self.last_event)
+                logger.debug(f'Restoring complaint of past event, input: {self.json["input_id"]}. Event timestamp={self.last_event.time_created} value={self.last_event.get_value()}')
+                await self.complaint.on_event(self.last_event)
+                #self.form.load_finished = True
             elif self.complaint:
                 self.remove_widget(self.complaint)
                 self.complaint = None
@@ -81,7 +91,6 @@ class Input(Widget):
     def show_help(self):
         uix.screenmgr.show_handbook(self.json['label'], self.json['fz67_text'])
         
-    @utils.asynced
     async def on_input(self, value):
         if uix.position.show_errors():
             uix.screenmgr.push_screen('position')
@@ -101,17 +110,20 @@ class Input(Widget):
             return False
         
         if self.value is not None:
-            if not await uix.confirm.yesno('Отозвать предыдущее значение?'):
+            msg = f'Отозвать предыдущее значение?'
+            if self.json['input_type'] == 'NUMBER':
+                msg += f' ({self.last_event.humanized_value()})'
+            if not await uix.confirm.yesno(msg):
                 self.set_state(self.last_event.get_value())
                 return False
             
             event = InputEvent.objects.get(id=self.last_event.id)
             event.update(revoked=True, time_updated=now())
             uix.events_screen.add_event(event)
-            logger.info('revoke event')
+            logger.info(f'Revoke event input: {self.json["input_id"]}. New value: {value}')
             
         if value is not None:
-            logger.info('new event')
+            logger.info(f'New event input: {self.json["input_id"]}. New value: {value}')
             alarm = False
             if self.json.get('alarm', None):
                 #print(self.json['alarm'])
@@ -143,16 +155,24 @@ class Input(Widget):
         for input in Input.instances.filter(input_id=self.input_id):
             input.on_save_success(event)
             
-        if event.alarm and not event.revoked:
+        if event.alarm and not event.revoked \
+           and state.get('role') not in ('other', 'videonabl'):
+            #self.form.load_finished = False
+            #await sleep(3)
             if not self.complaint:
                 self.complaint = Complaint(input=self)
                 self.add_widget(self.complaint)
-            self.complaint.on_event(event)
+            await self.complaint.on_event(event)
+            await sleep(0.6)
+            #self.form.load_finished = True
         elif self.complaint:
             self.remove_widget(self.complaint)
             self.complaint = None
         return True
 
+    def __del__(self):
+        print(f'del {self}')
+        
     def show(self):
         self.height = 10
         self.size_hint_y = 1
@@ -182,15 +202,16 @@ class Input(Widget):
         self.last_event = event
 
 
-@on('state.uik', 'state.region')
-def restore_past_events():
-    for input in Input.instances.all():
-        input.set_past_events(None)
+async def restore_past_events():
+    #for input in Input.instances.all():
+        #await input.set_past_events(None)
     if not (state.get('uik') and state.get('region')):
         return
-    filter = Q(uik=state.uik, region=state.region.id, time_created__gt=now()-timedelta(days=1))
+    filter = Q(uik=state.uik, region=state.region.id, time_created__gt=now()-timedelta(days=2))
     events = InputEvent.objects.filter(filter).order_by('input_id', 'time_created')
+    logger.info(f'Restoring {events.count()} past events for {state.region.name} УИК {state.uik}')
     for iid, events in groupby(events, key=lambda x: x.input_id):
         for input in Input.instances.filter(input_id=iid):
-            input.set_past_events(list(events))
+            await input.set_past_events(list(events))
+            await sleep(0.05)
             

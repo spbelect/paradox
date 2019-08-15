@@ -9,7 +9,7 @@ DEBUG = False
 
 SENTRY = True
 
-version = '1.8.9'
+version = '1.9.3'
 
 try:
     from .config_local import *

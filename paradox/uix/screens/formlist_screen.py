@@ -2,12 +2,14 @@
 
 from __future__ import unicode_literals
 
-from app_state import state 
+from functools import wraps
+
+from app_state import state, on
 from getinstance import InstanceManager
 from kivy.clock import Clock
 from kivy.lang import Builder
 from kivy.metrics import dp
-from kivy.properties import ObjectProperty
+from kivy.properties import ObjectProperty, StringProperty
 from kivy.uix.screenmanager import Screen
 from kivy.uix.behaviors.button import ButtonBehavior
 from loguru import logger
@@ -208,7 +210,9 @@ Builder.load_string('''
 
 class FormListItem(ButtonBehavior, Label):
     json = ObjectProperty()
+    id = StringProperty()
     
+    instances = InstanceManager()
     #def on_release(self, *a):
         #self.
 
@@ -220,14 +224,16 @@ class FormListScreen(Screen):
         forms = state.forms.general[state.country]
         logger.debug(f'Rebuilding {len(forms)} forms.')
         for form in forms:
-            item = FormListItem(json=form)
+            item = FormListItem(json=form, id=form['form_id'])
             item.bind(on_release=self.on_form_click)
             self.ids['general_forms'].add_widget(item)
 
     def on_form_click(self, item):
         self.manager.show_form(item.json)
 
+    
     def show_loader(self, f):
+        @wraps(f)
         async def wrapped(*a, **kw):
             self.ids.forms_loader.height = dp(20)
             self.ids.forms_loader.opacity = 1

@@ -29,10 +29,11 @@ class Model(db.models.Model):
         >>> user.save()
 
         """
+        self2 = self.__class__.objects.get(pk=self.pk)
         for attr, val in kwargs.items():
-            setattr(self, attr, val)
+            setattr(self2, attr, val)
 
-        self.save()
+        self2.save()
 
 def FK(*args, **kw):
     params = dict(
@@ -52,6 +53,7 @@ class InputEvent(Model):
     time_sent = DateTimeField(null=True)
     time_updated = DateTimeField()
     revoked = BooleanField(default=False)
+    refuse_person = TextField(null=True)
     
     input_id = CharField(max_length=40)  # UUID
     input_label = TextField()
@@ -60,22 +62,36 @@ class InputEvent(Model):
     country = CharField(max_length=2)
     region = CharField(max_length=6)
     uik = IntegerField()
-    COMPLAINT_STATUS = [
+    UIK_COMPLAINT_STATUS = [
         ('none', 'не подавалась'),
         ('refuse_to_accept', 'отказ принять жалобу'),
         ('refuse_to_resolve', 'отказ рассмотрения жалобы'),
+        ('refuse_to_copy_reply', 'отказ выдать копию решения'),
         ('waiting_reply', 'ожидание решения комиссии'),
         ('got_unfair_reply', 'получено неудовлетворительное решение'),
         ('got_fair_reply', 'получено удовлетворительное решение'),
     ]
-    uik_complaint_status = CharField(max_length=20, choices=COMPLAINT_STATUS, default='none')
-    tik_complaint_status = CharField(max_length=20, choices=COMPLAINT_STATUS, default='none')
+    TIK_COMPLAINT_STATUS = [
+        ('none', 'не подавалась'),
+        ('request_pending', 'запрос отправляется'),
+        ('request_sent', 'запрос отправлен'),
+        ('email_sent', 'email отправлен'),
+    ]
+    uik_complaint_status = CharField(max_length=30, choices=UIK_COMPLAINT_STATUS, default='none')
+    tik_complaint_status = CharField(max_length=30, choices=TIK_COMPLAINT_STATUS, default='none')
+    tik_complaint_text = TextField(null=True)
     
     def get_value(self):
         if hasattr(self, 'integerinputevent'):
             return self.integerinputevent.value
         if hasattr(self, 'boolinputevent'):
             return self.boolinputevent.value
+        
+    def humanized_value(self):
+        if hasattr(self, 'integerinputevent'):
+            return self.integerinputevent.value
+        if hasattr(self, 'boolinputevent'):
+            return 'Да' if self.boolinputevent.value else 'Нет'
     
 class IntegerInputEvent(InputEvent):
     value = IntegerField(null=True)

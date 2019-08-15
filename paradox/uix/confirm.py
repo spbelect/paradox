@@ -101,7 +101,7 @@ class ConfirmModal(ModalView):
         
     def dismiss(self):
         self._closed.set()
-        logger.debug('dis')
+        #logger.debug('dis')
         super().dismiss()
         
     async def wait(self):

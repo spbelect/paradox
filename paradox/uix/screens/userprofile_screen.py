@@ -39,30 +39,30 @@ Builder.load_string('''
             NiceTextInput:
                 id: email
                 hint_text: 'Email'
-                on_focus: state.profile.email = self.text
+                on_focus_out: state.profile.email = self.text
 
             NiceTextInput:
                 id: last_name
                 hint_text: 'Фамилия'
-                on_focus: state.profile.last_name = self.text
+                on_focus_out: state.profile.last_name = self.text
                 #text: root.last_name
 
             NiceTextInput:
                 id: first_name
                 hint_text: 'Имя'
-                on_focus: state.profile.first_name = self.text
+                on_focus_out: state.profile.first_name = self.text
                 #text: root.name
 
             NiceTextInput:
                 id: middle_name
                 hint_text: 'Отчество'
-                on_focus: state.profile.middle_name = self.text
+                on_focus_out: state.profile.middle_name = self.text
                 #text: root.middle_name
 
             NiceTextInput:
                 id: telegram
                 hint_text: 'telegram'
-                on_focus: state.profile.telegram = self.text
+                on_focus_out: state.profile.telegram = self.text
                 
             BoxLayout:
                 height: height1
@@ -78,10 +78,11 @@ Builder.load_string('''
                     hint_text: 'Телефон'
                     input_filter: 'int'
                     input_type: 'number'
-                    on_focus: state.profile.phone = self.text
+                    on_focus_out: state.profile.phone = self.text
                     #text: root.phone
 
             Button:
+                id: next
                 text: 'Продолжить'
                 on_release: root.manager.push_screen('formlist')
                 background_color: darkgray

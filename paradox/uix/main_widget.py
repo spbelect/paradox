@@ -6,7 +6,7 @@ from kivy.app import App
 from kivy.lang import Builder
 from kivy.properties import ObjectProperty
 from kivy.uix.boxlayout import BoxLayout
-
+from loguru import logger
 
 # It has to be imported first to register new Label and Button with Factory
 #from .label import Label
@@ -46,6 +46,7 @@ class MainWidget(NavigationDrawer):
         super().__init__(*a, **kw)
         self.add_widget(sidepanel)
         self.add_widget(screenmgr)
+        logger.debug(f'MainWidget created {self}')
         
         
     #async def init(self):

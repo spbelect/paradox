@@ -12,11 +12,12 @@ import time
 import traceback
 
 from kivy.config import Config
-Config.set('graphics', 'multisamples', '1')
+Config.set('graphics', 'multisamples', '0')
 #Config.set('kivy', 'log_level', 'debug')
 
-os.environ['KIVY_EVENTLOOP'] = 'async'
+os.environ['KIVY_EVENTLOOP'] = 'asyncio'
 
+from asyncio import sleep
 from datetime import datetime
 from glob import glob
 from hashlib import md5
@@ -37,10 +38,14 @@ from kivy.utils import platform
 from lockorator.asyncio import lock_or_exit
 from loguru import logger
 
+#from typing import Dict, List
+#from pydantic import BaseModel, ValidationError
+
 from paradox import config
 #from util import delay
 import label
 import button
+import textinput
 
 #import trio
 #import asks
@@ -68,7 +73,7 @@ if platform == 'android':
     os.environ['DBDIR'] = file_p.getAbsolutePath()
 else:
     data_dir = os.environ.get('XDG_CONFIG_HOME', '~/.config')
-    os.environ['DBDIR'] = expanduser(join(data_dir, 'paradox'))
+    os.environ.setdefault('DBDIR', expanduser(join(data_dir, 'paradox')))
     
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "django_settings")
@@ -102,7 +107,7 @@ def handle_traceback(err):
     from requests import post
     from os.path import join
     _traceback = traceback.format_tb(err.__traceback__)
-    message = u''.join(_traceback) + '\n' + str(err)
+    message = u''.join(_traceback) + '\n' + repr(err) + '\n' + str(err)
     logger.error(message)
     try:
         server = state.get('server', config.SERVER_ADDRESS)
@@ -132,6 +137,8 @@ def aexc_handler(loop, context):
     #‘transport’ (optional): Transport instance;
     #‘socket’ (optional): socket.socket instance.
     logger.info(context['message'])
+    if 'write error on socket transport' in context['message']:
+        return
     if context['message'] in [
         'Event loop stopped before Future completed.',
         'Task was destroyed but it is pending!']:
@@ -143,15 +150,24 @@ sys.excepthook = exchook
 
 class ParadoxApp(App):
     errors = ListProperty([])
+    app_has_started = False
 
     #def build_config(self, config):
         #config.setdefaults('kivy', {'keyboard_mode': 'system',})
 
+    def __init__(self, *a, **kw):
+        super().__init__(*a, **kw)
+        #import ipdb; ipdb.sset_trace()
+        logger.debug(f'ParadoxApp created: {self}')
+        
     def build(self):
+        #import ipdb; ipdb.sset_trace()
         ExceptionManager.add_handler(self)
-        if platform == 'android':
-            from jnius import autoclass
-            autoclass('org.kivy.android.PythonActivity').mActivity.removeLoadingScreen()
+        Clock.max_iteration = 1000
+        #print(Clock.max_iteration)
+        #if platform == 'android':
+            #from jnius import autoclass
+            #autoclass('org.kivy.android.PythonActivity').mActivity.removeLoadingScreen()
             
         try:
             loop = asyncio.get_running_loop()
@@ -236,9 +252,10 @@ class ParadoxApp(App):
         '''Launches the app in standalone mode.
         '''
         super().run()
-        logger.info('Paradox finished')
+        logger.info('ParadoxApp.run() finished')
         
     async def async_run(self):
+        #import ipdb; ipdb.sset_trace()
         from kivy.base import async_runTouchApp
         #async with trio.open_nursery() as nursery:
             #state._nursery = nursery
@@ -261,7 +278,7 @@ from paradox import client
 
 from django.core.management import call_command
 
-mock_forms = {'ru': [{
+mock_forms = [{
     "inputs": [
       {
         "help_text": "aoejgoa \n",
@@ -285,19 +302,26 @@ mock_forms = {'ru': [{
     "form_type": "GENERAL",
     "name": "НАЧАЛО ПОДСЧЕТА"
   },
-]}
+]
       
 @uix.formlist.show_loader
 async def on_start(app):
     #raise Exception('bb')
+    from django.conf import settings
+    logger.info(f"Using db {settings.DATABASES['default']}")
     
+    await sleep(0.2)
     logger.info('Start migration.')
     call_command('migrate')
     logger.info('Finished migration.')
+    await sleep(0.1)
     
     statefile = join(app.user_data_dir, 'state.db.shelve')
     logger.info(f'Reading state from {statefile}')
     state.autopersist(statefile)
+    if 'country' not in state:
+        logger.info('Creating default state.')
+    await sleep(0.2)
     
     await client.get_server()
 
@@ -305,35 +329,52 @@ async def on_start(app):
     state.setdefault('profile', {})
     
     state.setdefault('country', 'ru')
+    state.setdefault('superior_ik', 'TIK')
     state.setdefault('inputs', {})
+    state.setdefault('regions', {})
+    state.setdefault('forms', {'general': {'ru': []}})
     
     uix.formlist.build_general()
+        
     uix.events_screen.restore_past_events()
+    logger.info('Restored past events.')
     
-    formdata = (await client.recv_loop(f'forms/')).json()
+    formdata = (await client.recv_loop(f'{state.country}/forms/')).json()
     #logger.info(formdata)
     #formdata = {'ru': json.load(open('forms_general.json'))}
     #formdata = mock_forms
     
-    for country in formdata:
-        for form in formdata[country]:
-            for input in form['inputs']:
-                state.inputs[input['input_id']] = input
+    for form in formdata:
+        state.inputs.update((x['input_id'], x) for x in form['inputs'])
             
     state.setdefault('forms', {})
-    if not state.forms.get('general') == formdata:
-        state.forms.general = formdata
+    if not state.forms['general'].get(state.country) == formdata:
+        state.forms.general[state.country] = formdata
         uix.formlist.build_general()
     
-    #state.regions = await client.recv_loop('/regions/')
-    state.regions = {f'ru_{x["id"]}': dict(x, id=f'ru_{x["id"]}') for x in json.load(open('regions.json'))}
+    #class Region(BaseModel):
+        #id: str
+        #name: str
+        #tiks: List
+        #mokruga: List
+        
+    #class Response(BaseModel):
+        #regions: Dict[str, Region]
+        
+    regions = (await client.recv_loop(f'{state.country}/regions/')).json()
+    #regions = {f'ru_{x["id"]}': dict(x, id=f'ru_{x["id"]}') for x in json.load(open('regions.json'))}
+    #try:
+        #Response(regions=regions)
+    #except ValidationError as e:
+        #logger.error(regions)
+        #raise
+        
+    state.regions.update(regions)
+    logger.info('Regions updated.')
     
-    logger.info('Restored past events.')
-    await client.update_campaigns()
-    await client.send_userprofile()
-    #await client.send_position()
     asyncio.create_task(client.event_send_loop())
     asyncio.create_task(client.event_image_send_loop())
+    app.app_has_started = True
     logger.info('Startup finished.')
 
     
@@ -471,6 +512,7 @@ async def upl():
         return
     
 if __name__ == '__main__':
+    logger.info('__main__ started')
     app = ParadoxApp()
     asyncio.run(app.async_run())
     #app.run()

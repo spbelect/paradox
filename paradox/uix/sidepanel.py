@@ -8,7 +8,7 @@ from kivy.properties import ObjectProperty
 from kivy.uix.boxlayout import BoxLayout
 
 
-from .navigationdrawer.navigationdrawer import NavigationDrawer
+#from .navigationdrawer.navigationdrawer import NavigationDrawer
 from . import screenmgr
 
 from button import Button
@@ -88,12 +88,12 @@ class SidePanel(BoxLayout):
             
     @on('state.uik')
     def set_uik(self):
-        print(f'uik {state.get("uik")}')
+        #print(f'uik {state.get("uik")}')
         self.uik = state.get('uik')
         
     @on('state.region')
     def set_region(self):
-        print(f'region {state.get("region")}')
+        #print(f'region {state.get("region")}')
         self.region = state.get('region', {}).get('name')
         
         

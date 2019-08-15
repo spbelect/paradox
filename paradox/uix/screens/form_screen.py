@@ -14,6 +14,7 @@ from kivy.animation import Animation
 from kivy.clock import Clock
 from kivy.lang import Builder
 from kivy.properties import ObjectProperty
+from kivy.properties import BooleanProperty
 from kivy.uix.screenmanager import Screen
 from kivy.uix.widget import Widget
 from kivy.core.window import Window
@@ -36,6 +37,7 @@ Builder.load_string('''
 
 <FormScreen>:
     ScrollView:
+        id: scrollview
         VBox:
             VBox:
                 spacing: dp(4)
@@ -89,6 +91,7 @@ Builder.load_string('''
 
 class FormScreen(Screen):
     json = ObjectProperty()
+    load_finished = BooleanProperty(False)
 
     #def on_keyboard_height(self, *args):
         #pass
@@ -106,27 +109,28 @@ class FormScreen(Screen):
     
     @uix.top_loader.show
     async def build(self):
-        await sleep(0.5)
+        await sleep(0.05)
         logger.debug(f'building form {self.json["name"]}')
         for input in self.json['inputs']:
             #if not input_data.get('help_text'):
                 #input_data['help_text'] = txt
             
             self.add_input(input)
-            await sleep(0.05)
+            await sleep(0.01)
 
         self.remove_widget(self.ids['trailing_spacer'])
         
         logger.debug(f'building form {self.json["name"]} inputs added')
-        uix.base_input.restore_past_events()
+        await uix.base_input.restore_past_events()
         logger.debug(f'building form {self.json["name"]} finished')
-
+        await sleep(0.7)
+        self.load_finished = True
         
     def add_input(self, input_data):
         if input_data['input_type'] == 'NUMBER':
-            input = NumericInput(json=input_data, form=self.json)
+            input = NumericInput(json=input_data, form=self)
         elif input_data['input_type'] == 'MULTI_BOOL':
-            input = TrueNoneFalse(json=input_data, form=self.json)
+            input = TrueNoneFalse(json=input_data, form=self)
         else:
             return
         #input.ids['input_label'].bind(on_long_press=self.on_input_label_press)

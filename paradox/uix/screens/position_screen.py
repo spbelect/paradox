@@ -57,6 +57,7 @@ Builder.load_string('''
                 height: height1
                 size_hint_y: None
                 on_input:
+                    #print(f'on_input {self.value}')
                     state.region = state.regions[self.value]
 
             BoxLayout:
@@ -77,7 +78,7 @@ Builder.load_string('''
                     #max_len: 4
                     hint_text: 'введите номер'
                     text: root.uik or ''
-                    on_focus: state.uik = int(self.text) if self.text.isnumeric() else None
+                    on_focus_out: state.uik = int(self.text) if self.text.isnumeric() else None
 
             VBox:
                 spacing: 0
@@ -91,7 +92,7 @@ Builder.load_string('''
                     padding: 0, 0
 
                 Choices:
-                    id: status_choices
+                    id: role_choices
                     height: self.texture_size[1]
                     modal_header: 'Ваш статус:'
                     text: 'выберите статус'
@@ -101,42 +102,42 @@ Builder.load_string('''
                     padding: 0, 0
                     on_value: state.role = self.value
 
-                    StatusChoice:
+                    RoleChoice:
                         text: 'Член комиссии с правом решающего голоса (ПРГ)'
                         short_text: 'ПРГ'
                         value: 'prg'
 
-                    StatusChoice:
+                    RoleChoice:
                         text: 'Член комиссии с правом совещательного голоса (ПСГ)'
                         short_text: 'ПСГ'
                         value: 'psg'
 
-                    StatusChoice:
+                    RoleChoice:
                         text: 'Наблюдатель'
                         short_text: 'Наблюдатель'
                         value: 'nabludatel'
 
-                    StatusChoice:
+                    RoleChoice:
                         text: 'Представитель СМИ (Журналист)'
                         short_text: 'Журналист'
                         value: 'smi'
 
-                    StatusChoice:
+                    RoleChoice:
                         text: 'Кандидат'
                         short_text: 'Кандидат'
                         value: 'kandidat'
 
-                    StatusChoice:
+                    RoleChoice:
                         text: 'Избиратель (это ваш участок для голосования)'
                         short_text: 'Избиратель'
                         value: 'izbiratel'
 
-                    StatusChoice:
+                    RoleChoice:
                         text: 'Мимо проходил (это не ваш участок для голосования)'
                         short_text: 'Мимо проходил'
                         value: 'other'
                         
-                    StatusChoice:
+                    RoleChoice:
                         text: 'Видео-наблюдатель'
                         short_text: 'Видео-наблюдатель'
                         value: 'videonabl'
@@ -151,6 +152,7 @@ Builder.load_string('''
                 height: dp(15)
 
             Button:
+                id: next
                 text: 'Продолжить'
                 on_release: root.manager.push_screen('userprofile')
                 background_color: darkgray
@@ -163,8 +165,7 @@ from getinstance import InstanceManager
 class RegionChoice(Choice):
     instances = InstanceManager()
 
-
-class StatusChoice(Choice):
+class RoleChoice(Choice):
     instances = InstanceManager()
 
 
@@ -177,43 +178,54 @@ class PositionScreen(Screen):
         
     @on('state.regions')
     def build_regions(self):
+        if not state.get('regions', None):
+            return
+        #import ipdb; ipdb.sset_trace()
         logger.debug('rebuilding region choices')
         regions = state.regions.values()
+        #logger.debug(regions)
         
-        for choice in self.ids['region_choices'].choices():
-            self.ids['region_choices'].remove_choice(choice.value)
+        self.ids.region_choices.choice = None
+        for choice in self.ids.region_choices.choices():
+            self.ids.region_choices.remove_choice(choice.value)
+            #print(choice)
+            #del choice
+        #choice = None
 
         msk = list(filter(lambda x: 'Москва' in x['name'], regions))
         spb = list(filter(lambda x: 'Санкт' in x['name'], regions))
         lo = list(filter(lambda x: 'Ленинградская' in x['name'], regions))
 
         #choice = RegionChoice(short_text='Москва', text='Москва', value=msk['id'])
-        #self.ids['region_choices'].add_widget(choice)
+        #self.ids.region_choices.add_widget(choice)
         
         choice = RegionChoice(
             short_text='Санкт-Петербург', text='Санкт-Петербург', value='ru_78')
-        self.ids['region_choices'].add_widget(choice)
+        self.ids.region_choices.add_widget(choice)
+        #print(choice)
 
         choice = RegionChoice(
             short_text='Ленинградская область', text='Ленинградская область', value='ru_47')
-        self.ids['region_choices'].add_widget(choice)
+        self.ids.region_choices.add_widget(choice)
+        #print(choice)
 
         for region in sorted(regions, key=lambda x: x['name']):
             if region in spb + lo or not region['id'].startswith(state.country):
                 continue
             name = region['name']
             choice = RegionChoice(short_text=name, text=name, value=region['id'])
-            self.ids['region_choices'].add_widget(choice)
+            #print(region, choice)
+            self.ids.region_choices.add_widget(choice)
             
         if state.get('region'):
             region_choice = RegionChoice.instances.get(value=state.region.id)
             if region_choice:
-                self.ids['region_choices'].choice = region_choice
+                self.ids.region_choices.choice = region_choice
                 
     @on('state.role')
     def set_role(self):
         if state.get('role'):
-            self.ids.status_choices.choice = StatusChoice.instances.get(value=state.role)
+            self.ids.role_choices.choice = RoleChoice.instances.get(value=state.role)
             
     @on('state.uik')
     def set_uik(self):
@@ -223,26 +235,39 @@ class PositionScreen(Screen):
         if not (state.get('uik') and state.get('region')):
             return None
         for mokrug in state.region.get('mokruga', []):
-            if int(state.uik) in mokrug.get('uiks', []):
-                return mokrug
-            for first, last in mokrug.get('ranges', []):
+            #if int(state.uik) in mokrug.get('uiks', []):
+                #return mokrug
+            for first, last in mokrug.get('uik_ranges', []):
                 if first <= int(state.uik) <= last:
                     return mokrug
         return None
+    
+    def get_tik(self):
+        if not (state.get('uik') and state.get('region')):
+            return None
+        for tik in state.region.get('tiks', []):
+            #if int(state.uik) in tik.get('uiks', []):
+                #return tik
+            for first, last in tik.get('uik_ranges', []):
+                if first <= int(state.uik) <= last:
+                    return tik
+        return None
         
     @on('state.uik', 'state.region')
-    def update_mokrug(self):
+    def update_mokrug_tik(self):
+        #import ipdb; ipdb.sset_trace()
         self.mokrug = state.mokrug = self.get_mokrug()
+        self.tik = state.tik = self.get_tik()
         logger.debug(f'Mokrug: {self.mokrug}')
         
                    
     def show_errors(self):
         errors = []
-        if not self.ids['region_choices'].choice:
+        if not self.ids.region_choices.choice:
             errors.append('Выберите регион')
         if not self.ids['uik'].text:
             errors.append('Введите номер УИК')
-        if not self.ids['status_choices'].choice:
+        if not self.ids['role_choices'].choice:
             errors.append('Укажите ваш статус')
         if errors:
             errors = 'Пожалуйста заполните обязательные поля\n\n' + '\n'.join(errors)

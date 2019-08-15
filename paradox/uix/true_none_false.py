@@ -28,6 +28,7 @@ Builder.load_string('''
 ###:import ImagePicker paradox.uix.imagepicker.ImagePicker
 
 <TrueNoneFalse>:
+    disabled: not self.flags_match or not self.form.load_finished
     size_hint_y: None
     width: 0.9 * getattr(self.parent, 'width', 10)
     padding_y: 0
@@ -49,6 +50,7 @@ Builder.load_string('''
         pos_hint: {'center_x': .5}
 
         TNFButton:
+            id: yes
             size_hint_x: .2
             text: 'Да'
             value: True
@@ -63,6 +65,7 @@ Builder.load_string('''
             #on_press: root.on_input(None)
 
         TNFButton:
+            id: no
             size_hint_x: .2
             text: 'Нет'
             value: False
@@ -85,6 +88,7 @@ Builder.load_string('''
     #on_press: self.parent.parent.on_click(self.value)
     on_press: self.parent.parent.on_input(self)
     background_color: lightgray
+    #disabled: True
 
 
 ''')
@@ -115,17 +119,20 @@ class TrueNoneFalse(Input, VBox):
         self.ids.send_status.text = 'отправляется'
         self.on_event(event)
         
-    def on_input(self, button):
-        super().on_input(button.value)
+    @utils.asynced
+    async def on_input(self, button):
+        self.disabled = True
+        await super().on_input(button.value)
+        self.disabled = False
         
-    def set_past_events(self, events):
+    async def set_past_events(self, events):
         if events:
             #print('set past', events[-1].get_value())
             self.on_event(events[-1])
         else:
             self.set_state(None)
             
-        super().set_past_events(events)
+        await super().set_past_events(events)
 
     def on_event(self, event):
         if event.revoked:

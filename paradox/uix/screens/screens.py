@@ -6,7 +6,10 @@ import logging
 import json
 import traceback
 import shelve
+import cProfile
 
+from app_state import state, on
+from loguru import logger
 from kivy.app import App
 from kivy.base import EventLoop
 #from kivy.garden.anchoredscrollview import AnchoredScrollView
@@ -30,6 +33,7 @@ from kivy.uix.button import Button
 from kivy.uix.modalview import ModalView
 from kivy.uix.vkeyboard import VKeyboard
 from kivy.uix.behaviors.button import ButtonBehavior
+from kivy.utils import platform
 #import plyer
 
 from paradox import uix
@@ -123,6 +127,14 @@ class Screens(ScreenManager):
 
     def hook_keyboard(self, window, key, *args):
         logging.info( "XXXXXXXXXXXXXXXXX key %d pressed" % key)
+        if platform != 'android':
+            if key == ord('p'):
+                self.profile = cProfile.Profile()
+                self.profile.enable()
+            elif key == ord('o'):
+                self.profile.disable()
+                self.profile.dump_stats('myapp.profile')
+        
         if key in (1000, 27, 1073742095, 4):
             #if App.root.state == 'open':
                 #App.root.toggle_state()
@@ -155,6 +167,18 @@ class Screens(ScreenManager):
         self.get_screen('handbook').show_help(title, text)
         self.push_screen('handbook')
 
+    @on('state.uik', 'state.region')
+    def remove_formsreens(self):
+        self.screen_history = ['formlist']
+        #logger.debug(f'{self.screens}')
+        for screen in self.screens:
+            if screen.name.startswith('form_'):
+                self.remove_widget(screen)
+                del screen
+        import gc
+        gc.collect()
+        #logger.debug(f'{self.screens}')
+        
     def on_pause(self):
         pass
         #self.get_screen('formlist').ids['camera'].play = False
