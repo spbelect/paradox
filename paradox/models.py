@@ -32,6 +32,7 @@ class Model(db.models.Model):
         self2 = self.__class__.objects.get(pk=self.pk)
         for attr, val in kwargs.items():
             setattr(self2, attr, val)
+            setattr(self, attr, val)
 
         self2.save()
 
@@ -75,6 +76,7 @@ class InputEvent(Model):
         ('none', 'не подавалась'),
         ('request_pending', 'запрос отправляется'),
         ('request_sent', 'запрос отправлен'),
+        ('denied', 'отклонено'),
         ('email_sent', 'email отправлен'),
     ]
     uik_complaint_status = CharField(max_length=30, choices=UIK_COMPLAINT_STATUS, default='none')

@@ -124,12 +124,12 @@ class NumericInput(Input, VBox):
     value = ObjectProperty(None, allownone=True)
     #loader = ObjectProperty(None, allownone=True)
 
-    def set_state(self, value):
+    def show_state(self, value):
         self.ids.value_input.text = str(value)
         
     async def set_past_events(self, events):
         if events:
-            self.set_state(events[-1].get_value())
+            self.show_state(events[-1].get_value())
         await super().set_past_events(events)
 
     def reset(self):

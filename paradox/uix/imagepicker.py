@@ -44,6 +44,8 @@ Builder.load_string('''
         spacing: dp(20)
         height: dp(200)
         ImageButton:
+            size_hint_y: 1
+        
             #background_color: white
             height: dp(70)
             id: take_photo
@@ -53,6 +55,7 @@ Builder.load_string('''
             color: black
             #image: 'img/plus_small.png'
         ImageButton:
+            size_hint_y: 1
             height: dp(70)
             #background_color: white
             color: black
@@ -142,6 +145,7 @@ Builder.load_string('''
         width: dp(300)
         pos_hint: {'center_x': .5}
     ImageAddButton:
+        size_hint_y: 1
         image: 'img/Antu_folder-camera40.png'
         label: 'добавить фото'
         width: dp(200)

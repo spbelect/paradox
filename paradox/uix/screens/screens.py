@@ -84,6 +84,7 @@ class Screens(ScreenManager):
         self.add_widget(uix.position)
         self.add_widget(uix.coordinators)
         self.add_widget(uix.events_screen)
+        self.add_widget(uix.tik_complaint)
         self.add_widget(AboutScreen(name='about'))
         self.add_widget(CommunicationScreen(name='communication'))
         self.add_widget(uix.userprofile)
@@ -166,6 +167,10 @@ class Screens(ScreenManager):
     def show_handbook(self, title, text):
         self.get_screen('handbook').show_help(title, text)
         self.push_screen('handbook')
+        
+    def show_tik_complaint(self, complaint):
+        self.get_screen('tik_complaint').show(complaint)
+        self.push_screen('tik_complaint')
 
     @on('state.uik', 'state.region')
     def remove_formsreens(self):

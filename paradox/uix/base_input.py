@@ -22,12 +22,13 @@ class Input(Widget):
     json = ObjectProperty()
     form = ObjectProperty()
     value = ObjectProperty(None, allownone=True)
-    last_event = ObjectProperty(None, allownone=True)
+    #last_event = ObjectProperty(None, allownone=True)
     instances = InstanceManager()
     flags_match = BooleanProperty(True)
     
     def __init__(self, *args, **kwargs):
         self.complaint = None
+        self.last_event = None
         super(Input, self).__init__(*args, **kwargs)
         self.input_id = self.json['input_id']
         self.apply_flags()
@@ -93,10 +94,12 @@ class Input(Widget):
         
     async def on_input(self, value):
         if uix.position.show_errors():
+            self.show_state(self.value)
             uix.screenmgr.push_screen('position')
             return False
         
         if uix.userprofile.userprofile_errors():
+            self.show_state(self.value)
             uix.screenmgr.push_screen('userprofile')
             return False
 
@@ -114,7 +117,7 @@ class Input(Widget):
             if self.json['input_type'] == 'NUMBER':
                 msg += f' ({self.last_event.humanized_value()})'
             if not await uix.confirm.yesno(msg):
-                self.set_state(self.last_event.get_value())
+                self.show_state(self.last_event.get_value())
                 return False
             
             event = InputEvent.objects.get(id=self.last_event.id)
@@ -162,6 +165,7 @@ class Input(Widget):
             if not self.complaint:
                 self.complaint = Complaint(input=self)
                 self.add_widget(self.complaint)
+            #print(4343)
             await self.complaint.on_event(event)
             await sleep(0.6)
             #self.form.load_finished = True
@@ -183,14 +187,15 @@ class Input(Widget):
         self.size_hint_y = None
         self.opacity = 0
 
-    def set_state(self, value):
+    def show_state(self, value):
         pass
     
     def on_send_start(self, event):
         pass
     
     def on_send_success(self, event):
-        pass
+        #logger.debug(f'{self} {event} tik_complaint_status: {event.tik_complaint_status}')
+        self.last_event = event
 
     def on_send_error(self, event):
         pass
@@ -199,7 +204,11 @@ class Input(Widget):
         pass
 
     def on_save_success(self, event):
+        #logger.debug(f'{self} {event} tik_complaint_status: {event.tik_complaint_status}')
         self.last_event = event
+
+    #def on_last_event(self, *a):
+        #logger.debug(f'{self} {self.last_event} tik_complaint_status: {self.last_event.tik_complaint_status}')
 
 
 async def restore_past_events():

@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 
 from app_state import state, on
+from django.core.validators import ValidationError, validate_email
 from kivy.app import App
 from kivy.clock import Clock
 from kivy.lang import Builder
@@ -17,6 +18,7 @@ from kivy.uix.widget import Widget
 from kivy.uix.textinput import TextInput
 from kivy.uix.button import Button
 from kivy.uix.vkeyboard import VKeyboard
+from loguru import logger
 
 from ..vbox import VBox
 
@@ -113,16 +115,26 @@ class UserProfileScreen(Screen):
     @staticmethod
     def userprofile_errors():
         errors = []
+        missing = []
         data = state.get('profile', {})
         if not data.get('phone'):
-            errors.append('Телефон')
+            missing.append('Телефон')
         if not data.get('first_name'):
-            errors.append('Имя')
+            missing.append('Имя')
         if not data.get('last_name'):
-            errors.append('Фамилия')
+            missing.append('Фамилия')
+        if not data.get('email'):
+            missing.append('Email')
+        else:
+            try:
+                validate_email(data.get('email'))
+            except ValidationError as e:
+                errors.append('Некорректный email')
+    
+        if missing:
+            errors.append('Пожалуйста заполните обязательные поля\n' + '\n'.join(missing))
         if errors:
-            errors = 'Пожалуйста заполните обязательные поля\n' + '\n'.join(errors)
-            show_float_message(text=errors)
+            show_float_message(text='\n'.join(errors))
             return errors
         else:
             return False
@@ -130,6 +142,7 @@ class UserProfileScreen(Screen):
     def on_leave(self):
         data = {x: self.ids[x].text for x in self.inputs}
         stored = state.get('profile', {})
+        #logger.debug(f'{stored}\n {data}')
         if stored == data:
             return
         state.profile = data

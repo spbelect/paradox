@@ -148,6 +148,12 @@ Builder.load_string('''
                 text: root.mokrug['name'] if root.mokrug else ''
                 #text: "lol"
                 
+            Label:
+                #id: mokrug
+                #text: state.get('mokrug', {}).get('name', '') if state.get('mokrug') else ''
+                text: 'ТИК ' + root.tik['name'] if root.tik else ''
+                #text: "lol"
+                
             Widget:  #spacer
                 height: dp(15)
 
@@ -171,6 +177,7 @@ class RoleChoice(Choice):
 
 class PositionScreen(Screen):
     mokrug = ObjectProperty(None, allownone=True)
+    tik = ObjectProperty(None, allownone=True)
     uik = ObjectProperty(None, allownone=True)
 
     #def __init__(self, *args, **kwargs):
@@ -258,7 +265,7 @@ class PositionScreen(Screen):
         #import ipdb; ipdb.sset_trace()
         self.mokrug = state.mokrug = self.get_mokrug()
         self.tik = state.tik = self.get_tik()
-        logger.debug(f'Mokrug: {self.mokrug}')
+        logger.debug(f'Mokrug: {self.mokrug}. Tik: {self.tik}')
         
                    
     def show_errors(self):

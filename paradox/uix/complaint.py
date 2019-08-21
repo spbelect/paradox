@@ -326,7 +326,8 @@ Builder.load_string('''
             font_size: dp(20)
             text_size: self.width, None
             on_release: 
-                uix.screenmgr.show_handbook('Проверьте текст жалобы', root.tik_text)
+                uix.screenmgr.show_tik_complaint(root)
+                #uix.screenmgr.show_handbook('Проверьте текст жалобы', root.tik_text)
             
             
 #<ComplaintPhotoPicker>:
@@ -407,7 +408,7 @@ uik_complaint_stub = '''
 tik_header = '''
 Жалоба
 
-В Территориальную Избирательную Комиссию {state.tik} {region}
+В Территориальную Избирательную Комиссию {state.tik.name} {region}
 От кого: {profile.last_name} {profile.first_name} {profile.middle_name}, {role}.
 Дата: {date}
 
@@ -497,17 +498,18 @@ class Complaint(VBox):
             value=event.uik_complaint_status
         )
         #print('conmpl2')
-        if event.uik_complaint_status in ['got_unfair_reply', 'refuse_to_accept', 'refuse_to_resolve']:
-            self.ids.tik_complaint.visible = True
-            
-            if event.uik_complaint_status == 'refuse_to_accept':
-                self.ids.refuse_person.visible = True
+        if state.get('tik'):
+            if event.uik_complaint_status in ['got_unfair_reply', 'refuse_to_accept', 'refuse_to_resolve']:
+                self.ids.tik_complaint.visible = True
                 
-        #print('conmpl3')
-        self.ids.refuse_person_status.choice = RefusePersonChoice.instances.get(
-            value=event.refuse_person
-        )
-        self.toggle_tik(event.uik_complaint_status)
+                if event.uik_complaint_status == 'refuse_to_accept':
+                    self.ids.refuse_person.visible = True
+                    
+            #print('conmpl3')
+            self.ids.refuse_person_status.choice = RefusePersonChoice.instances.get(
+                value=event.refuse_person
+            )
+            self.toggle_tik(event.uik_complaint_status)
         self.build_uik_text()
         
         #print('conmpl4')
@@ -548,6 +550,8 @@ class Complaint(VBox):
         
         
     def toggle_tik(self, uik_complaint_status):
+        if not state.get('tik'):
+            return
         refuse = ['refuse_to_accept', 'refuse_to_resolve', 'refuse_to_copy_reply']
         if uik_complaint_status in ['got_unfair_reply'] + refuse:
             self.ids.tik_complaint.visible = True

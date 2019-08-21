@@ -330,6 +330,7 @@ async def on_start(app):
     
     state.setdefault('country', 'ru')
     state.setdefault('superior_ik', 'TIK')
+    state.setdefault('tik', None)
     state.setdefault('inputs', {})
     state.setdefault('regions', {})
     state.setdefault('forms', {'general': {'ru': []}})
@@ -369,8 +370,12 @@ async def on_start(app):
         #logger.error(regions)
         #raise
         
+    #logger.debug(regions)
     state.regions.update(regions)
     logger.info('Regions updated.')
+    if state.get('region'):
+        if not state.region == state.regions[state.region.id]:
+            state.region = state.regions[state.region.id]
     
     asyncio.create_task(client.event_send_loop())
     asyncio.create_task(client.event_image_send_loop())

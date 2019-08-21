@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
+from asyncio import sleep
 
 from getinstance import InstanceManager
 from kivy.lang import Builder
@@ -106,6 +107,7 @@ class TrueNoneFalse(Input, VBox):
         self.ids.send_status.text = 'отправляется'
     
     def on_send_success(self, event):
+        super().on_send_success(event)
         self.ids.send_status.text = ''
 
     def on_send_error(self, event):
@@ -123,6 +125,7 @@ class TrueNoneFalse(Input, VBox):
     async def on_input(self, button):
         self.disabled = True
         await super().on_input(button.value)
+        await sleep(0.2)
         self.disabled = False
         
     async def set_past_events(self, events):
@@ -130,17 +133,17 @@ class TrueNoneFalse(Input, VBox):
             #print('set past', events[-1].get_value())
             self.on_event(events[-1])
         else:
-            self.set_state(None)
+            self.show_state(None)
             
         await super().set_past_events(events)
 
     def on_event(self, event):
         if event.revoked:
-            self.set_state(None)
+            self.show_state(None)
         else:
-            self.set_state(event.get_value())
+            self.show_state(event.get_value())
             
-    def set_state(self, value):
+    def show_state(self, value):
         for button in self.ids.buttons.children:
             if button.value == value:
                 button.state = 'down'

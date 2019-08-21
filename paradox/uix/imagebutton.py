@@ -32,6 +32,7 @@ Builder.load_string('''
     Label:
         #background_color: teal
         #size_hint_x: None
+        size_hint_y: 1
         text: root.label
         color: self.parent.color
         text_size: self.width, self.height

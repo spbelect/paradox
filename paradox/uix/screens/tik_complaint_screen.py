@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 #from os.path import exists
 import traceback
 
+from django.utils.timezone import now
 from kivy.core.window import Window
 from kivy.app import App
 #from kivy.garden.anchoredscrollview import AnchoredScrollView
@@ -20,8 +21,10 @@ from kivy.uix.widget import Widget
 from kivy.uix.textinput import TextInput
 from kivy.uix.vkeyboard import VKeyboard
 from kivy.utils import platform
+from loguru import logger
 
 
+from ..float_message import show_float_message
 #from kivy.uix.textinput import TextInput
 #from
 
@@ -36,15 +39,18 @@ Builder.load_string('''
         VBox:
             Label:
                 id: header
-                #text: 'Запрос отравлен'
+                #text: 'Запрос отправлен'
                 size_hint_y: None
+                color: white
+                background_color: wheat4
                 #height: 0
                 #opacity: 0
+                
             VBox:
                 id: complaint_preview
                 Label:
                     id: complaint_label
-                    text: root.text
+                    text: root.text or ''
                     #split_str: ' '
                     #text_size: self.width, None
                     ##height: dp(100)
@@ -69,12 +75,16 @@ Builder.load_string('''
                     halign: 'left'
 
                 Button:
+                    id: edit_button
                     text: 'Редактировать текст'
                     on_release: root.on_edit_pressed()
+                    color: teal
                     
                 Button:
+                    id: send_button
                     text: 'Отправить'
                     on_release: root.on_send_pressed()
+                    color: teal
                 
             VBox:
                 id: complaint_edit
@@ -82,8 +92,17 @@ Builder.load_string('''
                 
                 TextInput:
                     id: complaint_textinput
+                    text: ''
+                    color: black
+                    multiline: True
+                    #height: root.height * 0.6
+                    
+                    height: self.minimum_height
+                    size_hint_y: None
                 
                 Button:
+                    id: save
+                    color: teal
                     text: 'Сохранить'
                     on_release: root.on_save_pressed()
                 
@@ -94,6 +113,7 @@ Builder.load_string('''
                     spacing: dp(2)
 
                     Button:
+                        id: back
                         text: '< Назад'
                         on_press: root.manager.pop_screen()
                         halign: 'left'
@@ -114,36 +134,50 @@ class TikComplaintScreen(Screen):
     text = StringProperty(None, allownone=True)
     
     def on_edit_pressed(self):
-        self.complaint_preview.visible = False
-        self.complaint_textinput.text = self.text
-        self.complaint_edit.visible = True
+        self.ids.complaint_preview.visible = False
+        self.ids.complaint_textinput.text = self.text
+        self.ids.complaint_edit.visible = True
         
     def on_save_pressed(self):
-        self.complaint_preview.visible = True
-        self.text = self.complaint_textinput.text
-        self.complaint_edit.visible = False
+        self.ids.complaint_preview.visible = True
+        self.text = self.ids.complaint_textinput.text
+        self.ids.complaint_edit.visible = False
         
     def on_send_pressed(self):
         self.complaint.input.last_event.update(
             tik_complaint_status='request_pending',
-            tik_complaint_text=self.text
+            tik_complaint_text=self.text,
+            time_updated=now()
         )
+        show_float_message('Запрос отправляется')
         self.ids.header.text = 'ЗАПРОС ОТПРАВЛЯЕТСЯ'
+        self.ids.edit_button.disabled = True
+        self.ids.send_button.disabled = True
         
     def show(self, complaint):
         event = complaint.input.last_event
+        #logger.debug(f'{complaint.input} {event}, tik_complaint_status: {event.tik_complaint_status}')
         self.text = event.tik_complaint_text or complaint.tik_text
         #if complaint.input.last_event.tik_complaint_text:
             #complaint.tik_text
         self.complaint = complaint
         #label = input_data['label'].upper()
         #help_text = input_data['help_text'] or imput_help_stub
-        if not event.tik_complaint_status:
+        if not event.tik_complaint_status or event.tik_complaint_status == 'none':
             self.ids.header.text = 'ПРОВЕРЬТЕ ТЕКСТ ЖАЛОБЫ'
+            self.ids.edit_button.disabled = False
+            self.ids.send_button.disabled = False
         elif event.tik_complaint_status == 'request_pending':
             self.ids.header.text = 'ЗАПРОС ОТПРАВЛЯЕТСЯ'
+            self.ids.edit_button.disabled = True
+            self.ids.send_button.disabled = True
         elif event.tik_complaint_status == 'request_sent':
             self.ids.header.text = 'ЗАПРОС ОТПРАВЛЕН'
+            self.ids.edit_button.disabled = True
+            self.ids.send_button.disabled = True
+        else:
+            raise Exception(event.tik_complaint_status)
+        
             
         #self.ids.complaint_label.text = self.text
         self.ids['scrollview'].scroll_y = 1

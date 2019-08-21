@@ -78,6 +78,9 @@ async def test_render(app):
     #window = EventLoop.window
     await app.wait_clock_frames(5)
 
+    from app_state import state
+    state._raise_all = True
+    
     
     from paradox import uix
     from paradox.uix.screens.position_screen import RegionChoice, RoleChoice
@@ -110,14 +113,13 @@ async def test_render(app):
     #await app.text_input('famil')
     #await app.click(uix.userprofile.ids.email)
     #await app.text_input('email@ya.ru')
+    ##await app.text_input('emailya.ru')
     #await app.click(uix.userprofile.ids.phone)
     #await app.text_input('9061234567')
     #await app.click(uix.userprofile.ids.next)
-    from app_state import state
-    #state._raise_all = True
     
     state.update(
-        profile=dict(email='1', first_name='2', last_name='3', phone='4', middle_name='5', telegram=''),
+        profile=dict(email='a@ya.ru', first_name='2', last_name='3', phone='4', middle_name='5', telegram=''),
         region=state.regions['ru_47'],
         role='smi',
         uik='244'
@@ -136,9 +138,36 @@ async def test_render(app):
     
     fromscreen = uix.screenmgr.get_screen('form_1')
     fromscreen.ids.scrollview.scroll_to(input.complaint.ids.preview_tik_complaint)
+    await app.wait_clock_frames(50)  # scroll animation
+    
     await app.click(input.complaint.ids.preview_tik_complaint)
-    print(11)
-    await app.wait_clock_frames(5000)
+    
+    uix.tik_complaint.ids.scrollview.scroll_to(uix.tik_complaint.ids.edit_button)
+    await app.wait_clock_frames(50)  # scroll animation
+    
+    await app.click(uix.tik_complaint.ids.edit_button)
+    
+    await app.click(uix.tik_complaint.ids.complaint_textinput)
+    
+    await app.text_input('lol')
+    
+    uix.tik_complaint.ids.scrollview.scroll_to(uix.tik_complaint.ids.save)
+    await app.wait_clock_frames(50)  # scroll animation
+    
+    await app.click(uix.tik_complaint.ids.save)
+    
+    uix.tik_complaint.ids.scrollview.scroll_to(uix.tik_complaint.ids.send_button)
+    await app.wait_clock_frames(50)  # scroll animation
+    
+    await app.click(uix.tik_complaint.ids.send_button)
+    
+    await app.wait_clock_frames(50) 
+    
+    await app.click(uix.tik_complaint.ids.back)
+    
+    
+    #print(11)
+    #await app.wait_clock_frames(5000)
     #return
     #await asyncio.sleep(5)
     #self.render(app.root, 20)

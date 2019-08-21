@@ -6,9 +6,11 @@ from .screens.formlist_screen import FormListScreen
 from .screens.events_screen import EventsScreen
 from .screens.coordinators_screen import CoordinatorsScreen
 from .screens.events_screen import EventsScreen
+from .screens.tik_complaint_screen import TikComplaintScreen
 
 
 coordinators = CoordinatorsScreen(name='coordinators')
+tik_complaint = TikComplaintScreen(name='tik_complaint')
 events_screen = EventsScreen(name='events')
 formlist = FormListScreen(name='formlist')
 position = PositionScreen(name='position')

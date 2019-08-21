@@ -306,6 +306,7 @@ async def _put_event(event):
             'revoked': event.revoked,
             'uik_complaint_status': event.uik_complaint_status,
             'tik_complaint_status': event.tik_complaint_status,
+            'tik_complaint_text': event.tik_complaint_text,
         })
     except Exception as e:
         event.update(send_status='put_exception')
@@ -313,15 +314,22 @@ async def _put_event(event):
             raise e
         return
     if response.status_code == 404:
-        # No such input
-        logger.info(f'404, {response.json()}')
+        # No such input or event
+        logger.info(f'404, {response!r} {response.json()}')
         event.update(send_status='sent', time_sent=now())
         return
     elif not response.status_code == 200:
+        try:
+            logger.info(f'{response!r} {response.json()}')
+        except:
+            logger.info(repr(response))
         event.update(send_status=f'put_http_{response.status_code}')
         return
     
-    event.update(send_status='sent', time_sent=now())
+    extra = {}
+    if event.tik_complaint_status == 'request_pending':
+        extra = {'tik_complaint_status': 'request_sent'}
+    event.update(send_status='sent', time_sent=now(), **extra)
 
 
 async def event_send_loop():
@@ -350,6 +358,7 @@ async def event_send_loop():
                     'value': event.get_value(),
                     'uik_complaint_status': event.uik_complaint_status,
                     'tik_complaint_status': event.tik_complaint_status,
+                    'tik_complaint_text': event.tik_complaint_text,
                     'region': event.region,
                     'uik': event.uik,
                     'role': event.role,

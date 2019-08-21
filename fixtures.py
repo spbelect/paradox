@@ -59,7 +59,9 @@ async def app():
             return Mock(
                 status_code=200,
                 json=lambda: {
-                    'ru_47': {'id': 'ru_47', 'name': 'Ленинградская обл', 'mokruga': [], 'tiks': []}
+                    'ru_47': {'id': 'ru_47', 'name': 'Ленинградская обл', 'mokruga': [], 'tiks': [
+                        {'name': '№ 11', 'uik_ranges': [[1,9999]]}
+                    ]}
                 }
             )
         elif url == f'/api/v2/ru/regions/ru_47/campaigns/':
@@ -74,6 +76,10 @@ async def app():
         elif url == f'/api/v2/position/':
             return Mock(status_code=200, json=lambda: {})
         elif url == f'/api/v2/userprofile/':
+            return Mock(status_code=200, json=lambda: {})
+        elif url == f'/api/v2/input_events/':
+            return Mock(status_code=201, json=lambda: {})
+        elif url.startswith(f'/api/v2/input_events/'):
             return Mock(status_code=200, json=lambda: {})
         else:
             raise Exception(f'unknown url {url}')
@@ -171,8 +177,17 @@ async def app():
                 
             text = getattr(widget, 'text', '') or getattr(widget, 'hint_text', '')
             logger.debug(f'Click {widget} "{text}"')
+            
+            parent = widget.parent
+            pos = widget.center
+            #while parent and hasattr(parent, 'to_parent'):
+                #pos = parent.to_parent(*pos)
+                #print(pos, parent)
+                #parent = parent.parent
+                
             touch = UnitTestTouch(
                 #window.height - 10, 10
+                #*pos
                 *widget.to_window(*widget.center)
             )
 
