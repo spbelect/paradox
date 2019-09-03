@@ -3,8 +3,11 @@
 from __future__ import unicode_literals
 
 #from os.path import exists
+from datetime import date
 import traceback
 
+
+from app_state import state, on
 from django.utils.timezone import now
 from kivy.core.window import Window
 from kivy.app import App
@@ -24,6 +27,8 @@ from kivy.utils import platform
 from loguru import logger
 
 
+from paradox import utils
+from paradox.models import Campaign
 from ..float_message import show_float_message
 #from kivy.uix.textinput import TextInput
 #from
@@ -39,12 +44,19 @@ Builder.load_string('''
         VBox:
             Label:
                 id: header
-                #text: 'Запрос отправлен'
                 size_hint_y: None
                 color: white
                 background_color: wheat4
-                #height: 0
-                #opacity: 0
+                
+            Label:
+                id: hint
+                font_size: dp(16)
+                color: lightgray
+                #multiline: True
+                padding_x: dp(6)
+                split_str: ' '
+                text_size: self.width, None
+                height: self.texture_size[1] + dp(10)
                 
             VBox:
                 id: complaint_preview
@@ -143,8 +155,16 @@ class TikComplaintScreen(Screen):
         self.text = self.ids.complaint_textinput.text
         self.ids.complaint_edit.visible = False
         
-    def on_send_pressed(self):
-        self.complaint.input.last_event.update(
+    @utils.asynced
+    async def on_send_pressed(self):
+        from paradox.uix import confirm
+        event = self.complaint.input.last_event
+        if not event.images.exists():
+            msg = 'Рекомендуется приложить фото жалобы. Действительно отправить пиьмо без прильжений?'
+            if not await confirm.yesno(msg):
+                return
+        
+        event.update(
             tik_complaint_status='request_pending',
             tik_complaint_text=self.text,
             time_updated=now()
@@ -163,6 +183,15 @@ class TikComplaintScreen(Screen):
         self.complaint = complaint
         #label = input_data['label'].upper()
         #help_text = input_data['help_text'] or imput_help_stub
+        
+        vote_dates = Campaign.objects.positional().current().values_list('vote_date', flat=True)
+        #today = now().date()
+        if now().date() in list(vote_dates):
+            self.ids.hint.text = f'Email будет отправлен в ТИК по адресу {state.tik.email}. '\
+                f'Также копия будет отправлена вам на адрес {state.profile.email}'
+        else:
+            self.ids.hint.text = f'Режим тестирования. Письмо не будет отправлено в тик.'
+            
         if not event.tik_complaint_status or event.tik_complaint_status == 'none':
             self.ids.header.text = 'ПРОВЕРЬТЕ ТЕКСТ ЖАЛОБЫ'
             self.ids.edit_button.disabled = False

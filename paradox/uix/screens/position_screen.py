@@ -265,7 +265,7 @@ class PositionScreen(Screen):
         #import ipdb; ipdb.sset_trace()
         self.mokrug = state.mokrug = self.get_mokrug()
         self.tik = state.tik = self.get_tik()
-        logger.debug(f'Mokrug: {self.mokrug}. Tik: {self.tik}')
+        #logger.debug(f'Mokrug: {self.mokrug}. Tik: {self.tik}')
         
                    
     def show_errors(self):

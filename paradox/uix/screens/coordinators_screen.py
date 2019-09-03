@@ -26,6 +26,7 @@ from label import Label
 from ..click_label import ClickLabel
 from ..vbox import VBox
 from paradox import utils
+from paradox import config
 from paradox.models import Campaign, Coordinator
 
 
@@ -118,13 +119,14 @@ class CoordinatorItem(VBox):
     
     def __init__(self, *a, **kw):
         super().__init__(*a, **kw)
-        for phone in json.loads(self.coordinator.phones or '[]'):
-            self.ids.contacts.add_widget(ContactItem(
-                image='img/Phone.png',
-                text='[color=#4AABFF][ref={number}]{name} {number}[/ref][/color]'.format(**phone),
-                on_ref_press=ContactItem.call
-            ))
+        self.add_phones(self.coordinator.phones)
+        self.add_channels(self.coordinator.external_channels)
         
+        for campaign in self.coordinator.campaigns.positional().current():
+            self.add_phones(campaign.phones)
+            self.add_channels(campaign.external_channels)
+            
+    def add_channels(self, channels):
         images = {
             'vk': 'img/vkontakte-256.png',
             'fb': 'img/fb_icon_325x325.png',
@@ -132,11 +134,19 @@ class CoordinatorItem(VBox):
             'wa': 'img/whatsapp.png'
         }
                 
-        for channel in json.loads(self.coordinator.external_channels or '[]'):
+        for channel in json.loads(channels or '[]'):
             self.ids.contacts.add_widget(ContactItem(
                 image=images[channel['type']],
                 text='[color=#4AABFF][ref={url}]{name}[/ref][/color]'.format(**channel),
                 on_ref_press=ContactItem.open_url
+            ))
+            
+    def add_phones(self, phones):
+        for phone in json.loads(phones or '[]'):
+            self.ids.contacts.add_widget(ContactItem(
+                image='img/Phone.png',
+                text='[color=#4AABFF][ref={number}]{name} {number}[/ref][/color]'.format(**phone),
+                on_ref_press=ContactItem.call
             ))
 
 
@@ -149,13 +159,16 @@ class CoordinatorsScreen(Screen):
             self.ids.content.remove_widget(item)
             
         for coord in coordinators:
-            self.ids.content.add_widget(CoordinatorItem(coordinator=coord))
+            if coord.campaigns.positional().current().exists():
+                if config.SHOW_TEST_COORDINATORS is False and 'test' in coord.name:
+                    continue
+                self.ids.content.add_widget(CoordinatorItem(coordinator=coord))
             
     @on('state.region')
     def show_current(self):
         #from paradox.models import Campaign, Coordinator
         campaigns = Campaign.objects.positional().current()
-        logger.debug(f'Active campaigns: {campaigns.values()}')
+        #logger.debug(f'Active campaigns: {campaigns.values()}')
         self.show(Coordinator.objects.filter(campaigns__in=campaigns))
     
     def show_loader(self, f):
@@ -163,11 +176,11 @@ class CoordinatorsScreen(Screen):
         async def wrapped(*a, **kw):
             self.ids.loader.height = dp(40)
             self.ids.loader.opacity = 1
-            logger.debug(f'show coord loader {f}')
+            #logger.debug(f'show coord loader {f}')
             try:
                 return await f(*a, **kw)
             finally:
-                logger.debug(f'hide coord loader {f}')
+                #logger.debug(f'hide coord loader {f}')
                 self.ids.loader.height = 0
                 self.ids.loader.opacity = 0
         return wrapped

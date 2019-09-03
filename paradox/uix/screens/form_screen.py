@@ -138,3 +138,7 @@ class FormScreen(Screen):
 
     def on_input_label_press(self, input_label):
         self.manager.show_handbook(input_data=input_label.parent.json)
+
+    #def __del__(self):
+        #logger.debug(f'del {self.json["name"]}')
+        

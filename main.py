@@ -324,6 +324,8 @@ async def on_start(app):
     await sleep(0.2)
     
     await client.get_server()
+    
+    asyncio.create_task(client.check_new_version_loop())
 
     state.setdefault('app_id', randint(10 ** 19, 10 ** 20 - 1))
     state.setdefault('profile', {})

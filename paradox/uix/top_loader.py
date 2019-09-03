@@ -69,9 +69,10 @@ def show_loader():
     Window.add_widget(Window.loader)
     
 def hide_loader():
-    Window.loader.anim.stop(Window.loader)
-    Window.remove_widget(Window.loader)
-    del(Window.loader)
+    if hasattr(Window, 'loader'):
+        Window.loader.anim.stop(Window.loader)
+        Window.remove_widget(Window.loader)
+        del(Window.loader)
 
 from inspect import iscoroutinefunction
 

@@ -3,7 +3,7 @@ import json
 from os.path import join, basename
 from asyncio import sleep, create_task
 from datetime import datetime
-from itertools import chain
+from itertools import chain, cycle
 from urllib.parse import urljoin
 
 #import asks
@@ -18,6 +18,7 @@ from loguru import logger
 import httpx
 
 from paradox import uix
+from paradox.uix import newversion_dialog
 from .models import Campaign, Coordinator, InputEvent, InputEventImage, InputEventUserComment
 from . import config
 from . import utils
@@ -33,18 +34,63 @@ from . import utils
 client = httpx.AsyncClient()
 
 state.server = config.SERVER_ADDRESS
+SERVER_GISTS = cycle(config.SERVER_GISTS) if config.SERVER_GISTS else None
+
 try:
     from get_server import get_server
 except ImportError:
     @lock_or_exit()
     async def get_server():
-        state.server = config.SERVER_ADDRESS
+        if not SERVER_GISTS:
+            state.server = config.SERVER_ADDRESS
+            return
+        
+        for gist in SERVER_GISTS:
+            try:
+                response = await client.get(gist, timeout=25)
+            except:
+                await sleep(2)
+                continue
+            if response.status_code != 200:
+                await sleep(2)
+                continue
+            state.server = response.text.strip()
+            #logger.debug(state.server)
+            return
+            
         #import ipdb; ipdb.sset_trace()
-        #logger.debug(state.server)
 
+
+async def check_new_version_loop():
+    while True:
+        try:
+            response = await client.get(config.CHANGELOG_URL, timeout=25)
+        except:
+            await sleep(2)
+            continue
+        if response.status_code != 200:
+            await sleep(2)
+            continue
+        #import ipdb; ipdb.sset_trace()
+        
+        changelog = response.content.decode('utf8').strip()
+        vstring = 'Версия %s' % config.version[0:3]
+        #import ipdb; ipdb.sset_trace()
+        if vstring in changelog:
+            try:
+                before, after = changelog.split(vstring)
+        
+                new = '\n'.join(before.split('\n')[4:]).strip()  # skip first 4 lines of the file
+                if new:
+                    uix.newversion_dialog.show_new_version_dialog(new)
+            except Exception as e:
+                logger.error(repr(e))
+            
+        await sleep(10*60)
 
 
 def send_debug(msg):
+    return
     from requests import post
     from os.path import join
     try:
@@ -461,6 +507,7 @@ async def update_campaigns():
         data = (await recv_loop(f'{country}/regions/{region.id}/campaigns/')).json()
         #data = mock_campaigns
         
+        #logger.debug(data)
         ##Channel.objects.filter(coordinator__in=data['coordinators']).update(actual=False)
                 
         for id, coordinator in data['coordinators'].items():
@@ -485,6 +532,7 @@ async def update_campaigns():
                 'mokrug': election.get('mokrug'), 
                 'fromtime': dtparse(campaign['fromtime']),
                 'totime': dtparse(campaign['totime']),
+                'vote_date': dtparse(election['date']),
                 'coordinator_id': campaign['coordinator'],
                 'elect_flags': ','.join(election['flags']),
                 'phones': json.dumps(campaign['phones']),

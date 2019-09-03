@@ -3,7 +3,7 @@ from datetime import datetime
 from uuid import uuid4
 
 from django.db.models import (
-    ForeignKey, UUIDField, DateTimeField, TextField, CharField, IntegerField,
+    ForeignKey, UUIDField, DateTimeField, DateField, TextField, CharField, IntegerField,
     BooleanField, ManyToManyField, SET_NULL, CASCADE, PROTECT, Manager, QuerySet, Q)
 from django.utils.timezone import now
 from django import db
@@ -164,6 +164,7 @@ class Campaign(Model):
     #active = BooleanField()  # shortcut for filtering current timerange
     fromtime = DateTimeField()
     totime = DateTimeField()
+    vote_date = DateField()
     country = CharField(max_length=2)
     region = CharField(max_length=6, null=True)
     mokrug = IntegerField(null=True) # Муниципльный округ
