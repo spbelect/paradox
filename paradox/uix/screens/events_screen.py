@@ -74,10 +74,16 @@ class EventsScreen(Screen):
         #events = 
         
     def restore_past_events(self):
+        for item in self.ids.content.children[:]:
+            self.ids.content.remove_widget(item)
+            
         for event in InputEvent.objects.order_by('time_created'):
             self.add_event(event)
 
     def add_event(self, event):
+        if event.input_id not in state.get('inputs', {}):
+            return
+        
         uptime = event.time_updated.astimezone()
         if self.last_uik != event.uik or self.last_region != event.region:
             region = state.regions.get(event.region, {}).get('name')

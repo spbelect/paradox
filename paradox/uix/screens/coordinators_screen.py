@@ -44,17 +44,20 @@ Builder.load_string('''
             padding: '10dp'
 
             Label:
-                #pos_hint: {'top': 1}
-                #pos: self.parent.pos
                 id: loader
                 text: "Координаторы обновляются..."
                 height: dp(40)
                 opacity: 1
                 font_size: sp(18)
-                #width: self.parent.width
-                #size_hint_y: None
-                #size: self.parent.size
                 background_color: wheat4
+                
+            Label:
+                id: hint
+                text: ""
+                height: dp(40)
+                opacity: 1
+                font_size: sp(18)
+                #background_color: wheat4
             
             VBox:
                 spacing: '50dp'
@@ -164,11 +167,18 @@ class CoordinatorsScreen(Screen):
                     continue
                 self.ids.content.add_widget(CoordinatorItem(coordinator=coord))
             
-    @on('state.region')
+    @on('state.region', 'state.uik')
     def show_current(self):
+        if not state.get('region'):
+            self.ids.hint.text = 'Регион не выбран'
+            return
+        if not state.get('uik'):
+            self.ids.hint.text = 'УИК не выбран'
+            return
+        self.ids.hint.text = ''
         #from paradox.models import Campaign, Coordinator
         campaigns = Campaign.objects.positional().current()
-        #logger.debug(f'Active campaigns: {campaigns.values()}')
+        logger.debug(f'Active campaigns: {campaigns.values()}')
         self.show(Coordinator.objects.filter(campaigns__in=campaigns))
     
     def show_loader(self, f):

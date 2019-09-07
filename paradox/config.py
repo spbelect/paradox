@@ -11,7 +11,7 @@ DEBUG = False
 
 SENTRY = True
 
-version = '2.0'
+version = '2.2'
 
 try:
     from .config_local import *

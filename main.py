@@ -379,6 +379,9 @@ async def on_start(app):
         if not state.region == state.regions[state.region.id]:
             state.region = state.regions[state.region.id]
     
+    uix.events_screen.restore_past_events()
+    logger.info('Restored past events (fin).')
+    
     asyncio.create_task(client.event_send_loop())
     asyncio.create_task(client.event_image_send_loop())
     app.app_has_started = True

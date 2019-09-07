@@ -77,6 +77,7 @@ class Input(Widget):
         self.show_dependants()
 
     def show_dependants(self):
+        #logger.debug(f"{self.json['label']}, {self.json.get('dependants', [])}")
         for dep in self.json.get('dependants', []):
             if dep.get('value') == self.value:
                 for input in Input.instances.filter(input_id=dep['iid']):
@@ -172,6 +173,7 @@ class Input(Widget):
         elif self.complaint:
             self.remove_widget(self.complaint)
             self.complaint = None
+        self.show_dependants()
         return True
 
     def __del__(self):
@@ -217,10 +219,11 @@ async def restore_past_events():
     if not (state.get('uik') and state.get('region')):
         return
     filter = Q(uik=state.uik, region=state.region.id, time_created__gt=now()-timedelta(days=2))
-    events = InputEvent.objects.filter(filter).order_by('input_id', 'time_created')
-    logger.info(f'Restoring {events.count()} past events for {state.region.name} УИК {state.uik}')
+    events = list(InputEvent.objects.filter(filter).order_by('input_id'))
+    logger.info(f'Restoring {len(events)} past events for {state.region.name} УИК {state.uik}')
     for iid, events in groupby(events, key=lambda x: x.input_id):
+        e = sorted(events, key=lambda x: x.time_created)
         for input in Input.instances.filter(input_id=iid):
-            await input.set_past_events(list(events))
+            await input.set_past_events(e)
             await sleep(0.05)
             

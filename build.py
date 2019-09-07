@@ -39,7 +39,7 @@ print(version)
 #@option('--loglevel', '-l', default='INFO',
         #type=click.Choice(list(logging._nameToLevel), case_sensitive=False))
 @option('--arch', default='armeabi-v7a', envvar='ANDROID_ARCH',
-        type=click.Choice(['armeabi-v7a', 'x86']))
+        type=click.Choice(['armeabi-v7a', 'arm64-v8a', 'x86']))
 @option('--java_home', envvar='JAVA_HOME')
 @option('--keypassword', envvar='KEYSTORE_PASSWORD')
 @option('--sdk_dir', envvar='ANDROIDSDK')
@@ -60,7 +60,7 @@ def cli(**kwargs):
     #name = 'tst'
     state.dist = f'{name}-{state.arch}'
     #state.package = f'paradox-{state.arch}'
-    state.package = f'{name}2dbg' if state.debug else f'{name}2'
+    state.package = f'{name}dbg' if state.debug else f'{name}'
     if state.debug:
         state.apk = f'{name}-{version}-{state.arch}-debug.apk'
     else:
@@ -103,6 +103,7 @@ def build(ctx):
     # debug build is already signed by p4a
     if not state.debug:
         ctx.invoke(sign)
+        ctx.invoke(zipalign)
 
 
 @cli.command()
@@ -111,13 +112,20 @@ def sign():
     jarsigner = f'{state.java_home}/bin/jarsigner'
     #keystore = '~/.android/debug.keystore'
     keystore = '~/.keystore'
-    #key = 'mygooglekey'
+    key = 'mygooglekey'
     #key = 'key0'
-    key = 'tomcat'
+    #key = 'tomcat'
+    #key = 'my2'
 
-    #sh(f'keytool -genkey -alias {key} -keyalg RSA')
+    #sh(f'{keytool} -genkey -alias {key} -keyalg RSA -validity 99999')
 
     sh(f'{jarsigner} -verbose:all -sigalg SHA1withRSA -digestalg SHA1 -keystore {keystore} {state.apk} {key} -storepass {state.keypassword}')
+    
+    
+@cli.command()
+def zipalign():
+    cmd = f'{state.sdk_dir}/build-tools/29.0.0/zipalign'
+    sh(f'{cmd} -f 4 {state.apk} align-{state.apk}')
 
 
 @cli.command()

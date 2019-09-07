@@ -160,10 +160,15 @@ class TikComplaintScreen(Screen):
         from paradox.uix import confirm
         event = self.complaint.input.last_event
         if not event.images.exists():
-            msg = 'Рекомендуется приложить фото жалобы. Действительно отправить пиьмо без прильжений?'
+            msg = 'Рекомендуется приложить фото жалобы. Действительно отправить письмо без приложений?'
             if not await confirm.yesno(msg):
                 return
         
+        if 'TODO' in self.text:
+            msg = 'Рекомендуется указать в жалобе на конкретное нарушение. Действительно отправить письмо?'
+            if not await confirm.yesno(msg):
+                return
+            
         event.update(
             tik_complaint_status='request_pending',
             tik_complaint_text=self.text,

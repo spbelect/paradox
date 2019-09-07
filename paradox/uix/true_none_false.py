@@ -9,6 +9,7 @@ from kivy.uix.behaviors.togglebutton import ToggleButtonBehavior
 from kivy.uix.togglebutton import ToggleButton
 from kivy.properties import StringProperty, BooleanProperty, ObjectProperty, Property
 
+from loguru import logger
 from .vbox import VBox
 from .base_input import Input
 from label import Label
@@ -129,6 +130,7 @@ class TrueNoneFalse(Input, VBox):
         self.disabled = False
         
     async def set_past_events(self, events):
+        #logger.debug(f'{self}, {self.json["label"]}, {events}')
         if events:
             #print('set past', events[-1].get_value())
             self.on_event(events[-1])
@@ -144,6 +146,7 @@ class TrueNoneFalse(Input, VBox):
             self.show_state(event.get_value())
             
     def show_state(self, value):
+        #logger.debug(f'{self}, {self.json["label"]}, {value}')
         for button in self.ids.buttons.children:
             if button.value == value:
                 button.state = 'down'

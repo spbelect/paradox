@@ -127,14 +127,14 @@ class Screens(ScreenManager):
         #return True
 
     def hook_keyboard(self, window, key, *args):
-        logging.info( "XXXXXXXXXXXXXXXXX key %d pressed" % key)
-        if platform != 'android':
-            if key == ord('p'):
-                self.profile = cProfile.Profile()
-                self.profile.enable()
-            elif key == ord('o'):
-                self.profile.disable()
-                self.profile.dump_stats('myapp.profile')
+        #logging.info( "XXXXXXXXXXXXXXXXX key %d pressed" % key)
+        #if platform != 'android':
+            #if key == ord('p'):
+                #self.profile = cProfile.Profile()
+                #self.profile.enable()
+            #elif key == ord('o'):
+                #self.profile.disable()
+                #self.profile.dump_stats('myapp.profile')
         
         if key in (1000, 27, 1073742095, 4):
             #if App.root.state == 'open':

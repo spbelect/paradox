@@ -43,7 +43,7 @@ def take_picture(filepath, on_complete):
     logger.debug(file)
     #uri = Uri.parse('file://' + filepath)
     photoURI = FileProvider.getUriForFile(
-        currentActivity, "org.spbelect.paradox2.fileprovider", file
+        currentActivity, "org.spbelect.paradox.fileprovider", file
     );
     logger.debug(photoURI)
     #parcelable = cast('android.os.Parcelable', uri)

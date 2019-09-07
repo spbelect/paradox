@@ -15,11 +15,12 @@ Builder.load_string('''
 #:import open_url paradox.utils.open_url
 
 <ClickLabel>:
-    height: height1
+    #height: height1
     size_hint_y: None
     markup: True
     color: black
     text_size: self.width, None
+    height: self.texture_size[1] + dp(10)
     halign: 'left'
     pos_hint: {'center_y':.5}
 
