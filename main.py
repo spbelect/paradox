@@ -65,12 +65,18 @@ def chmod(*a, **kw):
 os.chmod = chmod
 
 
+print(f'platform: {platform}')
 if platform == 'android':
     from jnius import autoclass, cast
     PythonActivity = autoclass('org.kivy.android.PythonActivity')
     context = cast('android.content.Context', PythonActivity.mActivity)
     file_p = cast('java.io.File', context.getFilesDir())
     os.environ['DBDIR'] = file_p.getAbsolutePath()
+elif platform == 'win':
+    data_dir = join(os.environ['APPDATA'], 'paradox')
+    if not exists(data_dir):
+        os.mkdir(data_dir)
+    os.environ.setdefault('DBDIR', data_dir)
 else:
     data_dir = os.environ.get('XDG_CONFIG_HOME', '~/.config')
     os.environ.setdefault('DBDIR', expanduser(join(data_dir, 'paradox')))
