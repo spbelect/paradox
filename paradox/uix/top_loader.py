@@ -72,7 +72,7 @@ def hide_loader():
     if hasattr(Window, 'loader'):
         Window.loader.anim.stop(Window.loader)
         Window.remove_widget(Window.loader)
-        del(Window.loader)
+        del Window.loader
 
 from inspect import iscoroutinefunction
 

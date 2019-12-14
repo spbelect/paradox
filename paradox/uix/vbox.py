@@ -36,7 +36,13 @@ class VBox(BoxLayout):
     def __init__(self, *a, **kw):
         super().__init__(*a, **kw)
         self.funbind('size', self._trigger_layout)
+        self.funbind('size_hint', self._trigger_layout)
         self.fbind('width', self._trigger_layout)
+        #self.fbind('size_hint_x', self._trigger_layout)
+        #self.fbind('width', self.set_wi)
+        
+    #def set_wi(self, *a):
+        #print('set_wi', self, self.width)
         
     def do_layout(self, *args):
         #import ipdb; ipdb.sset_trace()
@@ -54,9 +60,18 @@ class VBox(BoxLayout):
             #print('0  ', self, self.height)
             self.height = 0
             
-        result = super().do_layout(*args)
-        #print(self.height)
-        return result
+        if not self.children:
+            l, t, r, b = self.padding
+            self.minimum_size = l + r, t + b
+            return
+
+        for i, x, y, w, h in self._iterate_layout(
+                [(c.size, c.size_hint, c.pos_hint, c.size_hint_min,
+                  c.size_hint_max) for c in self.children]):
+            c = self.children[i]
+            c.pos = x, y
+            if c.size_hint_x is not None:
+                c.width = w
 
 
     def on_visible(self, *a):
@@ -73,6 +88,18 @@ class VBox(BoxLayout):
             self.disabled = True
         self.do_layout()
         
+        
+    def add_widget(self, widget, index=0, canvas=None):
+        result = super().add_widget(widget, index, canvas)
+        widget.funbind('size', self._trigger_layout)
+        widget.funbind('size_hint', self._trigger_layout)
+        widget.funbind('size_hint_max', self._trigger_layout)
+        widget.funbind('size_hint_min', self._trigger_layout)
+        #fbind = widget.fbind
+        widget.fbind('height', self._trigger_layout)
+        #widget.fbind('size_hint_y', self._trigger_layout)
+        return result
+    
     #def add_widget(self, *args):
         #super(VBox, self).add_widget(*args)
         #self.do_layout()

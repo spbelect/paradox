@@ -36,6 +36,7 @@ Builder.load_string('''
     #spacing: 0
     #visible: True
     
+    #width: 0.9 * getattr(self.parent, 'width', 10)
     #json: self.input.json
     #example_uik_complaint: self.input.json['example_uik_complaint']
     
@@ -263,6 +264,7 @@ Builder.load_string('''
         
         
         VBox:
+            
             id: refuse_person
             #visible: False
             size_hint_y: None
