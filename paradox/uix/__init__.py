@@ -5,7 +5,7 @@ from .screens.position_screen import PositionScreen
 from .screens.formlist_screen import FormListScreen
 from .screens.events_screen import EventsScreen
 from .screens.coordinators_screen import CoordinatorsScreen
-from .screens.events_screen import EventsScreen
+#from .screens.events_screen import EventsScreen
 from .screens.tik_complaint_screen import TikComplaintScreen
 
 

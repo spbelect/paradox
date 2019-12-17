@@ -166,6 +166,8 @@ async def test_render(app):
     await app.click(uix.tik_complaint.ids.back)
     
     
+    asyncio.get_running_loop()._kivyrunning = False
+    
     #print(11)
     #await app.wait_clock_frames(5000)
     #return

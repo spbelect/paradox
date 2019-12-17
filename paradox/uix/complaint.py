@@ -594,6 +594,10 @@ class Complaint(VBox):
         
     def context(self):
         #event = self.input.last_event
+        role = roles.get(self.input.last_event.role)
+        if not role:
+            # Если роль была Видеонаблюдатель - он не может подавать ж
+            role = roles['nabludatel']
         return dict(
             event=self.input.last_event,
             date=self.input.last_event.time_created.strftime('%d.%m.%Y'),
@@ -602,7 +606,7 @@ class Complaint(VBox):
             state=state, 
             whom2 = whom2[self.ids.refuse_person_status.value], 
             whom=whom[self.ids.refuse_person_status.value],
-            role=roles[self.input.last_event.role].format(event=self.input.last_event),
+            role=role.format(event=self.input.last_event),
             region=state.regions.get(self.input.last_event.region).name
         )
     

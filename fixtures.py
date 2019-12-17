@@ -88,6 +88,7 @@ async def app():
         
                 
     patch('paradox.client.client', Mock(request=CoroutineMock(side_effect=request))).start()
+    patch('paradox.client.get_server', CoroutineMock()).start()
     gc.collect()
     if apps:
         last_app, last_request = apps.pop()

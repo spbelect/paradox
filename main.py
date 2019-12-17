@@ -135,7 +135,12 @@ def exchook(type, err, traceback):
     handle_traceback(err)
     
 def aexc_handler(loop, context):
-    #TODO: which one is https://bugs.python.org/issue36709 ?
+    # TODO: 
+    # File "/home/u1/.local/share/python-for-android/build/other_builds/python3-libffi-openssl-sqlite3/arm64-v8a__ndk_target_21/python3/Lib/ssl.py", line 763, in do_handshake
+    # SSLZeroReturnError(6, 'TLS/SSL connection has been closed (EOF) (_ssl.c:1051)')
+    # TLS/SSL connection has been closed (EOF) (_ssl.c:1051)
+    # 
+    # TODO: which one is https://bugs.python.org/issue36709 ?
     #‘message’: Error message;
     #‘exception’ (optional): Exception object;
     #‘future’ (optional): asyncio.Future instance;

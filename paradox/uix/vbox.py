@@ -35,9 +35,9 @@ class VBox(BoxLayout):
 
     def __init__(self, *a, **kw):
         super().__init__(*a, **kw)
-        self.funbind('size', self._trigger_layout)
-        self.funbind('size_hint', self._trigger_layout)
-        self.fbind('width', self._trigger_layout)
+        #self.funbind('size', self._trigger_layout)
+        #self.funbind('size_hint', self._trigger_layout)
+        #self.fbind('width', self._trigger_layout)
         #self.fbind('size_hint_x', self._trigger_layout)
         #self.fbind('width', self.set_wi)
         
@@ -60,6 +60,7 @@ class VBox(BoxLayout):
             #print('0  ', self, self.height)
             self.height = 0
             
+        #return super().do_layout(*args)
         if not self.children:
             l, t, r, b = self.padding
             self.minimum_size = l + r, t + b
@@ -89,16 +90,16 @@ class VBox(BoxLayout):
         self.do_layout()
         
         
-    def add_widget(self, widget, index=0, canvas=None):
-        result = super().add_widget(widget, index, canvas)
-        widget.funbind('size', self._trigger_layout)
-        widget.funbind('size_hint', self._trigger_layout)
-        widget.funbind('size_hint_max', self._trigger_layout)
-        widget.funbind('size_hint_min', self._trigger_layout)
-        #fbind = widget.fbind
-        widget.fbind('height', self._trigger_layout)
-        #widget.fbind('size_hint_y', self._trigger_layout)
-        return result
+    #def add_widget(self, widget, index=0, canvas=None):
+        #result = super().add_widget(widget, index, canvas)
+        #widget.funbind('size', self._trigger_layout)
+        #widget.funbind('size_hint', self._trigger_layout)
+        #widget.funbind('size_hint_max', self._trigger_layout)
+        #widget.funbind('size_hint_min', self._trigger_layout)
+        ##fbind = widget.fbind
+        #widget.fbind('height', self._trigger_layout)
+        ##widget.fbind('size_hint_y', self._trigger_layout)
+        #return result
     
     #def add_widget(self, *args):
         #super(VBox, self).add_widget(*args)

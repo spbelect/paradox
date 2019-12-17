@@ -64,7 +64,7 @@ class EventLogItem(Button):
 
 
 class EventsScreen(Screen):
-    instances = InstanceManager()
+    #instances = InstanceManager()
     
     def __init__(self, *args, **kwargs):
         super(EventsScreen, self).__init__(*args, **kwargs)

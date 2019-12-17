@@ -117,16 +117,16 @@ class Choices(Button):
             self.value = None
 
     def add_widget(self, child):
-        self.modal.ids['list'].add_widget(child)
+        self.modal.ids.list.add_widget(child)
 
     def remove_choice(self, value):
-        for child in self.modal.ids['list'].children[:]:
+        for child in self.modal.ids.list.children[:]:
             if child.value == value:
-                self.modal.ids['list'].remove_widget(child)
+                self.modal.ids.list.remove_widget(child)
                 break
 
     def choices(self):
-        return self.modal.ids['list'].children[:]
+        return self.modal.ids.list.children[:]
     
     def do_input(self, choice):
         logger.debug(f'{choice} value={choice.value}')
@@ -137,46 +137,8 @@ class Choices(Button):
 class ChoicesModal(ModalView):
     choices = ObjectProperty()
 
-
-    #def on__anim_alpha(self, instance, value):
-        #if value == 0 and self._window is not None:
-            #self._real_remove_widget()
-
-    #def _real_remove_widget(self):
-        #if self._window is None:
-            #return
-        #self._window.remove_widget(self)
-        #self._window.unbind(
-            #on_resize=self._align_center,
-            #on_keyboard=self._handle_keyboard)
-
-    #def open(self, *largs):
-        #'''Show the view window from the :attr:`attach_to` widget. If set, it
-        #will attach to the nearest window. If the widget is not attached to any
-        #window, the view will attach to the global
-        #:class:`~kivy.core.window.Window`.
-        #'''
-        #self._window = self._search_window()
-        #self._window.add_widget(self)
-        #self._window.bind(
-            #on_resize=self._align_center,
-            #on_keyboard=self._handle_keyboard)
-
-    #def __init__(self, *args, **kwargs):
-        #super(ChoicesModal, self).__init__(*args, **kwargs)
-        #if self._window is not None:
-            ##Logger.warning('ModalView: you can only open once.')
-            #return
-        ## search window
-        #if not self._window:
-            ##Logger.warning('ModalView: cannot open view, no window found.')
-            #return
-        #self.center = self._window.center
-        #self.fbind('center', self._align_center)
-        #self.fbind('size', self._align_center)
-
     def on_touch_down(self, touch):
-        if self.ids['scrollview'].effect_y.velocity > 0:
+        if self.ids.scrollview.effect_y.velocity > 0:
             # The touch stops scrolling
             touch.ud['sv.stopped'] = True
         return super(ChoicesModal, self).on_touch_down(touch)
@@ -204,8 +166,8 @@ class ChoicesModal(ModalView):
         stopped = touch.ud.get('sv.stopped', False)
         if (not stopped and not scrolled):
             touch.push()
-            touch.apply_transform_2d(self.ids['scrollview'].to_local)
-            for child in self.ids['list'].children:
+            touch.apply_transform_2d(self.ids.scrollview.to_local)
+            for child in self.ids.list.children:
                 if child.collide_point(touch.x, touch.y):
                     self.choices.do_input(child)
                     #self.choices.input_value = child.value

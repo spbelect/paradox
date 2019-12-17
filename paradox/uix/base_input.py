@@ -47,48 +47,58 @@ class Input(Widget):
             
     async def set_past_events(self, events):
         #await sleep(0.02)
-        if events:
-            if self.last_event == list(events)[-1]:
-                return
-            self.last_event = list(events)[-1]
-            if self.last_event.revoked:
-                self.value = None
-            else:
-                self.value = self.last_event.get_value()
-                
-            if self.last_event.alarm and not self.last_event.revoked \
-               and state.get('role') not in ('other', 'videonabl'):
-                #self.form.load_finished = False
-                #await sleep(3)
-                if not self.complaint:
-                    self.complaint = Complaint(input=self)
-                    self.add_widget(self.complaint)
-                logger.debug(f'Restoring complaint of past event, input: {self.json["input_id"]}. Event timestamp={self.last_event.time_created} value={self.last_event.get_value()}')
-                await self.complaint.on_event(self.last_event)
-                #self.form.load_finished = True
-            elif self.complaint:
-                self.remove_widget(self.complaint)
-                self.complaint = None
-        else:
+        if not events:
             self.value = None
             if self.complaint:
                 self.remove_widget(self.complaint)
                 self.complaint = None
+            self.show_dependants()
+            return
+        
+        if self.last_event == list(events)[-1]:
+            return
+        self.last_event = list(events)[-1]
+        if self.last_event.revoked:
+            self.value = None
+        else:
+            self.value = self.last_event.get_value()
+            
+        if self.last_event.alarm and not self.last_event.revoked \
+            and state.get('role') not in ('other', 'videonabl'):
+            #self.form.load_finished = False
+            #await sleep(3)
+            if not self.complaint:
+                self.complaint = Complaint(input=self)
+                self.add_widget(self.complaint)
+            logger.debug(f'Restoring complaint of past event, input: {self.json["input_id"]}. Event timestamp={self.last_event.time_created} value={self.last_event.get_value()}')
+            await self.complaint.on_event(self.last_event)
+            #self.form.load_finished = True
+        elif self.complaint:
+            self.remove_widget(self.complaint)
+            self.complaint = None
+            
         self.show_dependants()
 
     def show_dependants(self):
-        #logger.debug(f"{self.json['label']}, {self.json.get('dependants', [])}")
+        if self.json.get('dependants'):
+            logger.debug(f"{self.json['label']}, {self.json['dependants']}")
         for dep in self.json.get('dependants', []):
             if dep.get('value') == self.value:
                 for input in Input.instances.filter(input_id=dep['iid']):
-                    input.show()
+                    #input.show()
+                    #input.disabled = False
+                    input.visible = True
                 continue
             if dep.get('range') and (dep['range'][0] <= self.value <= dep['range'][1]):
                 for input in Input.instances.filter(input_id=dep['iid']):
-                    input.show()
+                    #input.show()
+                    #input.disabled = False
+                    input.visible = True
                 continue
             for input in Input.instances.filter(input_id=dep['iid']):
-                input.hide()
+                #input.disabled = True
+                input.visible = False
+                #input.hide()
                 
     def show_help(self):
         uix.screenmgr.show_handbook(self.json['label'], self.json['fz67_text'])
@@ -136,6 +146,9 @@ class Input(Widget):
                 elif 'gt' in self.json['alarm']:
                     alarm = bool(int(value) > self.json['alarm'].get('gt'))
                 
+            #if alarm:
+                #logger.info(f'alarm!')
+                
             event = InputEventt.objects.create(
                 input_id=self.input_id,
                 input_label=self.json['label'],
@@ -163,7 +176,9 @@ class Input(Widget):
            and state.get('role') not in ('other', 'videonabl'):
             #self.form.load_finished = False
             #await sleep(3)
+            #print(self.complaint)
             if not self.complaint:
+                #logger.info(f'complaint!')
                 self.complaint = Complaint(input=self)
                 self.add_widget(self.complaint)
             #print(4343)
