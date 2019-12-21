@@ -47,6 +47,16 @@ from fixtures import app
         
 #class ZZMyTestCase(GraphicUnitTest):
 
+async def retry(fn, *args, **kw):
+    for x in range(30):
+        res = fn(*args, **kw)
+        if res:
+            return res
+        await sleep(0.1)
+    else:
+        raise Exception(f'retry failed: {fn} {args!r} {kw!r}')
+    
+    
 async def get(widget, **kwargs):
     for x in range(30):
         res = list(widget.instances.filter(**kwargs))
@@ -81,42 +91,41 @@ async def test_render(app):
     from app_state import state
     state._raise_all = True
     
-    
     from paradox import uix
-    from paradox.uix.screens.position_screen import RegionChoice, RoleChoice
+    #from paradox.uix.screens.position_screen import RegionChoice, RoleChoice
     from paradox.uix.screens.formlist_screen import FormListItem
-    from paradox.uix.base_input import Input
+    from paradox.uix.quiz_widgets.base import QuizWidget
     from paradox.uix.complaint import ComplaintStatusChoice
     
-    ###await sleep(10)
-    ###await app.wait_clock_frames(500)
-    #await app.click(uix.formlist.ids.menu_button)
+    ##await sleep(10)
+    ##await app.wait_clock_frames(500)
+    await app.click(uix.formlist.ids.menu_button)
     
-    #await app.click(uix.sidepanel.ids.region)
+    await app.click(uix.sidepanel.ids.region)
+    #print(uix.position.ids.region_choices)
     
-    #await app.click(uix.position.ids.region_choices)
+    await app.click(uix.position.ids.regions)
     
-    #await app.click(await get(RegionChoice, value='ru_47'))
+    await app.click(await retry(uix.position.ids.regions.getchoice, 'ru_47'))
     
-    #await app.click(uix.position.ids.role_choices)
-    #await app.click(await get(RoleChoice, value='smi'))
+    await app.click(uix.position.ids.roles)
+    await app.click(uix.position.ids.roles.getchoice('smi'))
     
-    #await app.click(uix.position.ids.uik)
-    #await app.text_input('1803')
+    await app.click(uix.position.ids.uik)
+    await app.text_input('1803')
+        
+    await app.click(uix.position.ids.next)
     
-    
-    #await app.click(uix.position.ids.next)
-    
-    #await app.click(uix.userprofile.ids.first_name)
-    #await app.text_input('name')
-    #await app.click(uix.userprofile.ids.last_name)
-    #await app.text_input('famil')
-    #await app.click(uix.userprofile.ids.email)
-    #await app.text_input('email@ya.ru')
-    ##await app.text_input('emailya.ru')
-    #await app.click(uix.userprofile.ids.phone)
-    #await app.text_input('9061234567')
-    #await app.click(uix.userprofile.ids.next)
+    await app.click(uix.userprofile.ids.first_name)
+    await app.text_input('name')
+    await app.click(uix.userprofile.ids.last_name)
+    await app.text_input('famil')
+    await app.click(uix.userprofile.ids.email)
+    await app.text_input('email@ya.ru')
+    #await app.text_input('emailya.ru')
+    await app.click(uix.userprofile.ids.phone)
+    await app.text_input('9061234567')
+    await app.click(uix.userprofile.ids.next)
     
     state.update(
         profile=dict(email='a@ya.ru', first_name='2', last_name='3', phone='4', middle_name='5', telegram=''),
@@ -127,20 +136,20 @@ async def test_render(app):
     
     await app.click(await get(FormListItem, id='1'))
     
-    input = await get(Input, input_id='i1')
-    await app.click(input.ids.no)
+    quizwidget = await get(QuizWidget, question_id='i1')
+    await app.click(quizwidget.ids.no)
     
     
     #complaint = 
-    await app.click(input.complaint.ids.uik_complaint_status)
+    await app.click(quizwidget.complaint.ids.uik_complaint_status)
     
     await app.click(await get(ComplaintStatusChoice, value='refuse_to_accept'))
     
     fromscreen = uix.screenmgr.get_screen('form_1')
-    fromscreen.ids.scrollview.scroll_to(input.complaint.ids.preview_tik_complaint)
+    fromscreen.ids.scrollview.scroll_to(quizwidget.complaint.ids.preview_tik_complaint)
     await app.wait_clock_frames(50)  # scroll animation
     
-    await app.click(input.complaint.ids.preview_tik_complaint)
+    await app.click(quizwidget.complaint.ids.preview_tik_complaint)
     
     uix.tik_complaint.ids.scrollview.scroll_to(uix.tik_complaint.ids.edit_button)
     await app.wait_clock_frames(50)  # scroll animation

@@ -19,7 +19,7 @@ import httpx
 
 from paradox import uix
 from paradox.uix import newversion_dialog
-from .models import Campaign, Coordinator, InputEvent, InputEventImage, InputEventUserComment
+from .models import Campaign, Coordinator, Answer, AnswerImage, AnswerUserComment
 from . import config
 from . import utils
 
@@ -249,7 +249,7 @@ async def send_position():
 
 async def _put_image(image):
     try:
-        response = await api_request('PUT', f'input_events/{image.event_id}/images/{image.md5}', {
+        response = await api_request('PUT', f'quiz_answers/{image.event_id}/images/{image.md5}', {
             #'type': image.type,
             #'time_created': image.time_created,
             'deleted': image.deleted,
@@ -267,15 +267,15 @@ async def _put_image(image):
     image.update(send_status='sent', time_sent=now())
 
 
-async def event_image_send_loop():
+async def answer_image_send_loop():
     while True:
-        waiting = InputEventImage.objects.filter(event__time_sent__isnull=True).count()
+        waiting = AnswerImage.objects.filter(event__time_sent__isnull=True).count()
         
         topost = Q(time_sent__isnull=True) & Q(event__time_sent__isnull=False)
-        topost = InputEventImage.objects.filter(topost).exclude(deleted=True)
+        topost = AnswerImage.objects.filter(topost).exclude(deleted=True)
         
         toput = Q(time_sent__isnull=False) & Q(time_sent__lt=F('time_updated'))
-        toput = InputEventImage.objects.filter(toput)
+        toput = AnswerImage.objects.filter(toput)
         
         logger.info(f'{topost.count()} images to create. {toput.count()} images to update. {waiting} waiting.')
         
@@ -323,7 +323,7 @@ async def event_image_send_loop():
                 continue
             
             try:
-                response = await api_request('POST', f'input_events/{image.event_id}/images/', {
+                response = await api_request('POST', f'quiz_answers/{image.event_id}/images/', {
                     'type': image.type,
                     'timestamp': image.time_created.isoformat(),
                     'deleted': image.deleted,
@@ -346,76 +346,76 @@ async def event_image_send_loop():
         await sleep(10)
             
             
-async def _put_event(event):
+async def _put_answer(answer):
     try:
-        response = await api_request('PUT', f'input_events/{event.id}/', {
-            'revoked': event.revoked,
-            'uik_complaint_status': event.uik_complaint_status,
-            'tik_complaint_status': event.tik_complaint_status,
-            'tik_complaint_text': event.tik_complaint_text,
+        response = await api_request('PUT', f'quiz_answers/{answer.id}/', {
+            'revoked': answer.revoked,
+            'uik_complaint_status': answer.uik_complaint_status,
+            'tik_complaint_status': answer.tik_complaint_status,
+            'tik_complaint_text': answer.tik_complaint_text,
         })
     except Exception as e:
-        event.update(send_status='put_exception')
+        answer.update(send_status='put_exception')
         if getattr(state, '_raise_all', None):
             raise e
         return
     if response.status_code == 404:
-        # No such input or event
+        # No such question or answer
         logger.info(f'404, {response!r} {response.json()}')
-        event.update(send_status='sent', time_sent=now())
+        answer.update(send_status='sent', time_sent=now())
         return
     elif not response.status_code == 200:
         try:
             logger.info(f'{response!r} {response.json()}')
         except:
             logger.info(repr(response))
-        event.update(send_status=f'put_http_{response.status_code}')
+        answer.update(send_status=f'put_http_{response.status_code}')
         return
     
     extra = {}
-    if event.tik_complaint_status == 'request_pending':
+    if answer.tik_complaint_status == 'request_pending':
         extra = {'tik_complaint_status': 'request_sent'}
-    event.update(send_status='sent', time_sent=now(), **extra)
+    answer.update(send_status='sent', time_sent=now(), **extra)
 
 
-async def event_send_loop():
+async def answer_send_loop():
     while True:
-        toput = InputEvent.objects.filter(time_sent__isnull=False, time_sent__lt=F('time_updated'))
-        topost = InputEvent.objects.filter(time_sent__isnull=True)
-        logger.info(f'{topost.count()} events to post. {toput.count()} events to put.')
+        toput = Answer.objects.filter(time_sent__isnull=False, time_sent__lt=F('time_updated'))
+        topost = Answer.objects.filter(time_sent__isnull=True)
+        logger.info(f'{topost.count()} answers to post. {toput.count()} answers to put.')
         
-        for event in chain(topost, toput):
-            uix_inputs = uix.Input.instances.filter(input_id=event.input_id)
-            uix_inputs.on_send_start(event)
+        for answer in chain(topost, toput):
+            quizwidgets = uix.QuizWidget.instances.filter(question_id=answer.question_id)
+            quizwidgets.on_send_start(answer)
             await sleep(0.1)
             
-        for event in toput:
+        for answer in toput:
             await sleep(0.2)
-            uix_inputs = uix.Input.instances.filter(input_id=event.input_id)
-            await _put_event(event)
-            uix_inputs.on_send_success(event)
+            quizwidgets = uix.QuizWidget.instances.filter(question_id=answer.question_id)
+            await _put_answer(answer)
+            quizwidgets.on_send_success(answer)
             
-        for event in topost:
-            uix_inputs = uix.Input.instances.filter(input_id=event.input_id)
+        for answer in topost:
+            quizwidgets = uix.QuizWidget.instances.filter(question_id=answer.question_id)
             try:
-                response = await api_request('POST', 'input_events/', {
-                    'id': event.id,
-                    'input_id': event.input_id,
-                    'value': event.get_value(),
-                    'uik_complaint_status': event.uik_complaint_status,
-                    'tik_complaint_status': event.tik_complaint_status,
-                    'tik_complaint_text': event.tik_complaint_text,
-                    'region': event.region,
-                    'uik': event.uik,
-                    'role': event.role,
-                    'alarm': event.alarm,
-                    'revoked': event.revoked,
-                    'timestamp': event.time_created.isoformat(),
+                response = await api_request('POST', 'quiz_answers/', {
+                    'id': answer.id,
+                    'question_id': answer.question_id,
+                    'value': answer.value(),
+                    'uik_complaint_status': answer.uik_complaint_status,
+                    'tik_complaint_status': answer.tik_complaint_status,
+                    'tik_complaint_text': answer.tik_complaint_text,
+                    'region': answer.region,
+                    'uik': answer.uik,
+                    'role': answer.role,
+                    'alarm': answer.alarm,
+                    'revoked': answer.revoked,
+                    'timestamp': answer.time_created.isoformat(),
                 })
             except Exception as e:
                 logger.error(repr(e))
-                event.update(send_status='post_exception')
-                uix_inputs.on_send_error(event)
+                answer.update(send_status='post_exception')
+                quizwidgets.on_send_error(answer)
                 #print(state.get('_raise_all'))
                 if getattr(state, '_raise_all', None):
                     raise e
@@ -423,18 +423,19 @@ async def event_send_loop():
             if response.status_code == 404:
                 # No such input
                 logger.info(f'404, {response.json()}')
-                event.update(send_status='sent', time_sent=now())
-                uix_inputs.on_send_success(event)
+                answer.update(send_status='sent', time_sent=now())
+                quizwidgets.on_send_success(answer)
                 continue
             if not response.status_code == 201:
                 logger.info(repr(response))
-                event.update(send_status=f'post_http_{response.status_code}')
-                uix_inputs.on_send_error(event)
+                answer.update(send_status=f'post_http_{response.status_code}')
+                quizwidgets.on_send_error(answer)
                 continue
-            event.update(send_status='sent', time_sent=now())
-            uix_inputs.on_send_success(event)
+            answer.update(send_status='sent', time_sent=now())
+            quizwidgets.on_send_success(answer)
             await sleep(0.1)
         await sleep(10)
+        
         
 mock_campaigns = {
     'campaigns': {
@@ -611,7 +612,7 @@ async def update_elect_flags():
         
         #for form in formdata:
             #for input in form['inputs']:
-                #state.inputs[input['id']] = input
+                #state.questions[input['id']] = input
                     
         #if not state.forms.campaign[campaign.id] == formdata:
             #state.forms.campaign[campaign.id] = formdata

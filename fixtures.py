@@ -47,7 +47,7 @@ async def app():
                 json=lambda: [
                     {'form_id': '1', 'name': 'ДО НАЧАЛА', 'inputs': [
                         {
-                            'input_id': 'i1', 
+                            'question_id': 'i1', 
                             'label': 'Вам предоставили', 
                             'input_type': 'MULTI_BOOL',
                             "alarm": { "eq": False },
@@ -77,9 +77,9 @@ async def app():
             return Mock(status_code=200, json=lambda: {})
         elif url == f'/api/v2/userprofile/':
             return Mock(status_code=200, json=lambda: {})
-        elif url == f'/api/v2/input_events/':
+        elif url == f'/api/v2/quiz_answers/':
             return Mock(status_code=201, json=lambda: {})
-        elif url.startswith(f'/api/v2/input_events/'):
+        elif url.startswith(f'/api/v2/quiz_answers/'):
             return Mock(status_code=200, json=lambda: {})
         else:
             raise Exception(f'unknown url {url}')

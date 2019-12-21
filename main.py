@@ -295,7 +295,7 @@ mock_forms = [{
       {
         "help_text": "aoejgoa \n",
         "input_type": "MULTI_BOOL",
-        "input_id": "ecc1deb3-5fe7-48b3-a07c-839993e4563b",
+        "question_id": "ecc1deb3-5fe7-48b3-a07c-839993e4563b",
         "label": "Неиспользованные бюллетени убраны в сейф или лежат на видном месте.",
         "alarm": { "eq": False },
         "example_uik_complaint": "это пример"
@@ -303,7 +303,7 @@ mock_forms = [{
       {
         "help_text": "pwijgpw \n",
         "input_type": "MULTI_BOOL",
-        "input_id": "b87436e0-e7f2-4453-b364-a952c0c7842d",
+        "question_id": "b87436e0-e7f2-4453-b364-a952c0c7842d",
         "label": "Этот только досрочка",
         "elect_flags": ["dosrochka"],
         "example_uik_complaint": "это пример"
@@ -360,7 +360,7 @@ async def on_start(app):
     #formdata = mock_forms
     
     for form in formdata:
-        state.inputs.update((x['input_id'], x) for x in form['inputs'])
+        state.questions.update((x['question_id'], x) for x in form['inputs'])
             
     state.setdefault('forms', {})
     if not state.forms['general'].get(state.country) == formdata:
@@ -394,8 +394,8 @@ async def on_start(app):
     uix.events_screen.restore_past_events()
     logger.info('Restored past events (fin).')
     
-    asyncio.create_task(client.event_send_loop())
-    asyncio.create_task(client.event_image_send_loop())
+    asyncio.create_task(client.answer_send_loop())
+    asyncio.create_task(client.answer_image_send_loop())
     app.app_has_started = True
     logger.info('Startup finished.')
 
@@ -444,12 +444,12 @@ async def xb():
     import paradox.utils
     import requests_async as requests
     
-    from paradox.models import InputEventImage
+    from paradox.models import AnswerImage
     #import paradox.utils
     #import requests_async as requests
     
     #state.app_id='123'
-    image = InputEventImage.objects.first()
+    image = AnswerImage.objects.first()
     md5 = paradox.utils.md5_file('4.jpg')
     try:
         response = await requests.post('http://127.0.0.1:8000/api/v2/upload_request/', timeout=0.1, json={
@@ -486,12 +486,12 @@ async def xb():
 
 async def upl():
     from os.path import basename
-    from paradox.models import InputEventImage
+    from paradox.models import AnswerImage
     import paradox.utils
     import requests_async as requests
     
     state.app_id='123'
-    image = InputEventImage.objects.first()
+    image = AnswerImage.objects.first()
     
     #md5 = paradox.utils.md5_file(image.filepath)
     #logger.info(f'{image.md5}, {md5}')

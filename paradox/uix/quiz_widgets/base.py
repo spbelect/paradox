@@ -11,26 +11,26 @@ from kivy.clock import Clock
 from kivy.uix.widget import Widget
 from loguru import logger
 
-from paradox.models import InputEvent, BoolInputEvent, IntegerInputEvent, InputEventImage
+from paradox.models import Answer, BoolAnswer, IntegerAnswer, AnswerImage
 from paradox import uix
 from paradox import utils
 from paradox.uix import confirm
 from paradox.uix.complaint import Complaint
 
 
-class Input(Widget):
+class QuizWidget(Widget):
     json = ObjectProperty()
     form = ObjectProperty()
     value = ObjectProperty(None, allownone=True)
-    #last_event = ObjectProperty(None, allownone=True)
+    answer = ObjectProperty(None, allownone=True)
     instances = InstanceManager()
     flags_match = BooleanProperty(True)
     
     def __init__(self, *args, **kwargs):
         self.complaint = None
-        self.last_event = None
-        super(Input, self).__init__(*args, **kwargs)
-        self.input_id = self.json['input_id']
+        #self.answer = None
+        super().__init__(*args, **kwargs)
+        self.question_id = self.json['question_id']
         self.apply_flags()
 
     @on('state.elect_flags')
@@ -45,9 +45,9 @@ class Input(Widget):
             #self.hide()
             self.flags_match = False
             
-    async def set_past_events(self, events):
+    async def set_past_answers(self, answers):
         #await sleep(0.02)
-        if not events:
+        if not answers:
             self.value = None
             if self.complaint:
                 self.remove_widget(self.complaint)
@@ -55,55 +55,57 @@ class Input(Widget):
             self.show_dependants()
             return
         
-        if self.last_event == list(events)[-1]:
+        if self.answer == list(answers)[-1]:
             return
-        self.last_event = list(events)[-1]
-        if self.last_event.revoked:
+        self.answer = list(answers)[-1]
+        if self.answer.revoked:
             self.value = None
         else:
-            self.value = self.last_event.get_value()
+            self.value = self.answer.value()
             
-        if self.last_event.alarm and not self.last_event.revoked \
+        if self.answer.alarm and not self.answer.revoked \
             and state.get('role') not in ('other', 'videonabl'):
             #self.form.load_finished = False
             #await sleep(3)
             if not self.complaint:
-                self.complaint = Complaint(input=self)
+                self.complaint = Complaint(quizwidget=self)
                 self.add_widget(self.complaint)
-            logger.debug(f'Restoring complaint of past event, input: {self.json["input_id"]}. Event timestamp={self.last_event.time_created} value={self.last_event.get_value()}')
-            await self.complaint.on_event(self.last_event)
+            #logger.debug(f'Restoring complaint of past answer, quizwidget: {self.json["question_id"]}. Event timestamp={self.answer.time_created} value={self.answer.value()}')
+            await self.complaint.on_event(self.answer)
             #self.form.load_finished = True
         elif self.complaint:
             self.remove_widget(self.complaint)
             self.complaint = None
             
-        self.show_dependants()
+        self.revise_dependants()
+        
+    def revise_complaint(self):
 
-    def show_dependants(self):
+    def revise_dependants(self):
         if self.json.get('dependants'):
             logger.debug(f"{self.json['label']}, {self.json['dependants']}")
         for dep in self.json.get('dependants', []):
             if dep.get('value') == self.value:
-                for input in Input.instances.filter(input_id=dep['iid']):
-                    #input.show()
-                    #input.disabled = False
-                    input.visible = True
+                for quizwidget in QuizWidget.instances.filter(question_id=dep['iid']):
+                    #quizwidget.show()
+                    #quizwidget.disabled = False
+                    quizwidget.visible = True
                 continue
             if dep.get('range') and (dep['range'][0] <= self.value <= dep['range'][1]):
-                for input in Input.instances.filter(input_id=dep['iid']):
-                    #input.show()
-                    #input.disabled = False
-                    input.visible = True
+                for quizwidget in QuizWidget.instances.filter(question_id=dep['iid']):
+                    #quizwidget.show()
+                    #quizwidget.disabled = False
+                    quizwidget.visible = True
                 continue
-            for input in Input.instances.filter(input_id=dep['iid']):
-                #input.disabled = True
-                input.visible = False
-                #input.hide()
+            for quizwidget in QuizWidget.instances.filter(question_id=dep['iid']):
+                #quizwidget.disabled = True
+                quizwidget.visible = False
+                #quizwidget.hide()
                 
     def show_help(self):
         uix.screenmgr.show_handbook(self.json['label'], self.json['fz67_text'])
         
-    async def on_input(self, value):
+    async def new_answer(self, value):
         if uix.position.show_errors():
             self.show_state(self.value)
             uix.screenmgr.push_screen('position')
@@ -115,9 +117,9 @@ class Input(Widget):
             return False
 
         if self.json['input_type'] == 'MULTI_BOOL':
-            InputEventt = BoolInputEvent
+            AnswerType = BoolAnswer
         elif self.json['input_type'] == 'NUMBER':
-            InputEventt = IntegerInputEvent
+            AnswerType = IntegerAnswer
             value = int(value) if value else None
                 
         if value == self.value:
@@ -126,18 +128,18 @@ class Input(Widget):
         if self.value is not None:
             msg = f'Отозвать предыдущее значение?'
             if self.json['input_type'] == 'NUMBER':
-                msg += f' ({self.last_event.humanized_value()})'
+                msg += f' ({self.answer.value()})'
             if not await uix.confirm.yesno(msg):
-                self.show_state(self.last_event.get_value())
+                self.show_state(self.answer.value())
                 return False
             
-            event = InputEvent.objects.get(id=self.last_event.id)
-            event.update(revoked=True, time_updated=now())
-            uix.events_screen.add_event(event)
-            logger.info(f'Revoke event input: {self.json["input_id"]}. New value: {value}')
+            answer = Answer.objects.get(id=self.answer.id)
+            answer.update(revoked=True, time_updated=now())
+            uix.events_screen.add_event(answer)
+            logger.info(f'Revoke answer input: {self.json["question_id"]}. New value: {value}')
             
         if value is not None:
-            logger.info(f'New event input: {self.json["input_id"]}. New value: {value}')
+            logger.info(f'New answer input: {self.json["question_id"]}. New value: {value}')
             alarm = False
             if self.json.get('alarm', None):
                 #print(self.json['alarm'])
@@ -149,9 +151,9 @@ class Input(Widget):
             #if alarm:
                 #logger.info(f'alarm!')
                 
-            event = InputEventt.objects.create(
-                input_id=self.input_id,
-                input_label=self.json['label'],
+            answer = AnswerType.objects.create(
+                question_id=self.question_id,
+                question_label=self.json['label'],
                 value=value,
                 #region='ru_78',
                 #uik=55,
@@ -162,33 +164,33 @@ class Input(Widget):
                 time_updated=now()
             )
             
-            uix.events_screen.add_event(event)
+            uix.events_screen.add_event(answer)
         
         #campaigns = Campaign.objects.positional().filter(active=True, subscription='yes')
-        #event.coordinators = [x.coordinator.id for x in campaigns]
+        #answer.coordinators = [x.coordinator.id for x in campaigns]
         
         self.value = value
 
-        for input in Input.instances.filter(input_id=self.input_id):
-            input.on_save_success(event)
+        for quizwidget in QuizWidget.instances.filter(question_id=self.question_id):
+            quizwidget.on_save_success(answer)
             
-        if event.alarm and not event.revoked \
+        if answer.alarm and not answer.revoked \
            and state.get('role') not in ('other', 'videonabl'):
             #self.form.load_finished = False
             #await sleep(3)
             #print(self.complaint)
             if not self.complaint:
                 #logger.info(f'complaint!')
-                self.complaint = Complaint(input=self)
+                self.complaint = Complaint(quizwidget=self)
                 self.add_widget(self.complaint)
             #print(4343)
-            await self.complaint.on_event(event)
+            await self.complaint.on_event(answer)
             await sleep(0.6)
             #self.form.load_finished = True
         elif self.complaint:
             self.remove_widget(self.complaint)
             self.complaint = None
-        self.show_dependants()
+        self.revise_dependants()
         return True
 
     def __del__(self):
@@ -207,38 +209,38 @@ class Input(Widget):
     def show_state(self, value):
         pass
     
-    def on_send_start(self, event):
+    def on_send_start(self, answer):
         pass
     
-    def on_send_success(self, event):
-        #logger.debug(f'{self} {event} tik_complaint_status: {event.tik_complaint_status}')
-        self.last_event = event
+    def on_send_success(self, answer):
+        #logger.debug(f'{self} {answer} tik_complaint_status: {answer.tik_complaint_status}')
+        self.answer = event
 
-    def on_send_error(self, event):
+    def on_send_error(self, answer):
         pass
 
-    def on_send_fatal_error(self, event):
+    def on_send_fatal_error(self, answer):
         pass
 
-    def on_save_success(self, event):
-        #logger.debug(f'{self} {event} tik_complaint_status: {event.tik_complaint_status}')
-        self.last_event = event
+    def on_save_success(self, answer):
+        #logger.debug(f'{self} {answer} tik_complaint_status: {answer.tik_complaint_status}')
+        self.answer = event
 
-    #def on_last_event(self, *a):
-        #logger.debug(f'{self} {self.last_event} tik_complaint_status: {self.last_event.tik_complaint_status}')
+    #def on_answer(self, *a):
+        #logger.debug(f'{self} {self.answer} tik_complaint_status: {self.answer.tik_complaint_status}')
 
 
-async def restore_past_events():
-    #for input in Input.instances.all():
-        #await input.set_past_events(None)
+async def restore_past_answers():
+    #for quizwidget in QuizWidget.instances.all():
+        #await quizwidget.set_past_answers(None)
     if not (state.get('uik') and state.get('region')):
         return
     filter = Q(uik=state.uik, region=state.region.id, time_created__gt=now()-timedelta(days=2))
-    events = list(InputEvent.objects.filter(filter).order_by('input_id'))
-    logger.info(f'Restoring {len(events)} past events for {state.region.name} УИК {state.uik}')
-    for iid, events in groupby(events, key=lambda x: x.input_id):
-        e = sorted(events, key=lambda x: x.time_created)
-        for input in Input.instances.filter(input_id=iid):
-            await input.set_past_events(e)
+    answers = list(Answer.objects.filter(filter).order_by('question_id'))
+    logger.info(f'Restoring {len(answers)} past answers for {state.region.name} УИК {state.uik}')
+    for iid, answers in groupby(answers, key=lambda x: x.question_id):
+        e = sorted(answers, key=lambda x: x.time_created)
+        for quizwidget in QuizWidget.instances.filter(question_id=iid):
+            await quizwidget.set_past_answers(e)
             await sleep(0.05)
             

@@ -56,7 +56,7 @@ from .about_screen import AboutScreen
 Builder.load_string('''
 #:include constants.kv
 
-<Screens>:
+<ScreenMgr>:
     canvas.before:
         Color:
             rgba: (4, 4, 9, 1)
@@ -67,12 +67,12 @@ Builder.load_string('''
 ''')
 
 
-class Screens(ScreenManager):
+class ScreenMgr(ScreenManager):
     screen_history = ListProperty([])
     about_to_exit = BooleanProperty(False)
 
     def __init__(self, *args, **kwargs):
-        super(Screens, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         #Clock.schedule_once(self.build_screens)
         #Window.bind(on_keyboard=self.hook_keyboard2)
             #self.init()
@@ -120,7 +120,7 @@ class Screens(ScreenManager):
 
     def on_current(self, *args):
         self.about_to_exit = False
-        super(Screens, self).on_current(*args)
+        super().on_current(*args)
 
     #def hook_keyboard2(self, *args):
         #print args

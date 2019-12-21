@@ -1,4 +1,4 @@
-from .screens.screens import Screens
+from .screens.screenmgr import ScreenMgr
 
 from .screens.userprofile_screen import UserProfileScreen
 from .screens.position_screen import PositionScreen
@@ -16,12 +16,12 @@ formlist = FormListScreen(name='formlist')
 position = PositionScreen(name='position')
 userprofile = UserProfileScreen(name='userprofile')
 
-screenmgr = Screens()
+screenmgr = ScreenMgr()
 
 from .sidepanel import SidePanel
 sidepanel = SidePanel()
 
-from .base_input import Input
+from .quiz_widgets.base import QuizWidget
 #from kivy.app import App
 
 #position = None

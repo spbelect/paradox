@@ -55,7 +55,7 @@
             #"help_text": "ст. 30, п. 1\n1. На всех заседаниях комиссии, ",
             #"input_type": "MULTI_BOOL",
             #"extra_tag": None,
-            #"input_id": "5275ae82-e2c1-4351-a52c-caf7922bd728",
+            #"question_id": "5275ae82-e2c1-4351-a52c-caf7922bd728",
             #"label": "В помещении остались только члены УИК и лица, зарегистрированные в реестре"
         #}))
         #await super().async_run()

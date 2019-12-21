@@ -101,7 +101,7 @@ Builder.load_string('''
 
 class HandBookScreen(Screen):
     def show_help(self, title, text):
-        #label = input_data['label'].upper()
-        #help_text = input_data['help_text'] or imput_help_stub
+        #label = question['label'].upper()
+        #help_text = question['help_text'] or imput_help_stub
         self.ids['text'].text = f'{title.upper()}\n\n{text}'
         self.ids['scrollview'].scroll_y = 1

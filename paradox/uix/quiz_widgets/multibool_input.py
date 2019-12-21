@@ -7,7 +7,7 @@ from kivy.properties import ObjectProperty, StringProperty
 
 from ..utils import strptime
 from .vbox import VBox
-from .base_input import Input
+from . import base
 
 from button import Button
 
@@ -58,7 +58,7 @@ Builder.load_string('''
     width: 0.9 * (self.parent.width if self.parent else 10)
 
     Button:
-        id: input_label
+        id: question_label
         padding_x: dp(6)
         split_str: ' '
         text_size: self.width, None
@@ -107,7 +107,7 @@ class TrueFalseButtons(BoxLayout):
 
 class ValueLogItem(BoxLayout):
     text = StringProperty(None, allownone=True)
-    input_id = StringProperty(None, allownone=True)
+    question_id = StringProperty(None, allownone=True)
     timestamp = StringProperty(None, allownone=True)
 
     def __init__(self, *args, **kwargs):
@@ -121,7 +121,7 @@ class MoreButton(Button):
     pass
 
 
-class MultiBoolInput(Input, VBox):
+class MultiBoolInput(base.QuizWidget, VBox):
     def __init__(self, *args, **kwargs):
         
         #print(11, args, kwargs)
@@ -131,7 +131,7 @@ class MultiBoolInput(Input, VBox):
         #print(22, args, kwargs)
         self.more_button = None
 
-    def add_past_event(self, event):
+    def add_past_event(self, answer):
         try:
             self.remove_widget(self.ids['true_false_buttons'])
         except:
@@ -140,9 +140,9 @@ class MultiBoolInput(Input, VBox):
             self.remove_widget(self.more_button)
         except:
             pass
-        ts = strptime(event['timestamp'], '%Y-%m-%dT%H:%M:%S.%f')
-        text = '%s %s' % (utc_to_local(ts).strftime('%H:%M'), 'Да' if event['value'] else 'Нет')
-        self.add_widget(ValueLogItem(text=text, timestamp=ts.isoformat(), input_id=self.input_id, no_loader=True))
+        ts = strptime(answer['timestamp'], '%Y-%m-%dT%H:%M:%S.%f')
+        text = '%s %s' % (utc_to_local(ts).strftime('%H:%M'), 'Да' if answer['value'] else 'Нет')
+        self.add_widget(ValueLogItem(text=text, timestamp=ts.isoformat(), question_id=self.question_id, no_loader=True))
         self.more_button = MoreButton()
         self.more_button.bind(on_press=self.on_more)
         self.add_widget(self.more_button)
@@ -150,35 +150,35 @@ class MultiBoolInput(Input, VBox):
     def on_save_success(self, eid, timestamp, value):
         #self.values.append((timestamp, value))
         text = '%s %s' % (utc_to_local(timestamp).strftime('%H:%M'), 'Да' if value else 'Нет')
-        self.add_widget(ValueLogItem(text=text, timestamp=timestamp.isoformat(), input_id=self.input_id))
+        self.add_widget(ValueLogItem(text=text, timestamp=timestamp.isoformat(), question_id=self.question_id))
         self.more_button = MoreButton()
         self.more_button.bind(on_press=self.on_more)
         self.add_widget(self.more_button)
         self.remove_widget(self.ids['true_false_buttons'])
 
-    def _get_loader(self, event):
-        logitem = ValueLogItem.objects.get(input_id=self.input_id, timestamp=event['timestamp'])
+    def _get_loader(self, answer):
+        logitem = ValueLogItem.objects.get(question_id=self.question_id, timestamp=answer['timestamp'])
         return logitem.ids.get('loader') if logitem else None
 
-    def on_send_success(self, event):
-        loader = self._get_loader(event)
+    def on_send_success(self, answer):
+        loader = self._get_loader(answer)
         try:
             if loader:
                 loader.parent.remove_widget(loader)
         except:
             pass
 
-    def on_send_error(self, event, request, error_data):
+    def on_send_error(self, answer, request, error_data):
         try:
-            loader = self._get_loader(event)
+            loader = self._get_loader(answer)
             if loader:
                 loader.text = 'отправляется (err)'   # .encode('utf8')
         except:
             pass
 
-    def on_send_fatal_error(self, event, request, error_data):
+    def on_send_fatal_error(self, answer, request, error_data):
         try:
-            loader = self._get_loader(event)
+            loader = self._get_loader(answer)
             if loader:
                 loader.text = 'fatal err'
         except:

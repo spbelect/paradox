@@ -13,7 +13,7 @@ from kivy.uix.screenmanager import Screen
 from ...utils import strptime
 from ..vbox import VBox
 from button import Button
-from paradox.models import InputEvent
+from paradox.models import Answer
 
 
 Builder.load_string('''
@@ -77,21 +77,21 @@ class EventsScreen(Screen):
         for item in self.ids.content.children[:]:
             self.ids.content.remove_widget(item)
             
-        for event in InputEvent.objects.order_by('time_created'):
-            self.add_event(event)
+        for answer in Answer.objects.order_by('time_created'):
+            self.add_event(answer)
 
-    def add_event(self, event):
-        if event.input_id not in state.get('inputs', {}):
+    def add_event(self, answer):
+        if answer.question_id not in state.get('inputs', {}):
             return
         
-        uptime = event.time_updated.astimezone()
-        if self.last_uik != event.uik or self.last_region != event.region:
-            region = state.regions.get(event.region, {}).get('name')
+        uptime = answer.time_updated.astimezone()
+        if self.last_uik != answer.uik or self.last_region != answer.region:
+            region = state.regions.get(answer.region, {}).get('name')
             self.ids['content'].add_widget(EventLogItem(
                 halign='center', 
-                text=f'[color=#444]\n{region}\nУИК {event.uik}[/color]'
+                text=f'[color=#444]\n{region}\nУИК {answer.uik}[/color]'
             ))
-            self.last_uik, self.last_region = event.uik, event.region
+            self.last_uik, self.last_region = answer.uik, answer.region
 
         if self.last_date != uptime.date():
             self.ids['content'].add_widget(EventLogItem(
@@ -99,17 +99,17 @@ class EventsScreen(Screen):
             ))
             self.last_date = uptime.date()
 
-        #if isinstance(event['value'], bool):
-            #event['value'] = 'Да' if event['value'] else 'Нет'
+        #if isinstance(answer['value'], bool):
+            #answer['value'] = 'Да' if answer['value'] else 'Нет'
 
         uptime = uptime.strftime("%H:%M")
-        ctime = event.time_created.astimezone().strftime("%H:%M")
+        ctime = answer.time_created.astimezone().strftime("%H:%M")
         
-        if event.revoked:
-            text = f'[color=#444]{uptime}[/color] отозвано: [s]{ctime} {event.input_label}: {event.get_value()}[/s]'
+        if answer.revoked:
+            text = f'[color=#444]{uptime}[/color] отозвано: [s]{ctime} {answer.question_label}: {answer.value()}[/s]'
         else:
-            text = f'[color=#444]{uptime}[/color] {event.input_label}: {event.get_value()}'
-        item = EventLogItem(input_json=state.inputs[event.input_id], text=text)
+            text = f'[color=#444]{uptime}[/color] {answer.question_label}: {answer.value()}'
+        item = EventLogItem(input_json=state.questions[answer.question_id], text=text)
         self.ids['content'].add_widget(item)
         item.bind(on_long_press=self.on_event_press)
 

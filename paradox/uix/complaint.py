@@ -19,7 +19,7 @@ from button import Button
 from .choices import Choice
 from paradox import utils
 from .imagepicker import ImagePicker
-from paradox.models import InputEventImage, InputEvent
+from paradox.models import AnswerImage, Answer
 
 Builder.load_string('''
 #:include constants.kv
@@ -37,8 +37,8 @@ Builder.load_string('''
     #visible: True
     
     #width: 0.9 * getattr(self.parent, 'width', 10)
-    #json: self.input.json
-    #example_uik_complaint: self.input.json['example_uik_complaint']
+    #json: self.quizwidget.json
+    #example_uik_complaint: self.quizwidget.json['example_uik_complaint']
     
     Button:
         height: dp(20)
@@ -80,7 +80,7 @@ Builder.load_string('''
             font_size: dp(14)
             #he
             on_release: 
-                uix.screenmgr.show_handbook(root.input.json['label'], root.uik_complaint_text)
+                uix.screenmgr.show_handbook(root.quizwidget.json['label'], root.uik_complaint_text)
             
         Button:
             #halign: 'right'
@@ -108,7 +108,7 @@ Builder.load_string('''
     ComplaintPhotoPicker:
         id: uik_complaint_images
         type: 'uik_complaint'
-        input: root.input
+        quizwidget: root.quizwidget
         compress_quality: 40
         #on_image_picked: root.on_image_picked(filepath)
         
@@ -126,7 +126,7 @@ Builder.load_string('''
         text: 'укажите статус жалобы'
         #halign: 'left'
         
-    Choices:
+    ChoicePicker:
         id: uik_complaint_status
         height: dp(18)
         font_size: dp(18)
@@ -137,7 +137,7 @@ Builder.load_string('''
         #halign: 'left'
         on_text: self.color = black
         padding: 0, 0
-        on_input: root.on_uik_complaint_status_input(self.value)
+        on_new_pick: root.on_uik_complaint_status_input(self.value)
         size_hint_y: None
                 
         ComplaintStatusChoice:
@@ -193,9 +193,9 @@ Builder.load_string('''
         ComplaintPhotoPicker:
             id: uik_reply_images
             type: 'uik_reply'
-            input: root.input
+            quizwidget: root.quizwidget
             compress_quality: 40
-            #on_input: root.input.complaint_image_create(*args[1:])
+            #on_new_pick: root.quizwidget.complaint_image_create(*args[1:])
             
     
     VBox:
@@ -257,7 +257,7 @@ Builder.load_string('''
             ComplaintPhotoPicker:
                 id: refuse_akt_images
                 type: 'tik_complaint'
-                input: root.input
+                quizwidget: root.quizwidget
                 compress_quality: 40
                 #on_image_picked: root.on_image_picked(filepath)
             
@@ -285,7 +285,7 @@ Builder.load_string('''
                 text: 'Укажите кому подавали жалобу'
                 #halign: 'left'
                 
-            Choices:
+            ChoicePicker:
                 id: refuse_person_status
                 height: dp(18)
                 font_size: dp(18)
@@ -296,7 +296,7 @@ Builder.load_string('''
                 #halign: 'left'
                 on_text: self.color = black
                 padding: 0, 0
-                on_input: root.on_refuse_person(self.value)
+                on_new_pick: root.on_refuse_person(self.value)
                 size_hint_y: None
                         
                 RefusePersonChoice:
@@ -345,20 +345,20 @@ class RefusePersonChoice(Choice):
     
 class ComplaintPhotoPicker(ImagePicker):
     type = StringProperty()
-    input = ObjectProperty()
+    quizwidget = ObjectProperty()
     
     def on_image_picked(self, filepath):
         
         filepath = self.compress(filepath)
-        #existing = InputEventImage.objects.filter()
+        #existing = AnswerImage.objects.filter()
         logger.info(f'create image {filepath}')
-        dbimage, created = InputEventImage.objects.get_or_create(
+        dbimage, created = AnswerImage.objects.get_or_create(
             type=self.type, 
-            event=self.input.last_event,
+            answer=self.quizwidget.answer,
             filepath=filepath
         )
         
-        #logger.debug(list(InputEventImage.objects.values_list('filepath', flat=True)))
+        #logger.debug(list(AnswerImage.objects.values_list('filepath', flat=True)))
         if dbimage.deleted:
             logger.debug('undelete')
             dbimage.update(deleted=False, time_updated=now())
@@ -370,7 +370,7 @@ class ComplaintPhotoPicker(ImagePicker):
         
     def on_cross_click(self, cross):
         super().on_cross_click(cross)
-        InputEventImage.objects.get(id=cross.parent.dbid).update(
+        AnswerImage.objects.get(id=cross.parent.dbid).update(
             deleted=True,
             time_updated=now()
         )
@@ -395,11 +395,11 @@ whom2 = {
 uik_complaint_stub = '''
 Жалоба
 
-В Участковую Избирательную Комиссию {event.uik}, {region}
+В Участковую Избирательную Комиссию {answer.uik}, {region}
 От кого: {role} {profile.last_name} {profile.first_name} {profile.middle_name}.
 e-mail: {profile.email}
 
-Я, {profile.last_name} {profile.first_name}, находясь в помещении УИК {event.uik} {date} приблизительно в {event.time_created.hour} часов стал свидетелем нарушения [TODO: нарушения чего, по каждому инпуту]. Прошу рассмотреть жалобу на заседании комиссии и устранить нарушение. 
+Я, {profile.last_name} {profile.first_name}, находясь в помещении УИК {answer.uik} {date} приблизительно в {answer.time_created.hour} часов стал свидетелем нарушения [TODO: нарушения чего, по каждому инпуту]. Прошу рассмотреть жалобу на заседании комиссии и устранить нарушение. 
 
 Прошу выдать мне заверенную копию решения комиссии.
 
@@ -418,7 +418,7 @@ tik_header = '''
 От кого: {role} {profile.last_name} {profile.first_name} {profile.middle_name}.
 e-mail: {profile.email}
 
-Я, {profile.last_name} {profile.first_name}, находясь в помещении УИК {event.uik} {date} приблизительно в {event.time_created.hour} часов стал свидетелем нарушения [TODO: нарушения чего, по каждому инпуту]. Составив жалобу, приложенную к данному письму, обратился к {whom} с просьбой принять жалобу и рассмотреть на заседании комиссии для устранения нарушения. 
+Я, {profile.last_name} {profile.first_name}, находясь в помещении УИК {answer.uik} {date} приблизительно в {answer.time_created.hour} часов стал свидетелем нарушения [TODO: нарушения чего, по каждому инпуту]. Составив жалобу, приложенную к данному письму, обратился к {whom} с просьбой принять жалобу и рассмотреть на заседании комиссии для устранения нарушения. 
 '''
 
 tik_footer = '''Прошу также рассмотреть мою жалобу по существу и донести решение до Участковой Избирательной Комииссии.
@@ -453,7 +453,7 @@ akt_stub = '''
 
 Акт
 
-Мы, нижеподписавшиеся, находясь в помещении УИК {event.uik} {date}, приблизительно в {event.time_created.hour} часов стали свидетелями того, как {role} {profile.first_name} {profile.last_name} обратился к (секретарю\председателю\...) с просьбой (принять\рассмотреть) жалобу на возможное нарушение.
+Мы, нижеподписавшиеся, находясь в помещении УИК {answer.uik} {date}, приблизительно в {answer.time_created.hour} часов стали свидетелями того, как {role} {profile.first_name} {profile.last_name} обратился к (секретарю\председателю\...) с просьбой (принять\рассмотреть) жалобу на возможное нарушение.
 (Комиссия\председатель\...) (не стала рассматривать\отказалась принять жалобу\отказалась выдать копию решения\...)
 
 Дата: {date} Время: ____
@@ -478,37 +478,37 @@ complaint_rules = '''
 '''
 
 roles = {
-    'prg': 'член комиссии с правом решающего голоса УИК {event.uik}',
-    'psg': 'член комиссии с правом совещательного голоса УИК {event.uik}',
-    'nabludatel': 'наблюдатель на УИК {event.uik}',
+    'prg': 'член комиссии с правом решающего голоса УИК {answer.uik}',
+    'psg': 'член комиссии с правом совещательного голоса УИК {answer.uik}',
+    'nabludatel': 'наблюдатель на УИК {answer.uik}',
     'smi': 'журналист',
     'kandidat': 'кандидат',
-    'izbiratel': 'избиратель на УИК {event.uik}',
+    'izbiratel': 'избиратель на УИК {answer.uik}',
     'other': 'избиратель',
 }
 
 class Complaint(VBox):
-    input = ObjectProperty()
+    quizwidget = ObjectProperty()
     tik_text = StringProperty(None, allow_none=True)
     uik_complaint_text = StringProperty(None, allow_none=True)
     complaint_rules = complaint_rules
     
     def refuse_akt_text(self):
         return akt_stub.format(**self.context())
-    #event = ObjectProperty(None, allow_none=True)
+    #answer = ObjectProperty(None, allow_none=True)
     
     
     #def do_layout(self, *args):
         ##import ipdb; ipdb.sset_trace()
         #return super().do_layout(*args)
         
-    async def on_event(self, event):
-        #logger.debug(event, event.revoked)
-        if event is None:
+    async def on_event(self, answer):
+        #logger.debug(answer, answer.revoked)
+        if answer is None:
             self.visible = False
             return
         
-        if event.revoked or not event.alarm:
+        if answer.revoked or not answer.alarm:
             self.visible = False
             return
             
@@ -516,21 +516,21 @@ class Complaint(VBox):
         self.visible = True
         self.ids.loader.opacity = 1
         self.ids.uik_complaint_status.choice = ComplaintStatusChoice.instances.get(
-            value=event.uik_complaint_status
+            value=answer.uik_complaint_status
         )
         #print('conmpl2')
         if state.get('tik'):
-            if event.uik_complaint_status in ['got_unfair_reply', 'refuse_to_accept', 'refuse_to_resolve']:
+            if answer.uik_complaint_status in ['got_unfair_reply', 'refuse_to_accept', 'refuse_to_resolve']:
                 self.ids.tik_complaint.visible = True
                 
-                if event.uik_complaint_status == 'refuse_to_accept':
+                if answer.uik_complaint_status == 'refuse_to_accept':
                     self.ids.refuse_person.visible = True
                     
             #print('conmpl3')
             self.ids.refuse_person_status.choice = RefusePersonChoice.instances.get(
-                value=event.refuse_person
+                value=answer.refuse_person
             )
-            self.toggle_tik(event.uik_complaint_status)
+            self.toggle_tik(answer.uik_complaint_status)
         self.build_uik_text()
         
         #print('conmpl4')
@@ -540,8 +540,8 @@ class Complaint(VBox):
         self.ids.uik_complaint_images.del_images()
         self.ids.uik_reply_images.del_images()
         
-        logger.debug(f'{self.input.json["label"]}: {event.images.count()} images for event {event.id}')
-        for dbimage in event.images.all():
+        logger.debug(f'{self.quizwidget.json["label"]}: {answer.images.count()} images for answer {answer.id}')
+        for dbimage in answer.images.all():
             if dbimage.deleted:
                 logger.debug(f'image {dbimage.filepath} was deleted by user')
                 continue
@@ -563,8 +563,8 @@ class Complaint(VBox):
         #super().__init__(*args, **kwargs)
         
     def on_uik_complaint_status_input(self, value):
-        logger.debug(f'{self.input.last_event.id}, {value}')
-        InputEvent.objects.filter(id=self.input.last_event.id).update(
+        logger.debug(f'{self.quizwidget.answer.id}, {value}')
+        Answer.objects.filter(id=self.quizwidget.answer.id).update(
             uik_complaint_status=value, time_updated=now()
         )
         self.toggle_tik(value)
@@ -587,27 +587,28 @@ class Complaint(VBox):
         self.build_tik_text()
         
     def on_refuse_person(self, value):
-        InputEvent.objects.filter(id=self.input.last_event.id).update(
+        Answer.objects.filter(id=self.quizwidget.answer.id).update(
             refuse_person=value
         )
         self.build_tik_text()
         
     def context(self):
-        #event = self.input.last_event
-        role = roles.get(self.input.last_event.role)
+        #answer = self.quizwidget.answer
+        role = roles.get(self.quizwidget.answer.role)
         if not role:
-            # Если роль была Видеонаблюдатель - он не может подавать ж
-            role = roles['nabludatel']
+            # Если роль была Видеонаблюдатель - он не может подавать жалобу.
+            # В примерах текстов будем использовать текущую роль.
+            role = roles[state.profile.role]
         return dict(
-            event=self.input.last_event,
-            date=self.input.last_event.time_created.strftime('%d.%m.%Y'),
+            answer=self.quizwidget.answer,
+            date=self.quizwidget.answer.time_created.strftime('%d.%m.%Y'),
             profile=state.profile,
             refuse_person_status=self.ids.refuse_person_status.value or 'член комиссии',
             state=state, 
             whom2 = whom2[self.ids.refuse_person_status.value], 
             whom=whom[self.ids.refuse_person_status.value],
-            role=role.format(event=self.input.last_event),
-            region=state.regions.get(self.input.last_event.region).name
+            role=role.format(answer=self.quizwidget.answer),
+            region=state.regions.get(self.quizwidget.answer.region).name
         )
     
     @on('state.profile')
@@ -623,7 +624,7 @@ class Complaint(VBox):
 
     @on('state.profile')
     def build_uik_text(self):
-        #input.json['example_uik_complaint']
+        #quizwidget.json['example_uik_complaint']
         self.uik_complaint_text = uik_complaint_stub.format(**self.context())
         
             

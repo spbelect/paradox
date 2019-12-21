@@ -158,8 +158,8 @@ class TikComplaintScreen(Screen):
     @utils.asynced
     async def on_send_pressed(self):
         from paradox.uix import confirm
-        event = self.complaint.input.last_event
-        if not event.images.exists():
+        answer = self.complaint.quizwidget.answer
+        if not answer.images.exists():
             msg = 'Рекомендуется приложить фото жалобы. Действительно отправить письмо без приложений?'
             if not await confirm.yesno(msg):
                 return
@@ -169,7 +169,7 @@ class TikComplaintScreen(Screen):
             if not await confirm.yesno(msg):
                 return
             
-        event.update(
+        answer.update(
             tik_complaint_status='request_pending',
             tik_complaint_text=self.text,
             time_updated=now()
@@ -180,14 +180,14 @@ class TikComplaintScreen(Screen):
         self.ids.send_button.disabled = True
         
     def show(self, complaint):
-        event = complaint.input.last_event
-        #logger.debug(f'{complaint.input} {event}, tik_complaint_status: {event.tik_complaint_status}')
-        self.text = event.tik_complaint_text or complaint.tik_text
-        #if complaint.input.last_event.tik_complaint_text:
+        answer = complaint.quizwidget.answer
+        #logger.debug(f'{complaint.quizwidget} {answer}, tik_complaint_status: {answer.tik_complaint_status}')
+        self.text = answer.tik_complaint_text or complaint.tik_text
+        #if complaint.quizwidget.answer.tik_complaint_text:
             #complaint.tik_text
         self.complaint = complaint
-        #label = input_data['label'].upper()
-        #help_text = input_data['help_text'] or imput_help_stub
+        #label = quizwidget['label'].upper()
+        #help_text = quizwidget['help_text'] or imput_help_stub
         
         vote_dates = Campaign.objects.positional().current().values_list('vote_date', flat=True)
         #today = now().date()
@@ -197,20 +197,20 @@ class TikComplaintScreen(Screen):
         else:
             self.ids.hint.text = f'Режим тестирования. Письмо не будет отправлено в тик.'
             
-        if not event.tik_complaint_status or event.tik_complaint_status == 'none':
+        if not answer.tik_complaint_status or answer.tik_complaint_status == 'none':
             self.ids.header.text = 'ПРОВЕРЬТЕ ТЕКСТ ЖАЛОБЫ'
             self.ids.edit_button.disabled = False
             self.ids.send_button.disabled = False
-        elif event.tik_complaint_status == 'request_pending':
+        elif answer.tik_complaint_status == 'request_pending':
             self.ids.header.text = 'ЗАПРОС ОТПРАВЛЯЕТСЯ'
             self.ids.edit_button.disabled = True
             self.ids.send_button.disabled = True
-        elif event.tik_complaint_status == 'request_sent':
+        elif answer.tik_complaint_status == 'request_sent':
             self.ids.header.text = 'ЗАПРОС ОТПРАВЛЕН'
             self.ids.edit_button.disabled = True
             self.ids.send_button.disabled = True
         else:
-            raise Exception(event.tik_complaint_status)
+            raise Exception(answer.tik_complaint_status)
         
             
         #self.ids.complaint_label.text = self.text

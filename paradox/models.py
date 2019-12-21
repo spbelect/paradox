@@ -36,17 +36,17 @@ class Model(db.models.Model):
 
         self2.save()
 
-def FK(*args, **kw):
+def FK(model, related_name, *args, **kw):
     params = dict(
         on_delete=SET_NULL,
-        related_name='+',
+        related_name=related_name,
         null=True,
         blank=True
     )
-    return ForeignKey(*args, **dict(params, **kw))
+    return ForeignKey(model, *args, **dict(params, **kw))
 
 
-class InputEvent(Model):
+class Answer(Model):
     id = CharField(max_length=40, default=uuid4, primary_key=True)
     
     time_created = DateTimeField(default=now)
@@ -56,8 +56,8 @@ class InputEvent(Model):
     revoked = BooleanField(default=False)
     refuse_person = TextField(null=True)
     
-    input_id = CharField(max_length=40)  # UUID
-    input_label = TextField()
+    question_id = CharField(max_length=40)  # UUID
+    question_label = TextField()
     alarm = BooleanField()
     role = CharField(max_length=15)
     country = CharField(max_length=2)
@@ -83,22 +83,24 @@ class InputEvent(Model):
     tik_complaint_status = CharField(max_length=30, choices=TIK_COMPLAINT_STATUS, default='none')
     tik_complaint_text = TextField(null=True)
     
-    def get_value(self):
+    @property
+    def value(self):
         if hasattr(self, 'integerinputevent'):
             return self.integerinputevent.value
         if hasattr(self, 'boolinputevent'):
             return self.boolinputevent.value
         
+    @property
     def humanized_value(self):
         if hasattr(self, 'integerinputevent'):
             return self.integerinputevent.value
         if hasattr(self, 'boolinputevent'):
             return 'Да' if self.boolinputevent.value else 'Нет'
     
-class IntegerInputEvent(InputEvent):
+class IntegerAnswer(Answer):
     value = IntegerField(null=True)
     
-class BoolInputEvent(InputEvent):
+class BoolAnswer(Answer):
     value = BooleanField(null=True)
     
 #class Message(Model):
@@ -130,8 +132,8 @@ class BoolInputEvent(InputEvent):
     #pass
     
     
-#class InputEventSupportChannel(Channel):
-    #event = FK(InputEvent)
+#class AnswerSupportChannel(Channel):
+    #answer = FK(Answer)
     
     
 class Coordinator(Model):
@@ -159,7 +161,7 @@ class Campaign(Model):
     objects = CampaignQuerySet.as_manager()
     
     id = CharField(primary_key=True, max_length=40)  # UUID
-    coordinator = FK(Coordinator, related_name='campaigns')
+    coordinator = FK(Coordinator, 'campaigns')
     #subscription = CharField() # yes/no/subing/unsubing
     #active = BooleanField()  # shortcut for filtering current timerange
     fromtime = DateTimeField()
@@ -180,8 +182,8 @@ class Campaign(Model):
     
     
 
-class InputEventUserComment(Model):
-    event = FK(InputEvent)
+class AnswerUserComment(Model):
+    answer = FK(Answer, 'comments')
     time_created = DateTimeField()
     text = TextField()
     send_status = CharField(max_length=20, default='pending') 
@@ -190,7 +192,7 @@ class InputEventUserComment(Model):
         ordering = ('time_created',)
         
         
-class InputEventImage(Model):
+class AnswerImage(Model):
     
     #uuid = CharField(primary_key=True, default=uuid4, max_length=40)  # UUID
     time_sent = DateTimeField(null=True)
@@ -198,7 +200,7 @@ class InputEventImage(Model):
     
     deleted = BooleanField(default=False)
     
-    event = FK(InputEvent, related_name='images')
+    answer = FK(Answer, 'images')
     TYPES = [
         ('uik_complaint', 'Подаваемые в УИК жалобы'),
         ('uik_reply', 'Ответы, решения от УИК'),

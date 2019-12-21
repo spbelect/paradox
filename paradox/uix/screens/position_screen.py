@@ -46,8 +46,8 @@ Builder.load_string('''
     ScrollView:
         VBox:
 
-            Choices:
-                id: region_choices
+            ChoicePicker:
+                id: regions
                 modal_header: 'Ваш регион:'
                 text: 'выберите регион'
                 text_size: self.width, None
@@ -56,9 +56,7 @@ Builder.load_string('''
                 on_text: self.color = black
                 height: height1
                 size_hint_y: None
-                on_input:
-                    #print(f'on_input {self.value}')
-                    state.region = state.regions[self.value]
+                on_new_pick: state.region = state.regions[self.value]
 
             BoxLayout:
                 height: height1
@@ -91,8 +89,8 @@ Builder.load_string('''
                     text_size: self.width, None
                     padding: 0, 0
 
-                Choices:
-                    id: role_choices
+                ChoicePicker:
+                    id: roles
                     height: self.texture_size[1]
                     modal_header: 'Ваш статус:'
                     text: 'выберите статус'
@@ -102,42 +100,42 @@ Builder.load_string('''
                     padding: 0, 0
                     on_value: state.role = self.value
 
-                    RoleChoice:
+                    Choice:
                         text: 'Член комиссии с правом решающего голоса (ПРГ)'
                         short_text: 'ПРГ'
                         value: 'prg'
 
-                    RoleChoice:
+                    Choice:
                         text: 'Член комиссии с правом совещательного голоса (ПСГ)'
                         short_text: 'ПСГ'
                         value: 'psg'
 
-                    RoleChoice:
+                    Choice:
                         text: 'Наблюдатель'
                         short_text: 'Наблюдатель'
                         value: 'nabludatel'
 
-                    RoleChoice:
+                    Choice:
                         text: 'Представитель СМИ (Журналист)'
                         short_text: 'Журналист'
                         value: 'smi'
 
-                    RoleChoice:
+                    Choice:
                         text: 'Кандидат'
                         short_text: 'Кандидат'
                         value: 'kandidat'
 
-                    RoleChoice:
+                    Choice:
                         text: 'Избиратель (это ваш участок для голосования)'
                         short_text: 'Избиратель'
                         value: 'izbiratel'
 
-                    RoleChoice:
+                    Choice:
                         text: 'Мимо проходил (это не ваш участок для голосования)'
                         short_text: 'Мимо проходил'
                         value: 'other'
                         
-                    RoleChoice:
+                    Choice:
                         text: 'Видео-наблюдатель'
                         short_text: 'Видео-наблюдатель'
                         value: 'videonabl'
@@ -166,13 +164,7 @@ Builder.load_string('''
 ''')
 
 
-from getinstance import InstanceManager
-
-class RegionChoice(Choice):
-    instances = InstanceManager()
-
-class RoleChoice(Choice):
-    instances = InstanceManager()
+#from getinstance import InstanceManager
 
 
 class PositionScreen(Screen):
@@ -189,50 +181,37 @@ class PositionScreen(Screen):
             return
         #import ipdb; ipdb.sset_trace()
         logger.debug('rebuilding region choices')
-        regions = state.regions.values()
-        #logger.debug(regions)
+        #regions = state.regions.values()
+        self.ids.regions.clear()
+
+        msk, spb, lo = 'ru_77', 'ru_78', 'ru_47'
+        #msk = list(filter(lambda x: 'Москва' in x['name'], regions))
+        #spb = list(filter(lambda x: 'Санкт' in x['name'], regions))
+        #lo = list(filter(lambda x: 'Ленинградская' in x['name'], regions))
+
+        #choice = Choice(text='Москва', value=)
+        #self.ids.regions.add_widget(choice)
         
-        self.ids.region_choices.choice = None
-        for choice in self.ids.region_choices.choices():
-            self.ids.region_choices.remove_choice(choice.value)
-            #print(choice)
-            #del choice
-        #choice = None
+        choice = Choice(text='Санкт-Петербург', value='ru_78')
+        self.ids.regions.add_widget(choice)
 
-        msk = list(filter(lambda x: 'Москва' in x['name'], regions))
-        spb = list(filter(lambda x: 'Санкт' in x['name'], regions))
-        lo = list(filter(lambda x: 'Ленинградская' in x['name'], regions))
+        choice = Choice(text='Ленинградская область', value='ru_47')
+        self.ids.regions.add_widget(choice)
 
-        #choice = RegionChoice(short_text='Москва', text='Москва', value=msk['id'])
-        #self.ids.region_choices.add_widget(choice)
-        
-        choice = RegionChoice(
-            short_text='Санкт-Петербург', text='Санкт-Петербург', value='ru_78')
-        self.ids.region_choices.add_widget(choice)
-        #print(choice)
-
-        choice = RegionChoice(
-            short_text='Ленинградская область', text='Ленинградская область', value='ru_47')
-        self.ids.region_choices.add_widget(choice)
-        #print(choice)
-
-        for region in sorted(regions, key=lambda x: x['name']):
-            if region in spb + lo or not region['id'].startswith(state.country):
+        for region in sorted(state.regions.values(), key=lambda x: x['name']):
+            if region['id'] in (spb, lo) or not region['id'].startswith(state.country):
                 continue
-            name = region['name']
-            choice = RegionChoice(short_text=name, text=name, value=region['id'])
-            #print(region, choice)
-            self.ids.region_choices.add_widget(choice)
+            self.ids.regions.add_widget(Choice(text=region['name'], value=region['id']))
             
         if state.get('region'):
-            region_choice = RegionChoice.instances.get(value=state.region.id)
-            if region_choice:
-                self.ids.region_choices.choice = region_choice
+            choice = self.ids.regions.getchoice(state.region.id)
+            if choice:
+                self.ids.regions.choice = choice
                 
     @on('state.role')
     def set_role(self):
-        if state.get('role'):
-            self.ids.role_choices.choice = RoleChoice.instances.get(value=state.role)
+        #if state.get('role'):
+        self.ids.roles.choice = self.ids.roles.getchoice(state.role)
             
     @on('state.uik')
     def set_uik(self):
@@ -270,11 +249,11 @@ class PositionScreen(Screen):
                    
     def show_errors(self):
         errors = []
-        if not self.ids.region_choices.choice:
+        if not self.ids.regions.choice:
             errors.append('Выберите регион')
-        if not self.ids['uik'].text:
+        if not self.ids.uik.text:
             errors.append('Введите номер УИК')
-        if not self.ids['role_choices'].choice:
+        if not self.ids.roles.choice:
             errors.append('Укажите ваш статус')
         if errors:
             errors = 'Пожалуйста заполните обязательные поля\n\n' + '\n'.join(errors)

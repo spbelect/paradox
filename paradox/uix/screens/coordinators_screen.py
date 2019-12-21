@@ -97,7 +97,7 @@ class ContactItem(BoxLayout):
         super().__init__(*a, **kw)
         self.ids.label.bind(on_ref_press=on_ref_press)
         
-        #input.ids['input_label']
+        #quizwidget.ids['question_label']
         
     @staticmethod
     def open_url(*a):

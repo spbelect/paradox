@@ -17,7 +17,7 @@ from kivy.properties import StringProperty, BooleanProperty, ObjectProperty, Pro
 from .vbox import VBox
 from label import Label
 from textinput import TextInput
-from .base_input import Input
+from . import base
 from paradox import utils
 
 
@@ -34,7 +34,7 @@ Builder.load_string('''
     width: 0.9 * getattr(self.parent, 'width', 10)
 
     Button:
-        id: input_label
+        id: question_label
         #size_hint: None, None
         #width: 0.9 * self.parent.width
         height: self.texture_size[1] + 10
@@ -70,7 +70,7 @@ Builder.load_string('''
 
     #Complaint:
         #id: complaint
-        #input: root
+        #quizwidget: root
 
 ''')
 
@@ -101,7 +101,7 @@ class SerialTextInput(TextInput):
         ##print next_input
         #if keycode[1] == 'enter':
             #if next_input:
-                ##print next_input.parent.ids['input_label'].text
+                ##print next_input.parent.ids['question_label'].text
                 #self._keyboard.release()
                 #self.focus = False
                 ##if self._keyboard:
@@ -116,21 +116,21 @@ class SerialTextInput(TextInput):
 
     @utils.asynced
     async def on_focus_out(self, *a):
-        await self.parent.on_input(self.text or '')
+        await self.parent.new_answer(self.text or '')
 
 
 
-class NumericInput(Input, VBox):
+class NumericInput(base.QuizWidget, VBox):
     value = ObjectProperty(None, allownone=True)
     #loader = ObjectProperty(None, allownone=True)
 
     def show_state(self, value):
         self.ids.value_input.text = str(value)
         
-    async def set_past_events(self, events):
-        if events:
-            self.show_state(events[-1].get_value())
-        await super().set_past_events(events)
+    async def set_past_answers(self, answers):
+        if answers:
+            self.show_state(answers[-1].value())
+        await super().set_past_answers(answers)
 
     def reset(self):
         self.ids.value_input.text = ''
@@ -138,19 +138,19 @@ class NumericInput(Input, VBox):
     #def on_value(self, *args):
         #schedule('core.new_input_event', self, self.value)
 
-    def on_save_success(self, event):
-        super().on_save_success(event)
+    def on_save_success(self, answer):
+        super().on_save_success(answer)
         #self.ids['loader'].timestamp = timestamp.isoformat()
         self.ids.loader.text = 'отправляется'
 
-    def on_send_success(self, event):
-        #if self.ids['loader'].timestamp == event['timestamp']:
+    def on_send_success(self, answer):
+        #if self.ids['loader'].timestamp == answer['timestamp']:
         self.ids.loader.text = ''
 
-    def on_send_error(self, event):
-        #if self.ids['loader'].timestamp == event['timestamp']:
+    def on_send_error(self, answer):
+        #if self.ids['loader'].timestamp == answer['timestamp']:
         self.ids.loader.text = 'отправляется (err)'
 
-    #def on_send_fatal_error(self, event, request, error_data):
-        #if self.ids['loader'].timestamp == event['timestamp']:
+    #def on_send_fatal_error(self, answer, request, error_data):
+        #if self.ids['loader'].timestamp == answer['timestamp']:
             #self.ids['loader'].text = 'отправляется (err)'

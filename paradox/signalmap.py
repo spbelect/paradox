@@ -4,8 +4,8 @@
      #'net/input_event/<iid>/send_success',
      #'net/input_event/<iid>/send_error',
      #'net/input_event/<iid>/send_fatal_error'): (
-        #'uix.base_input.Input',
-        #'models.InputEvent'),
+        #'uix.quiz_widgets.base.QuizWidget',
+        #'models.Answer'),
      
     #'uix/screens/userprofile/leave_changed': 'net.send_userprofile'
     

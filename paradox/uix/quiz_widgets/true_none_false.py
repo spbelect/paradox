@@ -11,7 +11,7 @@ from kivy.properties import StringProperty, BooleanProperty, ObjectProperty, Pro
 
 from loguru import logger
 from .vbox import VBox
-from .base_input import Input
+from . import base
 from label import Label
 from button import Button
 from .choices import Choice
@@ -36,7 +36,7 @@ Builder.load_string('''
     padding_y: 0
 
     Button:
-        id: input_label
+        id: question_label
         padding_x: dp(6)
         split_str: ' '
         text_size: self.width, None
@@ -56,7 +56,6 @@ Builder.load_string('''
             size_hint_x: .2
             text: 'Да'
             value: True
-            #on_press: root.on_input(True)
 
         TNFButton:
             id: neizvestno
@@ -64,7 +63,6 @@ Builder.load_string('''
             text: 'Неизвестно'
             value: None
             state: 'down'
-            #on_press: root.on_input(None)
 
         TNFButton:
             id: no
@@ -88,7 +86,7 @@ Builder.load_string('''
     allow_no_selection: False
     group: self.parent.uid
     #on_press: self.parent.parent.on_click(self.value)
-    on_press: self.parent.parent.on_input(self)
+    on_press: self.parent.parent.new_answer(self)
     background_color: lightgray
     #disabled: True
 
@@ -100,50 +98,45 @@ Builder.load_string('''
     #value = ObjectProperty(allownone=True)
 
 
-class TrueNoneFalse(Input, VBox):
+class TrueNoneFalse(base.QuizWidget, VBox):
     text = StringProperty('')
-    input_id = StringProperty()
+    question_id = StringProperty()
 
-    def on_send_start(self, event):
+    def on_send_start(self, answer):
         self.ids.send_status.text = 'отправляется'
     
-    def on_send_success(self, event):
-        super().on_send_success(event)
+    def on_send_success(self, answer):
+        super().on_send_success(answer)
         self.ids.send_status.text = ''
 
-    def on_send_error(self, event):
+    def on_send_error(self, answer):
         self.ids.send_status.text = 'отправляется (error)'
 
-    #def on_send_fatal_error(self, event, request, error_data):
+    #def on_send_fatal_error(self, answer, request, error_data):
         #self.ids.send_status.text = 'ошибка'
     
-    def on_save_success(self, event):
-        super().on_save_success(event)
+    def on_save_success(self, answer):
+        super().on_save_success(answer)
         self.ids.send_status.text = 'отправляется'
-        self.on_event(event)
+        self.show_state(None if answer.revoked else answer.value())
         
     @utils.asynced
-    async def on_input(self, button):
-        self.disabled = True
-        await super().on_input(button.value)
-        await sleep(0.2)
-        self.disabled = False
+    async def new_answer(self, button):
+        #self.disabled = True
+        await super().new_answer(button.value)
+        #await sleep(0.2)
+        #self.disabled = False
         
-    async def set_past_events(self, events):
-        #logger.debug(f'{self}, {self.json["label"]}, {events}')
-        if events:
-            #print('set past', events[-1].get_value())
-            self.on_event(events[-1])
+    async def set_past_answers(self, answers):
+        #logger.debug(f'{self}, {self.json["label"]}, {answers}')
+        if answers:
+            #print('set past', answers[-1].value())
+            answer = answers[-1]
+            self.show_state(None if answer.revoked else answer.value())
         else:
             self.show_state(None)
             
-        await super().set_past_events(events)
-
-    def on_event(self, event):
-        if event.revoked:
-            self.show_state(None)
-        else:
-            self.show_state(event.get_value())
+        await super().set_past_answers(answers)
             
     def show_state(self, value):
         #logger.debug(f'{self}, {self.json["label"]}, {value}')

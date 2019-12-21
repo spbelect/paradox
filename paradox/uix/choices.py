@@ -13,7 +13,7 @@ Builder.load_string('''
 
 #:import state app_state.state
 
-<ChoicesModal>:
+<ChoicePickerModal>:
     background: ''
     #background_color: transparent
 
@@ -44,14 +44,14 @@ Builder.load_string('''
                 padding: 0
 
                 Label:
-                    text: root.choices.modal_header
+                    text: root.choicepicker.modal_header
                     color: white
                     background_color: lightgray
                 VBox:
                     id: list
 
 
-<Choices>:
+<ChoicePicker>:
     color: lightgray
     height: height1
     #text: self.choice.short_text if self.choice else ''
@@ -91,26 +91,26 @@ class Choice(Button):
         #print Choice.fff
 
 
-class Choices(Button):
+class ChoicePicker(Button):
     choice = ObjectProperty(None, allownone=True)
     modal_header = StringProperty()
     value = ObjectProperty(None, allownone=True)
     #input_value = ObjectProperty(None, allownone=True)
 
     def __init__(self, *args, **kwargs):
-        super(Choices, self).__init__(*args, **kwargs)
-        self.modal = ChoicesModal(choices=self)
-        self.register_event_type('on_input')
+        super().__init__(*args, **kwargs)
+        self.modal = ChoicePickerModal(choicepicker=self)
+        self.register_event_type('on_new_pick')
 
     def on_release(self):
         self.modal.open()
 
-    def on_input(self, *a):
+    def on_new_pick(self, *a):
         pass
         
     def on_choice(self, *a):
         if self.choice:
-            self.text = self.choice.short_text
+            self.text = self.choice.short_text or self.choice.text
             self.value = self.choice.value
         else:
             self.text = ''
@@ -122,30 +122,37 @@ class Choices(Button):
     def remove_choice(self, value):
         for child in self.modal.ids.list.children[:]:
             if child.value == value:
+                if self.choice == child:
+                    self.choice = None
                 self.modal.ids.list.remove_widget(child)
                 break
+            
+    def clear(self):
+        self.choice = None
+        for child in self.modal.ids.list.children[:]:
+            self.modal.ids.list.remove_widget(child)
 
     def choices(self):
         return self.modal.ids.list.children[:]
     
-    def do_input(self, choice):
-        logger.debug(f'{choice} value={choice.value}')
-        self.choice = choice
-        self.dispatch('on_input', choice.value)
+    def getchoice(self, value):
+        for child in self.modal.ids.list.children[:]:
+            if child.value == value:
+                return child
         
 
-class ChoicesModal(ModalView):
-    choices = ObjectProperty()
+class ChoicePickerModal(ModalView):
+    choicepicker = ObjectProperty()   # Parent ChoicePicker
 
     def on_touch_down(self, touch):
         if self.ids.scrollview.effect_y.velocity > 0:
             # The touch stops scrolling
             touch.ud['sv.stopped'] = True
-        return super(ChoicesModal, self).on_touch_down(touch)
+        return super().on_touch_down(touch)
         #return res
 
     #def on_touch_move(self, touch):
-        #res = super(ChoicesModal, self).on_touch_move(touch)
+        #res = super().on_touch_move(touch)
         #sv_ud = touch.ud.get(self.ids['scrollview']._get_uid())
         ##print sv_ud['mode'], sv_ud['user_stopped'] #, stopped, scrolled
         #sv = self.ids['scrollview']
@@ -156,8 +163,7 @@ class ChoicesModal(ModalView):
         #return res
 
     def on_touch_up(self, touch):
-        #logger.debug(f'{self.choices}, {touch}')
-        #res = super(ChoicesModal, self).on_touch_up(touch)
+        #res = super().on_touch_up(touch)
         #sv = self.ids['scrollview']
         scrolled = not touch.ud.get('sv.can_defocus', True)
         #scrolled = False  # FIXME
@@ -169,8 +175,8 @@ class ChoicesModal(ModalView):
             touch.apply_transform_2d(self.ids.scrollview.to_local)
             for child in self.ids.list.children:
                 if child.collide_point(touch.x, touch.y):
-                    self.choices.do_input(child)
-                    #self.choices.input_value = child.value
+                    self.choicepicker.choice = choice
+                    self.choicepicker.dispatch('on_new_pick', choice.value)
                     self.dismiss()
                     return True
             touch.pop()

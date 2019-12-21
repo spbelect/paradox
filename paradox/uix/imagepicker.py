@@ -299,10 +299,6 @@ class ImageItem(BoxLayout):
     #value = ObjectProperty(None, allownone=True)
     #fff = 0
 
-    #def __init__(self, *args, **kwargs):
-        #super(Choices, self).__init__(*args, **kwargs)
-        #self.register_event_type('on_input')
-
     def on_release(self):
         self.modal = ImageModal(image=self.image)
         self.modal.open()
