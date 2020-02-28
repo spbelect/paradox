@@ -14,147 +14,104 @@ from loguru import logger
 from paradox.models import Answer, BoolAnswer, IntegerAnswer, AnswerImage
 from paradox import uix
 from paradox import utils
+from paradox.uix import float_message
 from paradox.uix import confirm
 from paradox.uix.complaint import Complaint
 
 
 class QuizWidget(Widget):
-    json = ObjectProperty()
+    question = ObjectProperty()
     form = ObjectProperty()
     value = ObjectProperty(None, allownone=True)
     answer = ObjectProperty(None, allownone=True)
     instances = InstanceManager()
     flags_match = BooleanProperty(True)
+    conditions_ok = BooleanProperty(True)
+    complaint_visible = BooleanProperty(False)
+    status_text = StringProperty('')
+    
     
     def __init__(self, *args, **kwargs):
-        self.complaint = None
+        #self.complaint = None
         #self.answer = None
         super().__init__(*args, **kwargs)
-        self.question_id = self.json['question_id']
-        self.apply_flags()
+        self.check_visibility()
 
-    @on('state.elect_flags')
-    def apply_flags(self):
-        flags = self.json.get('elect_flags')
-        if not flags:
-            return
-        if set(flags) & state.get('elect_flags', set()):
-            #self.show()
-            self.flags_match = True
-        else:
-            #self.hide()
-            self.flags_match = False
-            
     async def set_past_answers(self, answers):
         #await sleep(0.02)
         if not answers:
-            self.value = None
-            if self.complaint:
-                self.remove_widget(self.complaint)
-                self.complaint = None
-            self.show_dependants()
+            self.answer = None
             return
         
         if self.answer == list(answers)[-1]:
             return
+        
         self.answer = list(answers)[-1]
-        if self.answer.revoked:
-            self.value = None
-        else:
-            self.value = self.answer.value()
-            
-        if self.answer.alarm and not self.answer.revoked \
-            and state.get('role') not in ('other', 'videonabl'):
-            #self.form.load_finished = False
-            #await sleep(3)
-            if not self.complaint:
-                self.complaint = Complaint(quizwidget=self)
-                self.add_widget(self.complaint)
-            #logger.debug(f'Restoring complaint of past answer, quizwidget: {self.json["question_id"]}. Event timestamp={self.answer.time_created} value={self.answer.value()}')
-            await self.complaint.on_event(self.answer)
-            #self.form.load_finished = True
-        elif self.complaint:
-            self.remove_widget(self.complaint)
-            self.complaint = None
-            
-        self.revise_dependants()
         
-    def revise_complaint(self):
-
-    def revise_dependants(self):
-        if self.json.get('dependants'):
-            logger.debug(f"{self.json['label']}, {self.json['dependants']}")
-        for dep in self.json.get('dependants', []):
-            if dep.get('value') == self.value:
-                for quizwidget in QuizWidget.instances.filter(question_id=dep['iid']):
-                    #quizwidget.show()
-                    #quizwidget.disabled = False
-                    quizwidget.visible = True
-                continue
-            if dep.get('range') and (dep['range'][0] <= self.value <= dep['range'][1]):
-                for quizwidget in QuizWidget.instances.filter(question_id=dep['iid']):
-                    #quizwidget.show()
-                    #quizwidget.disabled = False
-                    quizwidget.visible = True
-                continue
-            for quizwidget in QuizWidget.instances.filter(question_id=dep['iid']):
-                #quizwidget.disabled = True
-                quizwidget.visible = False
-                #quizwidget.hide()
-                
+        
     def show_help(self):
-        uix.screenmgr.show_handbook(self.json['label'], self.json['fz67_text'])
+        uix.screenmgr.show_handbook(self.question.label, self.question.fz67_text)
         
-    async def new_answer(self, value):
+    async def add_new_answer(self, value):
+        #if self.question.id in state._pending_save_questions:
+            ## Prevent adding new values until saved in db
+            #uix.float_message.show('Предыдущий ответ еще не сохранен!')
+            #return False
+        
         if uix.position.show_errors():
-            self.show_state(self.value)
             uix.screenmgr.push_screen('position')
             return False
         
         if uix.userprofile.userprofile_errors():
-            self.show_state(self.value)
             uix.screenmgr.push_screen('userprofile')
             return False
 
-        if self.json['input_type'] == 'MULTI_BOOL':
+        if self.question.input_type == 'MULTI_BOOL':
             AnswerType = BoolAnswer
-        elif self.json['input_type'] == 'NUMBER':
+        elif self.question.input_type == 'NUMBER':
             AnswerType = IntegerAnswer
             value = int(value) if value else None
                 
-        if value == self.value:
-            return False
+        #if self.answer and value == self.answer.value:
+            #return False
         
-        if self.value is not None:
-            msg = f'Отозвать предыдущее значение?'
-            if self.json['input_type'] == 'NUMBER':
-                msg += f' ({self.answer.value()})'
-            if not await uix.confirm.yesno(msg):
-                self.show_state(self.answer.value())
-                return False
+        ## Prevent adding new values until saved in db
+        #state._pending_save_questions.add(self.question.id)
             
-            answer = Answer.objects.get(id=self.answer.id)
-            answer.update(revoked=True, time_updated=now())
-            uix.events_screen.add_event(answer)
-            logger.info(f'Revoke answer input: {self.json["question_id"]}. New value: {value}')
-            
-        if value is not None:
-            logger.info(f'New answer input: {self.json["question_id"]}. New value: {value}')
-            alarm = False
-            if self.json.get('alarm', None):
-                #print(self.json['alarm'])
-                if 'eq' in self.json['alarm']:
-                    alarm = bool(value == self.json['alarm'].get('eq'))
-                elif 'gt' in self.json['alarm']:
-                    alarm = bool(int(value) > self.json['alarm'].get('gt'))
+        sibling_widgets = QuizWidget.instances.filter(question__id=self.question.id)
+        sibling_widgets.status_text = 'сохраняется'
+        
+        try:
+            if self.answer and not self.answer.revoked:
+                msg = f'Отозвать предыдущее значение?'
+                if self.question.input_type == 'NUMBER':
+                    msg += f' ({self.answer.value})'
+                if not await uix.confirm.yesno(msg):
+                    return False
                 
-            #if alarm:
-                #logger.info(f'alarm!')
+                answer = Answer.objects.get(id=self.answer.id)
+                answer.update(revoked=True, time_updated=now())
+                uix.events_screen.add_event(answer)
+                logger.info(f'Revoke answer input: {self.question.id}. New value: {value}')
+                
+            if self.question.input_type == 'MULTI_BOOL' and value is None:
+                # None (кнопка Неизвестно) отзывает предыдущее значение, не добавляя новое.
+                sibling_widgets.answer = answer
+                return True
+            
+            logger.info(f'New answer input: {self.question.id}. New value: {value}')
+            alarm = False
+            if self.question.get('alarm', None):
+                #print(self.question.alarm)
+                if 'eq' in self.question.alarm:
+                    alarm = bool(value == self.question.alarm.get('eq'))
+                elif 'gt' in self.question.alarm:
+                    alarm = bool(int(value) > int(self.question.alarm.get('gt')))
                 
             answer = AnswerType.objects.create(
-                question_id=self.question_id,
-                question_label=self.json['label'],
-                value=value,
+                question_id=self.question.id,
+                question_label=self.question.label,
+                rawvalue=value,
                 #region='ru_78',
                 #uik=55,
                 alarm=alarm,
@@ -165,69 +122,140 @@ class QuizWidget(Widget):
             )
             
             uix.events_screen.add_event(answer)
-        
-        #campaigns = Campaign.objects.positional().filter(active=True, subscription='yes')
-        #answer.coordinators = [x.coordinator.id for x in campaigns]
-        
-        self.value = value
-
-        for quizwidget in QuizWidget.instances.filter(question_id=self.question_id):
-            quizwidget.on_save_success(answer)
             
-        if answer.alarm and not answer.revoked \
-           and state.get('role') not in ('other', 'videonabl'):
-            #self.form.load_finished = False
-            #await sleep(3)
-            #print(self.complaint)
-            if not self.complaint:
-                #logger.info(f'complaint!')
-                self.complaint = Complaint(quizwidget=self)
-                self.add_widget(self.complaint)
-            #print(4343)
-            await self.complaint.on_event(answer)
-            await sleep(0.6)
-            #self.form.load_finished = True
-        elif self.complaint:
-            self.remove_widget(self.complaint)
-            self.complaint = None
-        self.revise_dependants()
+            #campaigns = Campaign.objects.positional().filter(active=True, subscription='yes')
+            #answer.coordinators = [x.coordinator.id for x in campaigns]
+            
+            sibling_widgets.answer = answer
+        #except Exception as e:
+            ##uix.float_message.show('Ошибка при сохранении ответа! (ошибка отправлена разработчикам)')
+            #self.show_cur_state()
+            #raise e
+        finally:
+            sibling_widgets.status_text = 'отправляется'
+            
+            ## Enable previously disabled quizwidgets of same question
+            #state._pending_save_questions.difference_update({self.question.id})
+        
         return True
 
-    def __del__(self):
-        print(f'del {self}')
-        
-    def show(self):
-        self.height = 10
-        self.size_hint_y = 1
-        self.opacity = 1
-        
-    def hide(self):
-        self.height = 0
-        self.size_hint_y = None
-        self.opacity = 0
 
-    def show_state(self, value):
-        pass
+    def on_answer(self, *a):
+        self.show_cur_state()
+        
+        self.revise_complaint_visibility()
+            
+        logger.debug(f"Update dependants of {self.question.label}.")
+        for id in self.question.get('dependants', []):
+            QuizWidget.instances.filter(question__id=id).check_visibility()
+        
+        
+    @on('state.role')
+    def revise_complaint_visibility(self):
+        if self.answer.alarm and not self.answer.revoked \
+           and state.get('role') not in ('other', 'videonabl'):
+            self.complaint_visible = True
+        else:
+            self.complaint_visible = False
+                
+                
+    def check_precursor_answers(self):
+        """
+        Проверить условия для отображения этого виджета (вопроса).
+        Формат {'all': [{}, {}, ...]} или {'any': [{}, {}, ...]}.
+        """
+        conditions = self.question.get('visible_if', {}).get('precursor_answers')
+        if not conditions:
+            return True
+        
+        logger.debug(f'checking {self.question.label} {conditions}')
+        if conditions.get('all'):
+            if all(self.check_condition(**x) for x in conditions.all):
+                return True
+        elif conditions.get('any'):
+            if any(self.check_condition(**x) for x in conditions.any):
+                return True
+        return False
+            
+            
+    def check_condition(self, question_id, **rules):
+        """
+        Проверить значение последнего ответа на заданный вопрос на соответствие заданным критериям.
+        question_id - id вопроса, значение ответа на который проверяется.
+        rules - критерии для проверки значения.
+        rules['answer_equal_to'] - значение value которое должно точно совпадать с текущим.
+        rules['answer_greater_than'] - Проверить что value больше чем заданное.
+        rules['answer_less_than'] - Проверить что value меньше чем заданное.
+        Вернуть False если хотя бы один критерий не выполнен или ответа нет в базе.
+        """
+        answer = Answer.objects.filter(question_id=question_id).order_by('time_created').last()
+        #import ipdb; ipdb.sset_trace()
+        #logger.debug(f'{answer}')
+        if not answer:
+            return False
+        value = None if answer.revoked else answer.value
+        
+        if 'answer_equal_to' in rules:
+            return rules['answer_equal_to'] == value
+        if 'answer_greater_than' in rules:
+            if value <= rules['answer_greater_than']:
+                return False
+        if 'answer_less_than' in rules:
+            if value >= rules['answer_less_than']:
+                return False
+        return True
+            
+            
+    @on('state.elect_flags')
+    def check_visibility(self, *a):
+        self.visible = bool(self.check_election_flags() and self.check_precursor_answers())
+            
+            
+    def check_election_flags(self):
+        #print(state.get('elect_flags', set()), self.question.get('elect_flags'))
+        flags = self.question.get('visible_if', {}).get('elect_flags')
+        if not flags:
+            return True
+        if set(flags) & state.get('elect_flags', set()):
+            return True
+        self.flags_match = False
+            
+            
+    #def __del__(self):
+        #print(f'del {self}')
+        
+    #def show(self):
+        #self.height = 10
+        #self.size_hint_y = 1
+        #self.opacity = 1
+        
+    #def hide(self):
+        #self.height = 0
+        #self.size_hint_y = None
+        #self.opacity = 0
+
+    def show_cur_state(self):
+        """ Показать текущий ответ в инпуте """
+        raise NotImplementedError("show_cur_state must be implemented in QuizWidget subclass")
     
     def on_send_start(self, answer):
         pass
     
     def on_send_success(self, answer):
-        #logger.debug(f'{self} {answer} tik_complaint_status: {answer.tik_complaint_status}')
-        self.answer = event
+        if self.answer.id == answer.id:
+            self.status_text = ''   # Отправлен последний (текущий) ответ.
+        else:
+            self.status_text = 'отправляется'   # Еще не все ответы отправлены.
 
     def on_send_error(self, answer):
-        pass
+        self.status_text = 'отправляется (error)'
 
     def on_send_fatal_error(self, answer):
-        pass
+        self.status_text = 'отправляется (error)'
 
-    def on_save_success(self, answer):
-        #logger.debug(f'{self} {answer} tik_complaint_status: {answer.tik_complaint_status}')
-        self.answer = event
-
-    #def on_answer(self, *a):
-        #logger.debug(f'{self} {self.answer} tik_complaint_status: {self.answer.tik_complaint_status}')
+    #def on_save_success(self, answer):
+        ##logger.debug(f'{self} {answer} tik_complaint_status: {answer.tik_complaint_status}')
+        #self.answer = answer
 
 
 async def restore_past_answers():
@@ -238,9 +266,9 @@ async def restore_past_answers():
     filter = Q(uik=state.uik, region=state.region.id, time_created__gt=now()-timedelta(days=2))
     answers = list(Answer.objects.filter(filter).order_by('question_id'))
     logger.info(f'Restoring {len(answers)} past answers for {state.region.name} УИК {state.uik}')
-    for iid, answers in groupby(answers, key=lambda x: x.question_id):
+    for question, answers in groupby(answers, key=lambda x: x.question_id):
         e = sorted(answers, key=lambda x: x.time_created)
-        for quizwidget in QuizWidget.instances.filter(question_id=iid):
+        for quizwidget in QuizWidget.instances.filter(question__id=question):
             await quizwidget.set_past_answers(e)
             await sleep(0.05)
             

@@ -21,9 +21,9 @@ from kivy.core.window import Window
 from kivy.effects.dampedscroll import DampedScrollEffect
 from loguru import logger
 
-from ..multibool_input import MultiBoolInput
-from ..true_none_false import TrueNoneFalse
-from ..numeric_input import NumericInput
+from ..quiz_widgets.multibool_input import MultiBoolInput
+from ..quiz_widgets.true_none_false import TrueNoneFalse
+from ..quiz_widgets.numeric_input import NumericInput
 from ..vbox import VBox
 from paradox.models import Answer, Campaign
 from paradox.uix import top_loader
@@ -110,33 +110,32 @@ class FormScreen(Screen):
     async def build(self):
         await sleep(0.05)
         logger.debug(f'building form {self.json["name"]}')
-        for question in self.json['inputs']:
+        for question in self.json.get('questions', []):
             #if not question.get('help_text'):
                 #question['help_text'] = txt
             
-            self.add_widget(question)
+            self.add_quizwidget(state.questions.get(question['id']))
             await sleep(0.01)
 
-        self.remove_widget(self.ids['trailing_spacer'])
+        self.remove_widget(self.ids.trailing_spacer)
         
-        logger.debug(f'building form {self.json["name"]} inputs added')
+        logger.debug(f'building form {self.json["name"]} questions added')
         await uix.quiz_widgets.base.restore_past_answers()
         logger.debug(f'building form {self.json["name"]} finished')
         await sleep(0.7)
         self.load_finished = True
         
-    def add_widget(self, question):
+    def add_quizwidget(self, question):
         if question['input_type'] == 'NUMBER':
-            quizwidget = NumericInput(json=question, form=self)
+            quizwidget = NumericInput(question=question, form=self)
         elif question['input_type'] == 'MULTI_BOOL':
-            quizwidget = TrueNoneFalse(json=question, form=self)
+            quizwidget = TrueNoneFalse(question=question, form=self)
         else:
             return
-        #question.ids['question_label'].bind(on_long_press=self.on_question_label_press)
         self.ids.content.add_widget(quizwidget)
 
-    def on_question_label_press(self, question_label):
-        self.manager.show_handbook(question=question_label.parent.json)
+    #def on_question_label_press(self, quizwidget):
+        #self.manager.show_handbook(question=quizwidget.question)
 
     #def __del__(self):
         #logger.debug(f'del {self.json["name"]}')

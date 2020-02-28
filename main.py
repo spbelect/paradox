@@ -290,24 +290,91 @@ from paradox import client
 
 from django.core.management import call_command
 
+mock_regions = {
+    'ru_47': {
+        'id': 'ru_47',
+        'name': 'Лен. обл.',
+        'tiks': [
+            {
+                'id': '68b7a-2533d-8dd43',
+                'uik_ranges': [[21,800]],
+                'name': 'Tik kingiseppskogo rayona',
+                'email': 'tik-kingiseppskogo@lo.ru',
+                'phone': '72727',
+                'address': 'street 35'
+            },
+        ],
+        'munokruga': [],
+    },
+    'ru_78': {
+        'id': 'ru_78',
+        'name': 'Spb',
+        'tiks': [
+            {
+                'id': 'f8e424-235b-77a8a',
+                'uik_ranges': [[21,800]],
+                'name': 'Tik 7',
+                'email': 'tik7@x.ru',
+                'phone': '6463',
+                'address': 'ulitsa 77'
+            },
+        ],
+        'munokruga': [
+            {
+                'id': '6ab3-d1c23',
+                'uik_ranges': [[1,100], [4010, 4055]],
+                'name': 'Муниципальный округ Дачное',
+                'ikmo_email': 'MOlol@x.ru',
+                'ikmo_phone': '78796',
+                'ikmo_address': 'leninsky 53'
+            },
+        ],
+    }
+}
+
 mock_forms = [{
-    "inputs": [
+    "questions": [
       {
-        "help_text": "aoejgoa \n",
-        "input_type": "MULTI_BOOL",
-        "question_id": "ecc1deb3-5fe7-48b3-a07c-839993e4563b",
+        "id": "ecc1deb3-5fe7-48b3-a07c-839993e4563b",
         "label": "Неиспользованные бюллетени убраны в сейф или лежат на видном месте.",
+        "fz67_text": "ст.456 п.2 Неиспользованные бюллетени бла бла бла\n",
+        "input_type": "MULTI_BOOL",   # тип да\нет
         "alarm": { "eq": False },
-        "example_uik_complaint": "это пример"
+        "example_uik_complaint": "жалоба: бла бла"
       },
       {
-        "help_text": "pwijgpw \n",
+        "id": "b87436e0-e7f2-4453-b364-a952c0c7842d",
+        "label": "Число проголосаваших досрочно",
+        "fz67_text": "ст.123 п.9 Число проголосаваших досрочно бла бла бла\n",
+        "input_type": "NUMBER",  # тип число
+        "alarm": { "gt": 100 },
+        "visible_if": {
+            "elect_flags": ["dosrochka"],  # показать только если есть активная кампания с досрочкой
+        },
+        "example_uik_complaint": "жалоба: бла бла"
+      },
+      {
+        "id": "77532eb3-5fe7-48b3-a07c-cd9b35773709",
+        "label": "Все досрочные бюллетени считаются отдельно.",
         "input_type": "MULTI_BOOL",
-        "question_id": "b87436e0-e7f2-4453-b364-a952c0c7842d",
-        "label": "Этот только досрочка",
-        "elect_flags": ["dosrochka"],
-        "example_uik_complaint": "это пример"
-      }
+        "alarm": { "eq": False },
+        "visible_if": {
+            "elect_flags": ["dosrochka"],  # показать только если есть активная кампания с досрочкой
+            "precursor_answers": {"all": [  # "all" == "И"; "any" == "ИЛИ"
+                {
+                    "question_id": "ecc1deb3-5fe7-48b3-a07c-839993e4563b", 
+                    "answer_equal_to": False
+                },
+                {
+                    "question_id": "b87436e0-e7f2-4453-b364-a952c0c7842d", 
+                    "answer_greater_than": 100,
+                    "answer_less_than": 1000
+                }
+            ]},
+        },
+        "example_uik_complaint": "жалоба: бла бла",
+        "fz67_text": "ст. 778 ... \n",
+      },
     ],
     "form_id": "14bf4a0a-30f4-4ed2-9bcb-9a16a65033d7",
     "elections": None,
@@ -345,44 +412,40 @@ async def on_start(app):
     state.setdefault('country', 'ru')
     state.setdefault('superior_ik', 'TIK')
     state.setdefault('tik', None)
-    state.setdefault('inputs', {})
+    state.setdefault('questions', {})
     state.setdefault('regions', {})
     state.setdefault('forms', {'general': {'ru': []}})
+    
+    #state._pending_save_questions = set()
     
     uix.formlist.build_general()
         
     uix.events_screen.restore_past_events()
     logger.info('Restored past events.')
     
-    formdata = (await client.recv_loop(f'{state.country}/forms/')).json()
+    #formdata = (await client.recv_loop(f'{state.country}/forms/')).json()
     #logger.info(formdata)
     #formdata = {'ru': json.load(open('forms_general.json'))}
-    #formdata = mock_forms
+    formdata = mock_forms
     
     for form in formdata:
-        state.questions.update((x['question_id'], x) for x in form['inputs'])
+        state.questions.update({x['id']: x for x in form['questions']})
             
+    for question in state.questions.values():
+        #import ipdb; ipdb.sset_trace()
+        deps = question.get('visible_if', {}).get('precursor_answers', {})
+        for condition in (deps.get('any') or deps.get('all') or []):
+            precursor = state.questions.get(condition['question_id'], {})
+            precursor.setdefault('dependants', []).append(question['id'])
+        
     state.setdefault('forms', {})
     if not state.forms['general'].get(state.country) == formdata:
         state.forms.general[state.country] = formdata
         uix.formlist.build_general()
     
-    #class Region(BaseModel):
-        #id: str
-        #name: str
-        #tiks: List
-        #mokruga: List
-        
-    #class Response(BaseModel):
-        #regions: Dict[str, Region]
-        
-    regions = (await client.recv_loop(f'{state.country}/regions/')).json()
-    #regions = {f'ru_{x["id"]}': dict(x, id=f'ru_{x["id"]}') for x in json.load(open('regions.json'))}
-    #try:
-        #Response(regions=regions)
-    #except ValidationError as e:
-        #logger.error(regions)
-        #raise
+    regions = mock_regions
+    #regions = (await client.recv_loop(f'{state.country}/regions/')).json()
+    ###regions = {f'ru_{x["id"]}': dict(x, id=f'ru_{x["id"]}') for x in json.load(open('regions.json'))}
         
     #logger.debug(regions)
     state.regions.update(regions)

@@ -175,8 +175,8 @@ class ChoicePickerModal(ModalView):
             touch.apply_transform_2d(self.ids.scrollview.to_local)
             for child in self.ids.list.children:
                 if child.collide_point(touch.x, touch.y):
-                    self.choicepicker.choice = choice
-                    self.choicepicker.dispatch('on_new_pick', choice.value)
+                    self.choicepicker.choice = child
+                    self.choicepicker.dispatch('on_new_pick', child.value)
                     self.dismiss()
                     return True
             touch.pop()

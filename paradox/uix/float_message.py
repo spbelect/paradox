@@ -62,5 +62,5 @@ class FloatMessage(ModalView):
             return False
 
 
-def show_float_message(text):
+def show(text):
     FloatMessage(text=text)

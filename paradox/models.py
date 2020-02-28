@@ -85,23 +85,24 @@ class Answer(Model):
     
     @property
     def value(self):
-        if hasattr(self, 'integerinputevent'):
-            return self.integerinputevent.value
-        if hasattr(self, 'boolinputevent'):
-            return self.boolinputevent.value
+        if hasattr(self, 'integeranswer'):
+            return self.integeranswer.rawvalue
+        if hasattr(self, 'boolanswer'):
+            return self.boolanswer.rawvalue
         
     @property
     def humanized_value(self):
-        if hasattr(self, 'integerinputevent'):
-            return self.integerinputevent.value
-        if hasattr(self, 'boolinputevent'):
-            return 'Да' if self.boolinputevent.value else 'Нет'
+        if hasattr(self, 'integeranswer'):
+            return self.integeranswer.rawvalue
+        if hasattr(self, 'boolanswer'):
+            return 'Да' if self.boolanswer.rawvalue else 'Нет'
     
 class IntegerAnswer(Answer):
-    value = IntegerField(null=True)
+    rawvalue = IntegerField(null=True)
     
 class BoolAnswer(Answer):
-    value = BooleanField(null=True)
+    rawvalue = BooleanField(null=True)
+    
     
 #class Message(Model):
     #channel = FK(Channel)
@@ -147,9 +148,9 @@ class CampaignQuerySet(QuerySet):
     def positional(self):
         filter = Q(region__isnull=True)  # federal
         if state.get('region'):
-            filter |= Q(region=state.region.id, mokrug__isnull=True)  # regional
-        if state.get('mokrug'):
-            filter |= Q(mokrug=state.mokrug.id)
+            filter |= Q(region=state.region.id, munokrug__isnull=True)  # regional
+        if state.get('munokrug'):
+            filter |= Q(munokrug=state.munokrug.id)
         return self.filter(filter)
 
     def current(self):
@@ -169,7 +170,7 @@ class Campaign(Model):
     vote_date = DateField()
     country = CharField(max_length=2)
     region = CharField(max_length=6, null=True)
-    mokrug = IntegerField(null=True) # Муниципльный округ
+    munokrug = CharField(max_length=40, null=True)  # UUID Муниципльного округа
     #election
     phones = TextField()  #json
     external_channels = TextField()  #json

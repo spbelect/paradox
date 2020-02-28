@@ -59,7 +59,7 @@ async def app():
             return Mock(
                 status_code=200,
                 json=lambda: {
-                    'ru_47': {'id': 'ru_47', 'name': 'Ленинградская обл', 'mokruga': [], 'tiks': [
+                    'ru_47': {'id': 'ru_47', 'name': 'Ленинградская обл', 'munokruga': [], 'tiks': [
                         {'name': '№ 11', 'uik_ranges': [[1,9999]]}
                     ]}
                 }

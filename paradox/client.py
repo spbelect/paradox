@@ -249,7 +249,7 @@ async def send_position():
 
 async def _put_image(image):
     try:
-        response = await api_request('PUT', f'quiz_answers/{image.event_id}/images/{image.md5}', {
+        response = await api_request('PUT', f'quiz_answers/{image.answer_id}/images/{image.md5}', {
             #'type': image.type,
             #'time_created': image.time_created,
             'deleted': image.deleted,
@@ -269,9 +269,9 @@ async def _put_image(image):
 
 async def answer_image_send_loop():
     while True:
-        waiting = AnswerImage.objects.filter(event__time_sent__isnull=True).count()
+        waiting = AnswerImage.objects.filter(answer__time_sent__isnull=True).count()
         
-        topost = Q(time_sent__isnull=True) & Q(event__time_sent__isnull=False)
+        topost = Q(time_sent__isnull=True) & Q(answer__time_sent__isnull=False)
         topost = AnswerImage.objects.filter(topost).exclude(deleted=True)
         
         toput = Q(time_sent__isnull=False) & Q(time_sent__lt=F('time_updated'))
@@ -323,7 +323,7 @@ async def answer_image_send_loop():
                 continue
             
             try:
-                response = await api_request('POST', f'quiz_answers/{image.event_id}/images/', {
+                response = await api_request('POST', f'quiz_answers/{image.answer_id}/images/', {
                     'type': image.type,
                     'timestamp': image.time_created.isoformat(),
                     'deleted': image.deleted,
@@ -385,23 +385,23 @@ async def answer_send_loop():
         logger.info(f'{topost.count()} answers to post. {toput.count()} answers to put.')
         
         for answer in chain(topost, toput):
-            quizwidgets = uix.QuizWidget.instances.filter(question_id=answer.question_id)
+            quizwidgets = uix.QuizWidget.instances.filter(question__id=answer.question_id)
             quizwidgets.on_send_start(answer)
             await sleep(0.1)
             
         for answer in toput:
             await sleep(0.2)
-            quizwidgets = uix.QuizWidget.instances.filter(question_id=answer.question_id)
+            quizwidgets = uix.QuizWidget.instances.filter(question__id=answer.question_id)
             await _put_answer(answer)
             quizwidgets.on_send_success(answer)
             
         for answer in topost:
-            quizwidgets = uix.QuizWidget.instances.filter(question_id=answer.question_id)
+            quizwidgets = uix.QuizWidget.instances.filter(question__id=answer.question_id)
             try:
                 response = await api_request('POST', 'quiz_answers/', {
                     'id': answer.id,
                     'question_id': answer.question_id,
-                    'value': answer.value(),
+                    'value': answer.value,
                     'uik_complaint_status': answer.uik_complaint_status,
                     'tik_complaint_status': answer.tik_complaint_status,
                     'tik_complaint_text': answer.tik_complaint_text,
@@ -443,7 +443,7 @@ mock_campaigns = {
             'elections': '6b26',
             'coordinator': '724',
             'fromtime': '2018.07.22T00:00',
-            'totime': '2019.12.22T00:00',
+            'totime': '2059.12.22T00:00',
             #'channels': [
                 #{'type': 'readonly', 'uuid': '51', 'name': 'НП NEWS МО Дачное', 'icon': 'http://'},
                 #{'type': 'groupchat', 'uuid':'724', 'name': 'НП чат МО Дачное', 'icon': 'http://'},
@@ -458,7 +458,7 @@ mock_campaigns = {
         '6b26': {
             'name': 'Выборы Депутатов МО Дачное',
             'date': '2018.09.08', 
-            'mokrug': 3467,
+            'munokrug': '6ab3-d1c23',
             'flags': ['otkrep', 'mestonah', 'dosrochka'],
             'region': 'ru_78'
         },  
@@ -505,8 +505,8 @@ async def update_campaigns():
         logger.info(f'Updating campaigns. Region: {getattr(region, "name", None)}, country: {country}')
         if not region or not country:
             break
-        data = (await recv_loop(f'{country}/regions/{region.id}/campaigns/')).json()
-        #data = mock_campaigns
+        #data = (await recv_loop(f'{country}/regions/{region.id}/campaigns/')).json()
+        data = mock_campaigns
         
         #logger.debug(data)
         ##Channel.objects.filter(coordinator__in=data['coordinators']).update(actual=False)
@@ -530,7 +530,7 @@ async def update_campaigns():
             Campaign.objects.update_or_create(id=id, defaults={
                 'country': country,
                 'region': election.get('region'), 
-                'mokrug': election.get('mokrug'), 
+                'munokrug': election.get('munokrug'), 
                 'fromtime': dtparse(campaign['fromtime']),
                 'totime': dtparse(campaign['totime']),
                 'vote_date': dtparse(election['date']),
@@ -555,7 +555,7 @@ async def update_campaigns():
     create_task(update_elect_flags())
     campaigns = Campaign.objects.positional().current()
     logger.debug(campaigns.values())
-    if campaigns.filter(mokrug__isnull=True).exists():
+    if campaigns.filter(munokrug__isnull=True).exists():
         state.superior_ik = 'TIK'
     else:
         state.superior_ik = 'IKMO'

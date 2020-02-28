@@ -580,7 +580,7 @@
     "tg_channel": "https://t.me/spbelect_alerts",
     "id": "78",
     "name": "Город Санкт-Петербург",
-    "mokruga": [
+    "munokruga": [
         {"id": 3467, "name": "MO Dachnoye", "ranges":[[800,804]]}
     ]
   }

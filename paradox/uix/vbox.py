@@ -23,9 +23,13 @@ Builder.load_string('''
             #size: self.size
 
     orientation: 'vertical'
-    size_hint: 1, None
+    size_hint_x: 1 if self.visible else None
+    size_hint_y: None
+    width: 1 if self.visible else 0
+    opacity: 1 if self.visible else 0
     padding: dp(4)
     spacing: dp(8)
+    disabled: not self.visible
 ''')
 
 
@@ -58,7 +62,8 @@ class VBox(BoxLayout):
             #print('1  ', self, self.height)
         else:
             #print('0  ', self, self.height)
-            self.height = 0
+            self.size = (0, 0)
+            return
             
         #return super().do_layout(*args)
         if not self.children:
@@ -74,20 +79,25 @@ class VBox(BoxLayout):
             if c.size_hint_x is not None:
                 c.width = w
 
+    def on_touch_down(self, *a):
+        if not self.visible:
+            return False
+        return super().on_touch_down(*a)
 
-    def on_visible(self, *a):
-        if self.visible:
-            self.size_hint = 1, 1
-            self.size = 100,100
+    #def on_visible(self, *a):
+        ##print(self, self.visible)
+        #if self.visible:
+            #self.size_hint = 1, 1
+            #self.size = 100,100
             
-            self.opacity = 1
-            self.disabled = False
-        else:
-            self.size_hint = None, None
-            self.size = 0,0
-            self.opacity = 0
-            self.disabled = True
-        self.do_layout()
+            #self.opacity = 1
+            #self.disabled = False
+        #else:
+            #self.size_hint = None, None
+            #self.size = 0,0
+            #self.opacity = 1
+            #self.disabled = True
+        #self.do_layout()
         
         
     #def add_widget(self, widget, index=0, canvas=None):

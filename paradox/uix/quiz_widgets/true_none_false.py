@@ -10,14 +10,11 @@ from kivy.uix.togglebutton import ToggleButton
 from kivy.properties import StringProperty, BooleanProperty, ObjectProperty, Property
 
 from loguru import logger
-from .vbox import VBox
+from ..vbox import VBox
 from . import base
 from label import Label
 from button import Button
-from .choices import Choice
 from paradox import utils
-from .imagepicker import ImagePicker
-from .complaint import Complaint
 
 Builder.load_string('''
 #:include constants.kv
@@ -27,23 +24,28 @@ Builder.load_string('''
 #:import uix paradox.uix
 
 
-###:import ImagePicker paradox.uix.imagepicker.ImagePicker
 
 <TrueNoneFalse>:
-    disabled: not self.flags_match or not self.form.load_finished
+    disabled: not self.form.load_finished or not self.visible
     size_hint_y: None
-    width: 0.9 * getattr(self.parent, 'width', 10)
+    #width: 0.9 * getattr(self.parent, 'width', 10)
     padding_y: 0
-
+    #canvas.before:
+        #Color:
+            #rgba: teal
+        #Rectangle:
+            #pos: self.pos
+            #size: self.size
     Button:
         id: question_label
         padding_x: dp(6)
         split_str: ' '
         text_size: self.width, None
         height: self.texture_size[1] + dp(10)
-        text: self.parent.json['label']
+        text: self.parent.question.label
         color: black
         on_long_press: root.show_help()
+        #on_release: print(66)
 
     BoxLayout:
         size_hint: None, None
@@ -71,13 +73,26 @@ Builder.load_string('''
             value: False
             
     Label:
+        #id: send_status
         color: lightgray
-        font_size: dp(16)
-        id: send_status
-        #background_color: lightgray
+        font_size: dp(14)
         size_hint_y: None
-        height: dp(16)
+        height: dp(14)
         #text: '124'
+        text: root.status_text
+        
+    VBox:
+        id: complaint
+        visible: root.complaint_visible
+        
+        Button:
+            height: dp(49)
+            color: teal
+            text: "Обжаловать"
+            on_press: uix.screenmgr.show_complaint(root.answer)
+            #on_touch_down: print(2)
+            #on_press: print(2)
+            #on_long_press: print(99)
 
         
 <TNFButton@ToggleButton>:
@@ -86,7 +101,7 @@ Builder.load_string('''
     allow_no_selection: False
     group: self.parent.uid
     #on_press: self.parent.parent.on_click(self.value)
-    on_press: self.parent.parent.new_answer(self)
+    on_press: self.parent.parent.add_new_answer(self.value)
     background_color: lightgray
     #disabled: True
 
@@ -99,49 +114,67 @@ Builder.load_string('''
 
 
 class TrueNoneFalse(base.QuizWidget, VBox):
-    text = StringProperty('')
-    question_id = StringProperty()
+    #text = StringProperty('')
+    #question_id = StringProperty()
 
-    def on_send_start(self, answer):
-        self.ids.send_status.text = 'отправляется'
+    #def on_send_start(self, answer):
+        #self.ids.send_status.text = 'отправляется'
     
-    def on_send_success(self, answer):
-        super().on_send_success(answer)
-        self.ids.send_status.text = ''
+    #def on_send_success(self, answer):
+        #super().on_send_success(answer)
+        #self.ids.send_status.text = ''
 
-    def on_send_error(self, answer):
-        self.ids.send_status.text = 'отправляется (error)'
+    #def on_send_error(self, answer):
+        #self.ids.send_status.text = 'отправляется (error)'
 
-    #def on_send_fatal_error(self, answer, request, error_data):
-        #self.ids.send_status.text = 'ошибка'
+    ##def on_send_fatal_error(self, answer, request, error_data):
+        ##self.ids.send_status.text = 'ошибка'
     
-    def on_save_success(self, answer):
-        super().on_save_success(answer)
-        self.ids.send_status.text = 'отправляется'
-        self.show_state(None if answer.revoked else answer.value())
+    #def on_save_success(self, answer):
+        #super().on_save_success(answer)
+        #self.ids.send_status.text = 'отправляется'
+        ##self.show_state(None if answer.revoked else answer.value)
+        
+    #def on_save_start(self, answer):
+        #super().on_save_start(answer)
+        #self.ids.send_status.text = 'сохраняется'
+        ##self.show_state(None if answer.revoked else answer.value)
+        
+    @property
+    def val(self):
+        if not self.answer:
+            return None
+        return None if self.answer.revoked else self.answer.value
         
     @utils.asynced
-    async def new_answer(self, button):
+    async def add_new_answer(self, value):
         #self.disabled = True
-        await super().new_answer(button.value)
+        #import ipdb; ipdb.sset_trace()
+        if not value == self.val:
+            success = await super().add_new_answer(value)
+            if not success:
+                self.show_cur_state()
         #await sleep(0.2)
         #self.disabled = False
         
-    async def set_past_answers(self, answers):
-        #logger.debug(f'{self}, {self.json["label"]}, {answers}')
-        if answers:
-            #print('set past', answers[-1].value())
-            answer = answers[-1]
-            self.show_state(None if answer.revoked else answer.value())
-        else:
-            self.show_state(None)
+    #async def set_past_answers(self, answers):
+        ##logger.debug(f'{self}, {self.question.label}, {answers}')
+        #if answers:
+            ##print('set past', answers[-1].value)
+            #answer = answers[-1]
+            #self.show_state(None if answer.revoked else answer.value)
+        #else:
+            #self.show_state(None)
             
-        await super().set_past_answers(answers)
+        #await super().set_past_answers(answers)
             
-    def show_state(self, value):
-        #logger.debug(f'{self}, {self.json["label"]}, {value}')
+    #def on_answer(self, *a):
+        #return super().on_answer(*a)
+    
+    def show_cur_state(self):
+        #logger.debug(f'{self}, {self.question.label}, {self.val}')
         for button in self.ids.buttons.children:
-            if button.value == value:
+            if button.value == self.val:
                 button.state = 'down'
             else:
                 button.state = 'normal'

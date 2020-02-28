@@ -23,15 +23,16 @@ from loguru import logger
 
 from ..vbox import VBox
 from ..choices import Choice
-from ..float_message import show_float_message
+#from ..float_message import show_float_message
 
 from paradox import uix
+from paradox.uix import float_message
 from paradox.models import Campaign
 
 
 Builder.load_string('''
 #:include constants.kv
-##:import show_float_message paradox.uix.float_message.show_float_message
+##:import show_float_message paradox.uix.float_message.show
 #:import state app_state.state
 
 
@@ -141,14 +142,14 @@ Builder.load_string('''
                         value: 'videonabl'
 
             Label:
-                #id: mokrug
-                #text: state.get('mokrug', {}).get('name', '') if state.get('mokrug') else ''
-                text: root.mokrug['name'] if root.mokrug else ''
+                #id: munokrug
+                #text: state.get('munokrug', {}).get('name', '') if state.get('munokrug') else ''
+                text: root.munokrug['name'] if root.munokrug else ''
                 #text: "lol"
                 
             Label:
-                #id: mokrug
-                #text: state.get('mokrug', {}).get('name', '') if state.get('mokrug') else ''
+                #id: munokrug
+                #text: state.get('munokrug', {}).get('name', '') if state.get('munokrug') else ''
                 text: 'ТИК ' + root.tik['name'] if root.tik else ''
                 #text: "lol"
                 
@@ -168,7 +169,7 @@ Builder.load_string('''
 
 
 class PositionScreen(Screen):
-    mokrug = ObjectProperty(None, allownone=True)
+    munokrug = ObjectProperty(None, allownone=True)
     tik = ObjectProperty(None, allownone=True)
     uik = ObjectProperty(None, allownone=True)
 
@@ -211,21 +212,21 @@ class PositionScreen(Screen):
     @on('state.role')
     def set_role(self):
         #if state.get('role'):
-        self.ids.roles.choice = self.ids.roles.getchoice(state.role)
+        self.ids.roles.choice = self.ids.roles.getchoice(state.get('role'))
             
     @on('state.uik')
     def set_uik(self):
         self.uik = str(state.get('uik', '') or '')
   
-    def get_mokrug(self):
+    def get_munokrug(self):
         if not (state.get('uik') and state.get('region')):
             return None
-        for mokrug in state.region.get('mokruga', []):
-            #if int(state.uik) in mokrug.get('uiks', []):
-                #return mokrug
-            for first, last in mokrug.get('uik_ranges', []):
+        for munokrug in state.region.get('munokruga', []):
+            #if int(state.uik) in munokrug.get('uiks', []):
+                #return munokrug
+            for first, last in munokrug.get('uik_ranges', []):
                 if first <= int(state.uik) <= last:
-                    return mokrug
+                    return munokrug
         return None
     
     def get_tik(self):
@@ -240,11 +241,11 @@ class PositionScreen(Screen):
         return None
         
     @on('state.uik', 'state.region')
-    def update_mokrug_tik(self):
+    def update_munokrug_tik(self):
         #import ipdb; ipdb.sset_trace()
-        self.mokrug = state.mokrug = self.get_mokrug()
+        self.munokrug = state.munokrug = self.get_munokrug()
         self.tik = state.tik = self.get_tik()
-        #logger.debug(f'Mokrug: {self.mokrug}. Tik: {self.tik}')
+        #logger.debug(f'Mokrug: {self.munokrug}. Tik: {self.tik}')
         
                    
     def show_errors(self):
@@ -257,7 +258,7 @@ class PositionScreen(Screen):
             errors.append('Укажите ваш статус')
         if errors:
             errors = 'Пожалуйста заполните обязательные поля\n\n' + '\n'.join(errors)
-            show_float_message(text=errors)
+            uix.float_message.show(text=errors)
             return errors
         else:
             return False
@@ -275,13 +276,13 @@ class PositionScreen(Screen):
         ###if not (self.region == state.region) or not (self.uik == state.uik):
             ###schedule('send_position')
         
-        ###mokrug = get_mokrug(state.region, state.uik)
-        ###if mokrug == state.mokrug and mokrug is not None:
-            ###return  # same mokrug
+        ###munokrug = get_munokrug(state.region, state.uik)
+        ###if munokrug == state.munokrug and munokrug is not None:
+            ###return  # same munokrug
         
-        ###state.mokrug = mokrug
+        ###state.munokrug = munokrug
         
-        ###if state.mokrug is None and self.region == state.region:
+        ###if state.munokrug is None and self.region == state.region:
             ###return  # same region
         #import client
         #if not self.prev_regionid == state.get('region', {}).get('id'):

@@ -38,7 +38,7 @@ from paradox.models import Campaign
 Builder.load_string('''
 #:include constants.kv
 
-<TikComplaintScreen>:
+<ComplaintScreen>:
     ScrollView:
         id: scrollview
 
@@ -143,7 +143,7 @@ Builder.load_string('''
 ''')
 
 
-class TikComplaintScreen(Screen):
+class ComplaintScreen(Screen):
     text = StringProperty(None, allownone=True)
     
     def on_edit_pressed(self):

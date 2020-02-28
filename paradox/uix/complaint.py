@@ -38,7 +38,7 @@ Builder.load_string('''
     
     #width: 0.9 * getattr(self.parent, 'width', 10)
     #json: self.quizwidget.json
-    #example_uik_complaint: self.quizwidget.json['example_uik_complaint']
+    #example_uik_complaint: self.quizwidget.question.example_uik_complaint
     
     Button:
         height: dp(20)
@@ -53,14 +53,14 @@ Builder.load_string('''
         text_size: self.width, None
         #halign: 'left'
         
-        Label:
-            pos: self.parent.pos
-            size: self.parent.size
-            id: loader
-            font_size: dp(20)
-            opacity: 0
-            text: 'загрузка...'
-            background_color: wheat4
+        #Label:
+            #pos: self.parent.pos
+            #size: self.parent.size
+            #id: loader
+            #font_size: dp(20)
+            #opacity: 0
+            #text: 'загрузка...'
+            #background_color: wheat4
         
     BoxLayout:
         size_hint_y: None
@@ -80,7 +80,7 @@ Builder.load_string('''
             font_size: dp(14)
             #he
             on_release: 
-                uix.screenmgr.show_handbook(root.quizwidget.json['label'], root.uik_complaint_text)
+                uix.screenmgr.show_handbook(root.quizwidget.question.label, root.uik_complaint_text)
             
         Button:
             #halign: 'right'
@@ -514,7 +514,7 @@ class Complaint(VBox):
             
         #print('conmpl1')
         self.visible = True
-        self.ids.loader.opacity = 1
+        #self.ids.loader.opacity = 1
         self.ids.uik_complaint_status.choice = ComplaintStatusChoice.instances.get(
             value=answer.uik_complaint_status
         )
@@ -540,7 +540,7 @@ class Complaint(VBox):
         self.ids.uik_complaint_images.del_images()
         self.ids.uik_reply_images.del_images()
         
-        logger.debug(f'{self.quizwidget.json["label"]}: {answer.images.count()} images for answer {answer.id}')
+        logger.debug(f'{self.quizwidget.question.label}: {answer.images.count()} images for answer {answer.id}')
         for dbimage in answer.images.all():
             if dbimage.deleted:
                 logger.debug(f'image {dbimage.filepath} was deleted by user')
@@ -557,7 +557,7 @@ class Complaint(VBox):
             await sleep(0.01)
                 #('tik_complaint', 'Подаваемые в ТИК жалобы'),
                 #('tik_reply', 'Ответы, решения от ТИК'),'
-        self.ids.loader.opacity = 0
+        #self.ids.loader.opacity = 0
                 
     #def __init__(self, *args, **kwargs):
         #super().__init__(*args, **kwargs)
@@ -624,7 +624,7 @@ class Complaint(VBox):
 
     @on('state.profile')
     def build_uik_text(self):
-        #quizwidget.json['example_uik_complaint']
+        #quizwidget.question.example_uik_complaint
         self.uik_complaint_text = uik_complaint_stub.format(**self.context())
         
             

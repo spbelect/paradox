@@ -8,6 +8,8 @@ import traceback
 import shelve
 import cProfile
 
+import kivy
+
 from app_state import state, on
 from loguru import logger
 from kivy.app import App
@@ -26,7 +28,7 @@ from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.gridlayout import GridLayout
 #from kivy.uix.label import Label
 from kivy.uix.scrollview import ScrollView
-from kivy.uix.screenmanager import ScreenManager
+from kivy.uix import screenmanager
 from kivy.uix.widget import Widget
 from kivy.uix.textinput import TextInput
 from kivy.uix.button import Button
@@ -37,9 +39,8 @@ from kivy.utils import platform
 #import plyer
 
 from paradox import uix
+from paradox.uix import float_message
 from ..vbox import VBox
-###from uix.navigationdrawer2 import NavigationDrawer
-from ..float_message import show_float_message
 
 from .handbook_screen import HandBookScreen
 from .communication_screen import CommunicationScreen
@@ -56,7 +57,7 @@ from .about_screen import AboutScreen
 Builder.load_string('''
 #:include constants.kv
 
-<ScreenMgr>:
+<ScreenManager>:
     canvas.before:
         Color:
             rgba: (4, 4, 9, 1)
@@ -67,7 +68,7 @@ Builder.load_string('''
 ''')
 
 
-class ScreenMgr(ScreenManager):
+class ScreenManager(kivy.uix.screenmanager.ScreenManager):
     screen_history = ListProperty([])
     about_to_exit = BooleanProperty(False)
 
@@ -145,7 +146,7 @@ class ScreenMgr(ScreenManager):
                 return False
             else:
                 self.about_to_exit = True
-                show_float_message(text='Нажмите еще раз для выхода')
+                uix.float_message.show('Нажмите еще раз для выхода')
         return True
 
     def show_error_screen(self, message):
@@ -168,9 +169,9 @@ class ScreenMgr(ScreenManager):
         self.get_screen('handbook').show_help(title, text)
         self.push_screen('handbook')
         
-    def show_tik_complaint(self, complaint):
-        self.get_screen('tik_complaint').show(complaint)
-        self.push_screen('tik_complaint')
+    def show_complaint(self, answer):
+        self.get_screen('complaint').show(answer)
+        self.push_screen('complaint')
 
     @on('state.uik', 'state.region')
     def remove_formsreens(self):

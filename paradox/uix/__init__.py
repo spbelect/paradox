@@ -1,4 +1,4 @@
-from .screens.screenmgr import ScreenMgr
+from .screens.screen_manager import ScreenManager
 
 from .screens.userprofile_screen import UserProfileScreen
 from .screens.position_screen import PositionScreen
@@ -16,7 +16,7 @@ formlist = FormListScreen(name='formlist')
 position = PositionScreen(name='position')
 userprofile = UserProfileScreen(name='userprofile')
 
-screenmgr = ScreenMgr()
+screenmgr = ScreenManager()
 
 from .sidepanel import SidePanel
 sidepanel = SidePanel()

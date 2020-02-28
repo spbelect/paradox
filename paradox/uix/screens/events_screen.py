@@ -56,7 +56,7 @@ Builder.load_string('''
 
 
 class EventLogItem(Button):
-    input_json = ObjectProperty(None)
+    question = ObjectProperty(None)
 
 
 #class PositionItem(Label):
@@ -81,7 +81,7 @@ class EventsScreen(Screen):
             self.add_event(answer)
 
     def add_event(self, answer):
-        if answer.question_id not in state.get('inputs', {}):
+        if answer.question_id not in state.get('questions', {}):
             return
         
         uptime = answer.time_updated.astimezone()
@@ -106,12 +106,12 @@ class EventsScreen(Screen):
         ctime = answer.time_created.astimezone().strftime("%H:%M")
         
         if answer.revoked:
-            text = f'[color=#444]{uptime}[/color] отозвано: [s]{ctime} {answer.question_label}: {answer.value()}[/s]'
+            text = f'[color=#444]{uptime}[/color] отозвано: [s]{ctime} {answer.question_label}: {answer.humanized_value}[/s]'
         else:
-            text = f'[color=#444]{uptime}[/color] {answer.question_label}: {answer.value()}'
-        item = EventLogItem(input_json=state.questions[answer.question_id], text=text)
+            text = f'[color=#444]{uptime}[/color] {answer.question_label}: {answer.humanized_value}'
+        item = EventLogItem(question=state.questions[answer.question_id], text=text)
         self.ids['content'].add_widget(item)
         item.bind(on_long_press=self.on_event_press)
 
     def on_event_press(self, item):
-        self.manager.show_handbook(item.input_json['label'], item.input_json['fz67_text'])
+        self.manager.show_handbook(item.question.label, item.question.fz67_text)

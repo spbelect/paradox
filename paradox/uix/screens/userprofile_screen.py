@@ -21,8 +21,8 @@ from kivy.uix.vkeyboard import VKeyboard
 from loguru import logger
 
 from ..vbox import VBox
-
-from ..float_message import show_float_message
+from paradox import uix
+from paradox.uix import float_message
 
 
 Builder.load_string('''
@@ -134,7 +134,7 @@ class UserProfileScreen(Screen):
         if missing:
             errors.append('Пожалуйста заполните обязательные поля\n' + '\n'.join(missing))
         if errors:
-            show_float_message(text='\n'.join(errors))
+            uix.float_message.show(text='\n'.join(errors))
             return errors
         else:
             return False

@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
+# TODO: rewrite. Old code, not used.
 from __future__ import unicode_literals
 
 from kivy.lang import Builder
 from kivy.uix.boxlayout import BoxLayout
 from kivy.properties import ObjectProperty, StringProperty
 
-from ..utils import strptime
-from .vbox import VBox
+from paradox import utils
+from ..vbox import VBox
 from . import base
 
 from button import Button
@@ -63,7 +64,7 @@ Builder.load_string('''
         split_str: ' '
         text_size: self.width, None
         height: self.texture_size[1] + dp(10)
-        text: self.parent.json['label']
+        text: self.parent.question.label
         color: black
         #on_press: root.show
 
@@ -140,9 +141,9 @@ class MultiBoolInput(base.QuizWidget, VBox):
             self.remove_widget(self.more_button)
         except:
             pass
-        ts = strptime(answer['timestamp'], '%Y-%m-%dT%H:%M:%S.%f')
+        ts = utils.strptime(answer['timestamp'], '%Y-%m-%dT%H:%M:%S.%f')
         text = '%s %s' % (utc_to_local(ts).strftime('%H:%M'), 'Да' if answer['value'] else 'Нет')
-        self.add_widget(ValueLogItem(text=text, timestamp=ts.isoformat(), question_id=self.question_id, no_loader=True))
+        self.add_widget(ValueLogItem(text=text, timestamp=ts.isoformat(), question_id=selfquestion.id, no_loader=True))
         self.more_button = MoreButton()
         self.more_button.bind(on_press=self.on_more)
         self.add_widget(self.more_button)
@@ -150,14 +151,14 @@ class MultiBoolInput(base.QuizWidget, VBox):
     def on_save_success(self, eid, timestamp, value):
         #self.values.append((timestamp, value))
         text = '%s %s' % (utc_to_local(timestamp).strftime('%H:%M'), 'Да' if value else 'Нет')
-        self.add_widget(ValueLogItem(text=text, timestamp=timestamp.isoformat(), question_id=self.question_id))
+        self.add_widget(ValueLogItem(text=text, timestamp=timestamp.isoformat(), question_id=selfquestion.id))
         self.more_button = MoreButton()
         self.more_button.bind(on_press=self.on_more)
         self.add_widget(self.more_button)
         self.remove_widget(self.ids['true_false_buttons'])
 
     def _get_loader(self, answer):
-        logitem = ValueLogItem.objects.get(question_id=self.question_id, timestamp=answer['timestamp'])
+        logitem = ValueLogItem.objects.get(question_id=selfquestion.id, timestamp=answer['timestamp'])
         return logitem.ids.get('loader') if logitem else None
 
     def on_send_success(self, answer):
