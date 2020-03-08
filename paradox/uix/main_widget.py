@@ -14,7 +14,7 @@ from loguru import logger
 
 from .navigationdrawer.navigationdrawer import NavigationDrawer
 #from .screens.screens import screens
-from . import sidepanel, screenmgr
+from paradox import uix
 
 
 Builder.load_string('''
@@ -23,6 +23,7 @@ Builder.load_string('''
 ##:import SidePanel paradox.uix.sidepanel.SidePanel
 
 <MainWidget>:
+    # NavigationDrawer settings
     touch_accept_width: dp(45)  # width to toggle navigation drawer
     side_panel_width: min(dp(450), 0.8*self.width)
     min_dist_to_open: 0.25
@@ -44,8 +45,8 @@ class MainWidget(NavigationDrawer):
     def __init__(self, *a, **kw):
         ##kw['__no_builder'] = False
         super().__init__(*a, **kw)
-        self.add_widget(sidepanel)
-        self.add_widget(screenmgr)
+        self.add_widget(uix.sidepanel)
+        self.add_widget(uix.screenmgr)
         logger.debug(f'MainWidget created {self}')
         
         

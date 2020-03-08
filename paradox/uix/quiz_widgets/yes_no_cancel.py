@@ -1,11 +1,4 @@
 # -*- coding: utf-8 -*-
-# 
-# DEPRECATED. Not used anymore. Use yes_no_cancel instead.
-# 
-
-
-
-
 from __future__ import unicode_literals
 from asyncio import sleep
 
@@ -32,7 +25,7 @@ Builder.load_string('''
 
 
 
-<TrueNoneFalse>:
+<YesNoCancel>:
     disabled: not self.form.load_finished or not self.visible
     size_hint_y: None
     #width: 0.9 * getattr(self.parent, 'width', 10)
@@ -69,26 +62,19 @@ Builder.load_string('''
     BoxLayout:
         size_hint: None, None
         id: buttons
-        padding: 0
-        #spacing: 0
+        padding: 0, 0, 0, dp(10)
+        spacing: dp(100)
         size: dp(300), height1
         pos_hint: {'center_x': .5, 'top': 1}
         background_color: lightgray
 
-        TNFButton:
+        YesNoButton:
             id: yes
             size_hint_x: .2
             text: 'Да'
             value: True
 
-        TNFButton:
-            id: neizvestno
-            size_hint_x: .6
-            text: 'Неизвестно'
-            value: None
-            state: 'down'
-
-        TNFButton:
+        YesNoButton:
             id: no
             size_hint_x: .2
             text: 'Нет'
@@ -109,7 +95,7 @@ Builder.load_string('''
             on_press: uix.screenmgr.show_complaint(root.answer)
 
         
-<TNFButton@ToggleButton>:
+<YesNoButton@ToggleButton>:
     height: self.parent.height - 10
     size_hint_y: 1
     allow_no_selection: False
@@ -127,7 +113,7 @@ Builder.load_string('''
     #value = ObjectProperty(allownone=True)
 
 
-class TrueNoneFalse(base.QuizWidget, VBox):
+class YesNoCancel(base.QuizWidget, VBox):
     #text = StringProperty('')
     #question_id = StringProperty()
 
@@ -162,12 +148,14 @@ class TrueNoneFalse(base.QuizWidget, VBox):
         
     @utils.asynced
     async def add_new_answer(self, value):
+        if self.val == value:
+            value = None
         #self.disabled = True
         #import ipdb; ipdb.sset_trace()
-        if not value == self.val:
-            success = await super().add_new_answer(value)
-            if not success:
-                self.show_cur_state()
+        #if not value == self.val:
+        success = await super().add_new_answer(value)
+        if not success:
+            self.show_cur_state()
         #await sleep(0.2)
         #self.disabled = False
         
@@ -187,9 +175,6 @@ class TrueNoneFalse(base.QuizWidget, VBox):
     
     def show_cur_state(self):
         #logger.debug(f'{self}, {self.question.label}, {self.val}')
-        for button in self.ids.buttons.children:
-            if button.value == self.val:
-                button.state = 'down'
-            else:
-                button.state = 'normal'
+        self.ids.yes.state = 'down' if self.val is True else 'normal'
+        self.ids.no.state = 'down' if self.val is False else 'normal'
                 

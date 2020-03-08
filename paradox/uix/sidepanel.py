@@ -9,7 +9,7 @@ from kivy.uix.boxlayout import BoxLayout
 
 
 #from .navigationdrawer.navigationdrawer import NavigationDrawer
-from . import screenmgr
+from paradox.uix import screenmgr
 
 from button import Button
 
@@ -27,43 +27,43 @@ Builder.load_string('''
 
     Button:
         id: region
-        text: self.parent.region or 'Регион не выбран'
-        on_release: root.on_click('position')
+        text: state.region.name or 'Регион не выбран'
+        on_release: root.on_screen_click('position')
         background_color: transparent
         shorten: True
         text_size: self.width, None
 
     Button:
         id: uik
-        text: f'УИК {self.parent.uik}' if self.parent.uik else 'УИК не выбран'
-        on_release: root.on_click('position')
+        text: f'УИК {state.uik}' if state.uik else 'УИК не выбран'
+        on_release: root.on_screen_click('position')
         background_color: transparent
 
     Button:
         text: 'Профиль'
-        on_release: root.on_click('userprofile')
+        on_release: root.on_screen_click('userprofile')
         background_color: teal
 
     Button:
         text: 'Анкеты'
-        on_release: root.on_click('formlist')
+        on_release: root.on_screen_click('formlist')
         background_color: teal
 
     Button:
         text: 'Журнал'
-        on_release: root.on_click('events')
+        on_release: root.on_screen_click('events')
         background_color: teal
 
     Button:
         text: 'Координаторы'
-        on_release: root.on_click('coordinators')
+        on_release: root.on_screen_click('coordinators')
         #background_color: transparent
         background_color: teal
         #disabled: True
 
     #Button:
         #text: 'Сообщения'
-        #on_release: root.on_click('messages')
+        #on_release: root.on_screen_click('messages')
         #background_color: transparent
         #disabled: True
 
@@ -71,33 +71,19 @@ Builder.load_string('''
 
     Button:
         text: 'О программе'
-        on_release: root.on_click('about')
+        on_release: root.on_screen_click('about')
         background_color: transparent
 
 ''')
 
 
 class SidePanel(BoxLayout):
-    manager = ObjectProperty()
-    uik = ObjectProperty(allownone=True)
-    region = ObjectProperty(allownone=True)
-        
+    #manager = ObjectProperty()
     #async def init(self):
         #if 'region' in state:
             #self.region = state.region.name
             
-    @on('state.uik')
-    def set_uik(self):
-        #print(f'uik {state.get("uik")}')
-        self.uik = state.get('uik')
-        
-    @on('state.region')
-    def set_region(self):
-        #print(f'region {state.get("region")}')
-        self.region = state.get('region', {}).get('name')
-        
-        
-    def on_click(self, screen):
+    def on_screen_click(self, screen):
         main_widget = self.parent.parent
         screenmgr.push_screen(screen)
         main_widget.state = 'closed'

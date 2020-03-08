@@ -24,20 +24,20 @@ Builder.load_string('''
 #:import state app_state.state
 
 
-<SmartCamera>:
-    canvas.before:
-        PushMatrix
-        Rotate:
-            angle: root.rotate
-            origin: self.center
-    canvas.after:
-        PopMatrix
+#<SmartCamera>:
+    #canvas.before:
+        #PushMatrix
+        #Rotate:
+            #angle: root.rotate
+            #origin: self.center
+    #canvas.after:
+        #PopMatrix
 
-        Color:
-            rgba: 1,0,0,0.5
-        Rectangle:
-            pos: self.pos
-            size: self.size
+        #Color:
+            #rgba: 1,0,0,0.5
+        #Rectangle:
+            #pos: self.pos
+            #size: self.size
 
 <FormListScreen>:
     FloatLayout:
@@ -66,6 +66,7 @@ Builder.load_string('''
                         
                     VBox:
                         padding: 0, dp(10)
+                        spacing: dp(8)
 
                         Label:
                             height: dp(20)

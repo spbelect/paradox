@@ -21,6 +21,7 @@ from kivy.core.window import Window
 from kivy.effects.dampedscroll import DampedScrollEffect
 from loguru import logger
 
+from ..quiz_widgets.yes_no_cancel import YesNoCancel
 from ..quiz_widgets.multibool_input import MultiBoolInput
 from ..quiz_widgets.true_none_false import TrueNoneFalse
 from ..quiz_widgets.numeric_input import NumericInput
@@ -128,8 +129,9 @@ class FormScreen(Screen):
     def add_quizwidget(self, question):
         if question['input_type'] == 'NUMBER':
             quizwidget = NumericInput(question=question, form=self)
-        elif question['input_type'] == 'MULTI_BOOL':
-            quizwidget = TrueNoneFalse(question=question, form=self)
+        elif question['input_type'] == 'YESNO':
+            logger.debug(f'Adding quizwidget for {question}')
+            quizwidget = YesNoCancel(question=question, form=self)
         else:
             return
         self.ids.content.add_widget(quizwidget)

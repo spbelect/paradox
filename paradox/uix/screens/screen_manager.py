@@ -85,7 +85,7 @@ class ScreenManager(kivy.uix.screenmanager.ScreenManager):
         self.add_widget(uix.position)
         self.add_widget(uix.coordinators)
         self.add_widget(uix.events_screen)
-        self.add_widget(uix.tik_complaint)
+        self.add_widget(uix.complaint)
         self.add_widget(AboutScreen(name='about'))
         self.add_widget(CommunicationScreen(name='communication'))
         self.add_widget(uix.userprofile)
@@ -166,10 +166,14 @@ class ScreenManager(kivy.uix.screenmanager.ScreenManager):
         self.push_screen(screen_name)
 
     def show_handbook(self, title, text):
+        if 'handbook' in self.screen_history:
+            self.screen_history.remove('handbook')
         self.get_screen('handbook').show_help(title, text)
         self.push_screen('handbook')
         
     def show_complaint(self, answer):
+        if 'complaint' in self.screen_history:
+            self.screen_history.remove('complaint')
         self.get_screen('complaint').show(answer)
         self.push_screen('complaint')
 

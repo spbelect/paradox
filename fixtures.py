@@ -49,8 +49,8 @@ async def app():
                         {
                             'question_id': 'i1', 
                             'label': 'Вам предоставили', 
-                            'input_type': 'MULTI_BOOL',
-                            "alarm": { "eq": False },
+                            'input_type': 'YESNO',
+                            "incident_conditions": { "answer_equal_to": False },
                         }
                     ]}
                 ]

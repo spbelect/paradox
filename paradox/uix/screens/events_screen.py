@@ -38,9 +38,18 @@ Builder.load_string('''
 
         ScrollView:
             scroll_y: 0
+            
             VBox:
-                id: content
-                spacing: 0
+                padding: 0
+                spacing: dp(8)
+                
+                Label:
+                    text: 'В журнале показаны все ваши ответы в хронологическом порядке.'
+                    color: lightgray
+                    font_size: dp(14)
+                VBox:
+                    id: content
+                    padding: 0
 
 <EventLogItem>:
     text_size: self.width, None

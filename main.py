@@ -16,6 +16,8 @@ Config.set('graphics', 'multisamples', '0')
 #Config.set('kivy', 'log_level', 'debug')
 
 os.environ['KIVY_EVENTLOOP'] = 'asyncio'
+os.environ['LOGURU_AUTOINIT'] = '0'
+#os.environ['KIVY_PROFILE_LANG'] = '1'
 
 from asyncio import sleep
 from datetime import datetime
@@ -37,6 +39,9 @@ from kivy.resources import resource_add_path
 from kivy.utils import platform
 from lockorator.asyncio import lock_or_exit
 from loguru import logger
+
+logger.add(sys.stderr, colorize=True)
+state._appstate_autocreate = True
 
 #from typing import Dict, List
 #from pydantic import BaseModel, ValidationError
@@ -338,8 +343,8 @@ mock_forms = [{
         "id": "ecc1deb3-5fe7-48b3-a07c-839993e4563b",
         "label": "Неиспользованные бюллетени убраны в сейф или лежат на видном месте.",
         "fz67_text": "ст.456 п.2 Неиспользованные бюллетени бла бла бла\n",
-        "input_type": "MULTI_BOOL",   # тип да\нет
-        "alarm": { "eq": False },
+        "input_type": "YESNO",   # тип да\нет
+        "incident_conditions": { "answer_equal_to": False },
         "example_uik_complaint": "жалоба: бла бла"
       },
       {
@@ -347,7 +352,7 @@ mock_forms = [{
         "label": "Число проголосаваших досрочно",
         "fz67_text": "ст.123 п.9 Число проголосаваших досрочно бла бла бла\n",
         "input_type": "NUMBER",  # тип число
-        "alarm": { "gt": 100 },
+        "incident_conditions": { "answer_greater_than": 100 },
         "visible_if": {
             "elect_flags": ["dosrochka"],  # показать только если есть активная кампания с досрочкой
         },
@@ -356,21 +361,33 @@ mock_forms = [{
       {
         "id": "77532eb3-5fe7-48b3-a07c-cd9b35773709",
         "label": "Все досрочные бюллетени считаются отдельно.",
-        "input_type": "MULTI_BOOL",
-        "alarm": { "eq": False },
+        "input_type": "YESNO",
+        # Считать ответ инцидетом если все заданные условия соблюдены
+        "incident_conditions": { "answer_equal_to": False },
+        # Показывать этот вопрос в анкете если:
+        # - текущие выборы имеют заданные флаги
+        # И
+        # - даны разрешающие ответы на ограничивающие вопросы
         "visible_if": {
             "elect_flags": ["dosrochka"],  # показать только если есть активная кампания с досрочкой
-            "precursor_answers": {"all": [  # "all" == "И"; "any" == "ИЛИ"
-                {
-                    "question_id": "ecc1deb3-5fe7-48b3-a07c-839993e4563b", 
-                    "answer_equal_to": False
-                },
-                {
-                    "question_id": "b87436e0-e7f2-4453-b364-a952c0c7842d", 
-                    "answer_greater_than": 100,
-                    "answer_less_than": 1000
-                }
-            ]},
+            "limiting_questions": {
+                # Возможные значения:
+                # all: [] - все условия в списке должны быть соблюдены
+                # any: [] - хотя бы одно условие в списке соблюдено
+                "all": [
+                    # Возможные условия:
+                    # answer_equal_to, answer_greater_than, answer_less_than
+                    {
+                        "question_id": "ecc1deb3-5fe7-48b3-a07c-839993e4563b", 
+                        "answer_equal_to": False
+                    },
+                    {
+                        "question_id": "b87436e0-e7f2-4453-b364-a952c0c7842d", 
+                        "answer_greater_than": 100,
+                        "answer_less_than": 1000
+                    }
+                ]
+            },
         },
         "example_uik_complaint": "жалоба: бла бла",
         "fz67_text": "ст. 778 ... \n",
@@ -400,21 +417,25 @@ async def on_start(app):
     state.autopersist(statefile)
     if 'country' not in state:
         logger.info('Creating default state.')
-    await sleep(0.2)
     
-    await client.get_server()
-    
-    asyncio.create_task(client.check_new_version_loop())
+    state._server_ping_success = asyncio.Event()
+    state._server_ping_success.set()  # Assume success on app start.
 
     state.setdefault('app_id', randint(10 ** 19, 10 ** 20 - 1))
-    state.setdefault('profile', {})
-    
+    state.setdefault('profile', {})    
     state.setdefault('country', 'ru')
     state.setdefault('superior_ik', 'TIK')
     state.setdefault('tik', None)
     state.setdefault('questions', {})
     state.setdefault('regions', {})
     state.setdefault('forms', {'general': {'ru': []}})
+    
+    if not state.server:
+        await client.get_server()
+    
+    await sleep(0.2)
+    
+    asyncio.create_task(client.check_new_version_loop())
     
     #state._pending_save_questions = set()
     
@@ -433,7 +454,7 @@ async def on_start(app):
             
     for question in state.questions.values():
         #import ipdb; ipdb.sset_trace()
-        deps = question.get('visible_if', {}).get('precursor_answers', {})
+        deps = question.get('visible_if', {}).get('limiting_questions', {})
         for condition in (deps.get('any') or deps.get('all') or []):
             precursor = state.questions.get(condition['question_id'], {})
             precursor.setdefault('dependants', []).append(question['id'])
@@ -450,9 +471,10 @@ async def on_start(app):
     #logger.debug(regions)
     state.regions.update(regions)
     logger.info('Regions updated.')
-    if state.get('region'):
-        if not state.region == state.regions[state.region.id]:
-            state.region = state.regions[state.region.id]
+    if state.region:
+        if not state.region == state.regions.get(state.region.id):
+            logger.debug(f'Setting region to {state.regions.get(state.region.id)}')
+            state.region = state.regions.get(state.region.id)
     
     uix.events_screen.restore_past_events()
     logger.info('Restored past events (fin).')

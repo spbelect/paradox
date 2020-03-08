@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # TODO: move this into standalone package
 
+#from functools import partial
 import kivy.uix.button
 from kivy.clock import Clock
 from kivy.factory import Factory
@@ -22,43 +23,32 @@ from kivy.properties import BooleanProperty, ListProperty
 
 class Button(kivy.uix.button.Button):
     """
-    Button with long_press event.
+    Button with on_long_press event.
     """
-    long_touch = BooleanProperty(False)
-    long_touch_color = ListProperty([0.137, 0.451, 0.565, 0.5])  # teal
-
-    def get_bg_color(self):
-        self.long_touch_color if self.long_touch else self.background_color
-
 
     def __init__(self, *args, **kwargs):
         super(Button, self).__init__(*args, **kwargs)
         self.register_event_type('on_long_press')
         self.bind(
             on_touch_down=self.ontouchdown,
-            on_touch_up=self.on_stop_longpress,)
+            on_touch_up=self.ontouchup,
+            on_touch_move=self.ontouchmove
+        )
 
     def ontouchdown(self, s, touch):
         if not self.collide_point(touch.x, touch.y):
             return False
-        Clock.schedule_once(self.set_long_touch, 0.4),
+        Clock.schedule_once(self.do_long_touch, 0.1),
 
-    def set_long_touch(self, *a):
-        self.long_touch = True
+    def ontouchup(self, *a):
+        Clock.unschedule(self.do_long_touch)
 
-    #def on_touch_down(self, e):
-        #print(e.grab_state, e.grab_list, e.is_mouse_scrolling, e.ud, '\n')
-        
-    def on_touch_cancel(self, *a):
-        Clock.unschedule(self.set_long_touch)
-        self.long_touch = False
+    def ontouchmove(self, s, touch):
+        if abs(touch.ox - touch.x) > 20 and abs(touch.oy - touch.y) > 20:
+            Clock.unschedule(self.do_long_touch)
 
-    def on_stop_longpress(self, s, touch):
-        Clock.unschedule(self.set_long_touch)
-        if self.long_touch:
-            if self.collide_point(touch.x, touch.y):
-                self.dispatch('on_long_press')
-            self.long_touch = False
+    def do_long_touch(self, *a):
+        self.dispatch('on_long_press')
 
     def on_long_press(self, *args):
         pass

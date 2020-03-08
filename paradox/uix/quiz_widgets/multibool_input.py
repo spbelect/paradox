@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
-# TODO: rewrite. Old code, not used.
+# 
+# DEPRECATED. Not used anymore. Use yes_no_cancel instead.
+# 
+
+
 from __future__ import unicode_literals
 
 from kivy.lang import Builder

@@ -28,7 +28,7 @@ Builder.load_string('''
     width: 1 if self.visible else 0
     opacity: 1 if self.visible else 0
     padding: dp(4)
-    spacing: dp(8)
+    spacing: 0
     disabled: not self.visible
 ''')
 

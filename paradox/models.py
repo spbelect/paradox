@@ -26,15 +26,15 @@ class Model(db.models.Model):
 
         >>> user.email = 'user@example.com'
         >>> user.last_name = 'Bob'
-        >>> user.save()
+        >>> user.save(update_fields=['email', 'last_name'])
 
         """
-        self2 = self.__class__.objects.get(pk=self.pk)
+        #self2 = self.__class__.objects.get(pk=self.pk)
         for attr, val in kwargs.items():
-            setattr(self2, attr, val)
+            #setattr(self2, attr, val)
             setattr(self, attr, val)
 
-        self2.save()
+        self.save(update_fields=kwargs)
 
 def FK(model, related_name, *args, **kw):
     params = dict(
@@ -50,7 +50,10 @@ class Answer(Model):
     id = CharField(max_length=40, default=uuid4, primary_key=True)
     
     time_created = DateTimeField(default=now)
-    send_status = CharField(max_length=40, default='pending')  # sent/pending/exception/http_{NNN}
+    
+    # sent/pending/post_exception/post_http_{NNN}/put_exception/put_http_{NNN}
+    send_status = CharField(max_length=40, default='pending')  
+    
     time_sent = DateTimeField(null=True)
     time_updated = DateTimeField()
     revoked = BooleanField(default=False)
@@ -58,7 +61,7 @@ class Answer(Model):
     
     question_id = CharField(max_length=40)  # UUID
     question_label = TextField()
-    alarm = BooleanField()
+    is_incident = BooleanField()
     role = CharField(max_length=15)
     country = CharField(max_length=2)
     region = CharField(max_length=6)
@@ -84,6 +87,10 @@ class Answer(Model):
     tik_complaint_text = TextField(null=True)
     
     @property
+    def question(self):
+        return state.get('questions', {}).get(self.question_id, {})
+    
+    @property
     def value(self):
         if hasattr(self, 'integeranswer'):
             return self.integeranswer.rawvalue
@@ -96,6 +103,12 @@ class Answer(Model):
             return self.integeranswer.rawvalue
         if hasattr(self, 'boolanswer'):
             return 'Да' if self.boolanswer.rawvalue else 'Нет'
+    
+    def __eq__(self, other):
+        # Default django model only checks if pk are equal. We also need to check if value and 
+        # revoked fields are equal, so that QuizWidget.answer property change is dispatched when 
+        # answer is changed.
+        return super().__eq__(other) and self.value == other.value and self.revoked == other.revoked
     
 class IntegerAnswer(Answer):
     rawvalue = IntegerField(null=True)
@@ -147,9 +160,9 @@ class Coordinator(Model):
 class CampaignQuerySet(QuerySet):
     def positional(self):
         filter = Q(region__isnull=True)  # federal
-        if state.get('region'):
+        if state.region.id:
             filter |= Q(region=state.region.id, munokrug__isnull=True)  # regional
-        if state.get('munokrug'):
+        if state.munokrug:
             filter |= Q(munokrug=state.munokrug.id)
         return self.filter(filter)
 
@@ -171,7 +184,7 @@ class Campaign(Model):
     country = CharField(max_length=2)
     region = CharField(max_length=6, null=True)
     munokrug = CharField(max_length=40, null=True)  # UUID Муниципльного округа
-    #election
+    elections_name = TextField(null=True)
     phones = TextField()  #json
     external_channels = TextField()  #json
     elect_flags = TextField()

@@ -3,5 +3,8 @@
 
 .*~
 .kateproject
-.kateproject.d/
+.kaeproject.d/
+winbuild/
+build/
 *.orig
+*.kate-swp

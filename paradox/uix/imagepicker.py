@@ -149,7 +149,8 @@ Builder.load_string('''
         image: 'img/Antu_folder-camera40.png'
         label: 'добавить фото'
         width: dp(200)
-        height: dp(32)
+        font_size: font1
+        height: self.font_size
         image_size: dp(20), dp(20)
         #image: 'img/plus_small.png'
     #Button:

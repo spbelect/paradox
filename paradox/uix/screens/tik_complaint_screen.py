@@ -45,7 +45,6 @@ Builder.load_string('''
         VBox:
             Label:
                 id: header
-                size_hint_y: None
                 color: white
                 background_color: wheat4
                 

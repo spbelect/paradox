@@ -10,6 +10,7 @@ from urllib.parse import urljoin
 #import trio
 from app_state import state, on
 from dateutil.parser import parse as dtparse
+from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models import Q, F
 from django.utils.timezone import now
 from lockorator.asyncio import lock_or_exit
@@ -43,6 +44,8 @@ except ImportError:
     async def get_server():
         if not SERVER_GISTS:
             state.server = config.SERVER_ADDRESS
+            state._server_ping_success.clear()
+            create_task(check_servers())
             return
         
         for gist in SERVER_GISTS:
@@ -56,6 +59,8 @@ except ImportError:
                 continue
             state.server = response.text.strip()
             #logger.debug(state.server)
+            state._server_ping_success.clear()
+            create_task(check_servers())
             return
             
         #import ipdb; ipdb.sset_trace()
@@ -104,23 +109,45 @@ def send_debug(msg):
     except:
         pass
     
+
+async def server_ping_success():
+    if not state._server_ping_success:
+        state._server_ping_success = asyncio.Event()
+        state._server_ping_success.set()  # Assume success on app start.
+    return await state._server_ping_success.wait()
+    
+    
 async def ping_loop():
+    """ Бесконечный цикл. Запускается и останавливается в check_servers() """
+    state._server_ping_success.clear()
     while True:
         try:
             return await client.get(state.server, timeout=15)
         except httpx.Timeout as e:
             pass
+        except ConnectionRefusedError as e:
+            # Сеть недоступна.
+            logger.debug(repr(e))
         except Exception as e:
             raise
         else:
+            state._server_ping_success.set()
             return
         await sleep(5)
     
 @lock_or_exit()
-async def check_server():
+async def check_servers():
+    """
+    Запустить ping_loop(), если не отвечает за 3 минуты, остановить ping_loop(),
+    и изменить state.server на следующий.
+    """
+    while not state.server:
+        # state.server должен быть иницализирован в main.on_start()
+        await sleep(5)
+    
     logger.info('Checking server.')
     try:
-        await asyncio.wait_for(ping_loop(), timeout=0.5*60)
+        await asyncio.wait_for(ping_loop(), timeout=3*60)
     except asyncio.TimeoutError:
         logger.info('Server ping timeout.')
         await get_server()
@@ -132,14 +159,13 @@ async def check_server():
 
 
 async def api_request(method, url, data=None, timeout=15):
-    while True:
-        if 'server' in state:
-            break
-        await get_server()
+    while not state.server:
+        # state.server должен быть иницализирован в main.on_start()
         await sleep(5)
+    
+    await server_ping_success()
         
-    #import ipdb; ipdb.sset_trace()
-    url = urljoin(state.server, join('/api/v2', url))
+    url = urljoin(state.server, urljoin('/api/v2', url))
     logger.debug(f'{method} {url}')
     try:
         #state.server = 'http://8.8.8.8'
@@ -149,10 +175,10 @@ async def api_request(method, url, data=None, timeout=15):
         )
     except httpx.Timeout as e:
         logger.debug(repr(e))
-        create_task(check_server())
+        create_task(check_servers())
         raise
     except Exception as e:
-        create_task(check_server())
+        create_task(check_servers())
         
         #import ipdb; ipdb.sset_trace()
         #raise
@@ -247,6 +273,14 @@ async def send_position():
         await sleep(50)
 
 
+def get_throttle_delay():
+    vote_dates = Campaign.objects.positional().current().values_list('vote_date', flat=True)
+    if now().date() in list(vote_dates):
+        return 5
+    else:
+        return 0.1
+        
+        
 async def _put_image(image):
     try:
         response = await api_request('PUT', f'quiz_answers/{image.answer_id}/images/{image.md5}', {
@@ -269,7 +303,7 @@ async def _put_image(image):
 
 async def answer_image_send_loop():
     while True:
-        waiting = AnswerImage.objects.filter(answer__time_sent__isnull=True).count()
+        waiting_answer = AnswerImage.objects.filter(answer__time_sent__isnull=True).count()
         
         topost = Q(time_sent__isnull=True) & Q(answer__time_sent__isnull=False)
         topost = AnswerImage.objects.filter(topost).exclude(deleted=True)
@@ -277,15 +311,19 @@ async def answer_image_send_loop():
         toput = Q(time_sent__isnull=False) & Q(time_sent__lt=F('time_updated'))
         toput = AnswerImage.objects.filter(toput)
         
-        logger.info(f'{topost.count()} images to create. {toput.count()} images to update. {waiting} waiting.')
+        logger.info(
+            f'{topost.count()} images to post now. {toput.count()} images to put.'
+            f' {waiting_answer} waiting for answer to be sent first.'
+        )
         
-        #logger.debug(list(topost.values_list('filepath')))
+        throttle_delay = get_throttle_delay()
+        
         for image in toput:
-            await sleep(0.2)
             await _put_image(image)
+            await sleep(throttle_delay)
             
         for image in topost:
-            await sleep(0.2)
+            await sleep(throttle_delay)
             try:
                 response = await api_request('POST', 'upload_request/', {
                     'filename': image.md5 + basename(image.filepath),
@@ -347,6 +385,7 @@ async def answer_image_send_loop():
             
             
 async def _put_answer(answer):
+    """ Return True on success """
     try:
         response = await api_request('PUT', f'quiz_answers/{answer.id}/', {
             'revoked': answer.revoked,
@@ -358,12 +397,19 @@ async def _put_answer(answer):
         answer.update(send_status='put_exception')
         if getattr(state, '_raise_all', None):
             raise e
-        return
+        return False
     if response.status_code == 404:
-        # No such question or answer
+        # На сервере нет такого вопроса или ответа.
+        #  Если нет такого вопроса - вероятно на сервере удалили старый вопрос. В идеале на сервере 
+        # вопросы удаляться совсем не должны, а только исключаться из анкеты. Но пока идет активная
+        # разработка, и бывает что вопросы удаляются.
+        #  Если нет такого ответа - возможно на сервере удалили ответы после того как юзер его 
+        # отправил.
+        #  Скорее всего это неисправимые ошибки на сервере, так что помечаем ответ как успешно
+        # отправленный, чтобы больше не пытаться.
         logger.info(f'404, {response!r} {response.json()}')
         answer.update(send_status='sent', time_sent=now())
-        return
+        return True
     elif not response.status_code == 200:
         try:
             logger.info(f'{response!r} {response.json()}')
@@ -380,20 +426,27 @@ async def _put_answer(answer):
 
 async def answer_send_loop():
     while True:
+        # Ответы которые пользователь обновил после того как они были отправлены. (напр. статус жалобы)
         toput = Answer.objects.filter(time_sent__isnull=False, time_sent__lt=F('time_updated'))
+        # Еще не отправленные ответы.
         topost = Answer.objects.filter(time_sent__isnull=True)
+        
         logger.info(f'{topost.count()} answers to post. {toput.count()} answers to put.')
         
+        throttle_delay = get_throttle_delay()
+            
         for answer in chain(topost, toput):
             quizwidgets = uix.QuizWidget.instances.filter(question__id=answer.question_id)
             quizwidgets.on_send_start(answer)
-            await sleep(0.1)
+            await sleep(throttle_delay)
             
         for answer in toput:
-            await sleep(0.2)
             quizwidgets = uix.QuizWidget.instances.filter(question__id=answer.question_id)
-            await _put_answer(answer)
-            quizwidgets.on_send_success(answer)
+            if await _put_answer(answer):
+                quizwidgets.on_send_success(answer)
+            else:
+                quizwidgets.on_send_error(answer)
+            await sleep(throttle_delay)
             
         for answer in topost:
             quizwidgets = uix.QuizWidget.instances.filter(question__id=answer.question_id)
@@ -408,7 +461,7 @@ async def answer_send_loop():
                     'region': answer.region,
                     'uik': answer.uik,
                     'role': answer.role,
-                    'alarm': answer.alarm,
+                    'is_incident': answer.is_incident,
                     'revoked': answer.revoked,
                     'timestamp': answer.time_created.isoformat(),
                 })
@@ -419,28 +472,29 @@ async def answer_send_loop():
                 #print(state.get('_raise_all'))
                 if getattr(state, '_raise_all', None):
                     raise e
+                await sleep(throttle_delay)
                 continue
+            
             if response.status_code == 404:
-                # No such input
+                # No such question
                 logger.info(f'404, {response.json()}')
                 answer.update(send_status='sent', time_sent=now())
                 quizwidgets.on_send_success(answer)
-                continue
-            if not response.status_code == 201:
+            elif not response.status_code == 201:
                 logger.info(repr(response))
                 answer.update(send_status=f'post_http_{response.status_code}')
                 quizwidgets.on_send_error(answer)
-                continue
-            answer.update(send_status='sent', time_sent=now())
-            quizwidgets.on_send_success(answer)
-            await sleep(0.1)
+            else:
+                answer.update(send_status='sent', time_sent=now())
+                quizwidgets.on_send_success(answer)
+            await sleep(throttle_delay)
         await sleep(10)
         
         
 mock_campaigns = {
     'campaigns': {
         '8446': {
-            'elections': '6b26',
+            'election': '6b26',
             'coordinator': '724',
             'fromtime': '2018.07.22T00:00',
             'totime': '2059.12.22T00:00',
@@ -514,8 +568,8 @@ async def update_campaigns():
         for id, coordinator in data['coordinators'].items():
             Coordinator.objects.update_or_create(id=id, defaults={
                 'name': coordinator['name'],
-                'phones': json.dumps(coordinator['phones']),
-                'external_channels': json.dumps(coordinator['external_channels']),
+                'phones': json.dumps(coordinator['phones'], ensure_ascii=False),
+                'external_channels': json.dumps(coordinator['external_channels'], ensure_ascii=False),
             })
             #for channel in coordinator['channels']:
                 #Channel.objects.update_or_create(id=channel['id'], {
@@ -525,10 +579,11 @@ async def update_campaigns():
                 #})
         
         for id, campaign in data['campaigns'].items():
-            election = data['elections'].get(campaign['elections'])
-            logger.debug(election)
+            election = data['elections'].get(campaign['election'])
+            #logger.debug(election)
             Campaign.objects.update_or_create(id=id, defaults={
                 'country': country,
+                'election_name': election.get('name'),
                 'region': election.get('region'), 
                 'munokrug': election.get('munokrug'), 
                 'fromtime': dtparse(campaign['fromtime']),
@@ -536,8 +591,8 @@ async def update_campaigns():
                 'vote_date': dtparse(election['date']),
                 'coordinator_id': campaign['coordinator'],
                 'elect_flags': ','.join(election['flags']),
-                'phones': json.dumps(campaign['phones']),
-                'external_channels': json.dumps(campaign['external_channels']),
+                'phones': json.dumps(campaign['phones'], ensure_ascii=False),
+                'external_channels': json.dumps(campaign['external_channels'], ensure_ascii=False),
             })
             #for channel in campaign['channels']:
                 #Channel.objects.update_or_create(id=channel['id'], {
@@ -554,7 +609,9 @@ async def update_campaigns():
     
     create_task(update_elect_flags())
     campaigns = Campaign.objects.positional().current()
-    logger.debug(campaigns.values())
+    logger.debug('Active election observers campaigns in current region: {}'.format(
+        json.dumps(list(campaigns.values()), ensure_ascii=False, indent=2, cls=DjangoJSONEncoder)
+    ))
     if campaigns.filter(munokrug__isnull=True).exists():
         state.superior_ik = 'TIK'
     else:

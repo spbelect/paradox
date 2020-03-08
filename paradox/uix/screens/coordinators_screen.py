@@ -178,7 +178,7 @@ class CoordinatorsScreen(Screen):
         self.ids.hint.text = ''
         #from paradox.models import Campaign, Coordinator
         campaigns = Campaign.objects.positional().current()
-        logger.debug(f'Active campaigns: {campaigns.values()}')
+        #logger.debug(f'Active campaigns: {campaigns.values()}')
         self.show(Coordinator.objects.filter(campaigns__in=campaigns))
     
     def show_loader(self, f):

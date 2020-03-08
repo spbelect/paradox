@@ -18,3 +18,7 @@ DEBUG = True
 
 #if platform == 'linux':
     #SENTRY = False
+
+from loguru import logger
+#logger.disable("paradox.client")
+logger.disable("paradox.uix.quiz_widgets.base")

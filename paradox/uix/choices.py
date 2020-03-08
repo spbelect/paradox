@@ -54,6 +54,9 @@ Builder.load_string('''
 <ChoicePicker>:
     color: lightgray
     height: height1
+    size_hint_y: None
+    text_size: self.width, None
+    
     #text: self.choice.short_text if self.choice else ''
     #value: self.choice.value if self.choice else None
 
@@ -80,6 +83,11 @@ class Choice(Button):
     value = ObjectProperty(None, allownone=True)
     #fff = 0
 
+    #def __init__(self, *args, **kwargs):
+        #super().__init__(*args, **kwargs)
+        #if not self.short_text:
+            #self.short_text = self.text
+            
     def on_parent(self, selff, parent):
         if parent is None and hasattr(self, 'instances'):
             #logger.debug(f'Widget parnet is None, remove {self}.')
@@ -139,6 +147,9 @@ class ChoicePicker(Button):
         for child in self.modal.ids.list.children[:]:
             if child.value == value:
                 return child
+            
+    def setchoice(self, value):
+        self.choice = self.getchoice(value)
         
 
 class ChoicePickerModal(ModalView):

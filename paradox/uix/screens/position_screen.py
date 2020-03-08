@@ -51,12 +51,10 @@ Builder.load_string('''
                 id: regions
                 modal_header: 'Ваш регион:'
                 text: 'выберите регион'
-                text_size: self.width, None
                 shorten: True
                 halign: 'left'
                 on_text: self.color = black
                 height: height1
-                size_hint_y: None
                 on_new_pick: state.region = state.regions[self.value]
 
             BoxLayout:
@@ -76,7 +74,7 @@ Builder.load_string('''
                     input_type: 'number'
                     #max_len: 4
                     hint_text: 'введите номер'
-                    text: root.uik or ''
+                    text: str(state.uik) if state.uik else ''
                     on_focus_out: state.uik = int(self.text) if self.text.isnumeric() else None
 
             VBox:
@@ -92,10 +90,10 @@ Builder.load_string('''
 
                 ChoicePicker:
                     id: roles
+                    choice: self.getchoice(state.role)
                     height: self.texture_size[1]
                     modal_header: 'Ваш статус:'
                     text: 'выберите статус'
-                    text_size: self.width, None
                     halign: 'left'
                     on_text: self.color = black
                     padding: 0, 0
@@ -113,7 +111,6 @@ Builder.load_string('''
 
                     Choice:
                         text: 'Наблюдатель'
-                        short_text: 'Наблюдатель'
                         value: 'nabludatel'
 
                     Choice:
@@ -123,7 +120,6 @@ Builder.load_string('''
 
                     Choice:
                         text: 'Кандидат'
-                        short_text: 'Кандидат'
                         value: 'kandidat'
 
                     Choice:
@@ -138,20 +134,13 @@ Builder.load_string('''
                         
                     Choice:
                         text: 'Видео-наблюдатель'
-                        short_text: 'Видео-наблюдатель'
                         value: 'videonabl'
 
             Label:
-                #id: munokrug
-                #text: state.get('munokrug', {}).get('name', '') if state.get('munokrug') else ''
-                text: root.munokrug['name'] if root.munokrug else ''
-                #text: "lol"
+                text: state.munokrug.name if state.munokrug else ''
                 
             Label:
-                #id: munokrug
-                #text: state.get('munokrug', {}).get('name', '') if state.get('munokrug') else ''
-                text: 'ТИК ' + root.tik['name'] if root.tik else ''
-                #text: "lol"
+                text: 'ТИК ' + state.tik.name if state.tik else ''
                 
             Widget:  #spacer
                 height: dp(15)
@@ -169,10 +158,6 @@ Builder.load_string('''
 
 
 class PositionScreen(Screen):
-    munokrug = ObjectProperty(None, allownone=True)
-    tik = ObjectProperty(None, allownone=True)
-    uik = ObjectProperty(None, allownone=True)
-
     #def __init__(self, *args, **kwargs):
         #super().__init__(*args, **kwargs)
         
@@ -209,44 +194,40 @@ class PositionScreen(Screen):
             if choice:
                 self.ids.regions.choice = choice
                 
-    @on('state.role')
-    def set_role(self):
-        #if state.get('role'):
-        self.ids.roles.choice = self.ids.roles.getchoice(state.get('role'))
+    #@on('state.role')
+    #def set_role(self):
+        ##if state.get('role'):
+        #self.ids.roles.choice = self.ids.roles.getchoice(state.get('role'))
             
-    @on('state.uik')
-    def set_uik(self):
-        self.uik = str(state.get('uik', '') or '')
+    #@on('state.uik')
+    #def set_uik(self):
+        #self.uik = str(state.get('uik', '') or '')
   
+    @on('state.uik', 'state.region')
+    def update_munokrug_tik(self):
+        #import ipdb; ipdb.sset_trace()
+        state.munokrug = self.get_munokrug()
+        state.tik = self.get_tik()
+        #logger.debug(f'Mokrug: {self.munokrug}. Tik: {self.tik}')
+        
     def get_munokrug(self):
-        if not (state.get('uik') and state.get('region')):
+        if not state.uik or not state.region:
             return None
         for munokrug in state.region.get('munokruga', []):
-            #if int(state.uik) in munokrug.get('uiks', []):
-                #return munokrug
-            for first, last in munokrug.get('uik_ranges', []):
+            for first, last in munokrug.uik_ranges:
                 if first <= int(state.uik) <= last:
                     return munokrug
         return None
     
     def get_tik(self):
-        if not (state.get('uik') and state.get('region')):
+        if not state.uik or not state.region:
             return None
         for tik in state.region.get('tiks', []):
-            #if int(state.uik) in tik.get('uiks', []):
-                #return tik
-            for first, last in tik.get('uik_ranges', []):
+            #if isinstance()
+            for first, last in tik.uik_ranges:
                 if first <= int(state.uik) <= last:
                     return tik
         return None
-        
-    @on('state.uik', 'state.region')
-    def update_munokrug_tik(self):
-        #import ipdb; ipdb.sset_trace()
-        self.munokrug = state.munokrug = self.get_munokrug()
-        self.tik = state.tik = self.get_tik()
-        #logger.debug(f'Mokrug: {self.munokrug}. Tik: {self.tik}')
-        
                    
     def show_errors(self):
         errors = []

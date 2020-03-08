@@ -42,6 +42,7 @@ Builder.load_string('''
         ##size_hint: None, None
         ##pos: root.pos
         ##size: root.size
+        spacing: dp(8)
 
         ScrollView:
             

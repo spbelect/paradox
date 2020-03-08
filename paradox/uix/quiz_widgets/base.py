@@ -16,7 +16,7 @@ from paradox import uix
 from paradox import utils
 from paradox.uix import float_message
 from paradox.uix import confirm
-from paradox.uix.complaint import Complaint
+#from paradox.uix.complaint import Complaint
 
 
 class QuizWidget(Widget):
@@ -34,7 +34,9 @@ class QuizWidget(Widget):
     def __init__(self, *args, **kwargs):
         #self.complaint = None
         #self.answer = None
+        #import ipdb; ipdb.sset_trace()
         super().__init__(*args, **kwargs)
+        #logger.debug(f'QuizWidget.__init__: question = {self.question}')
         self.check_visibility()
 
     async def set_past_answers(self, answers):
@@ -66,7 +68,7 @@ class QuizWidget(Widget):
             uix.screenmgr.push_screen('userprofile')
             return False
 
-        if self.question.input_type == 'MULTI_BOOL':
+        if self.question.input_type == 'YESNO':
             AnswerType = BoolAnswer
         elif self.question.input_type == 'NUMBER':
             AnswerType = IntegerAnswer
@@ -94,19 +96,22 @@ class QuizWidget(Widget):
                 uix.events_screen.add_event(answer)
                 logger.info(f'Revoke answer input: {self.question.id}. New value: {value}')
                 
-            if self.question.input_type == 'MULTI_BOOL' and value is None:
-                # None (кнопка Неизвестно) отзывает предыдущее значение, не добавляя новое.
+            if self.question.input_type == 'YESNO' and value is None:
+                # None отзывает предыдущее значение, не добавляя новое.
                 sibling_widgets.answer = answer
                 return True
             
             logger.info(f'New answer input: {self.question.id}. New value: {value}')
-            alarm = False
-            if self.question.get('alarm', None):
-                #print(self.question.alarm)
-                if 'eq' in self.question.alarm:
-                    alarm = bool(value == self.question.alarm.get('eq'))
-                elif 'gt' in self.question.alarm:
-                    alarm = bool(int(value) > int(self.question.alarm.get('gt')))
+            
+            # Проверим является ли ответ инцидентом.
+            is_incident = False
+            for condition, badvalue in self.question.incident_conditions.items():
+                if condition == 'answer_equal_to':
+                    is_incident = bool(value == badvalue)
+                elif condition == 'answer_greater_than':
+                    is_incident = bool(int(value) > int(badvalue))
+                elif condition == 'answer_less_than':
+                    is_incident = bool(int(value) < int(badvalue))
                 
             answer = AnswerType.objects.create(
                 question_id=self.question.id,
@@ -114,7 +119,7 @@ class QuizWidget(Widget):
                 rawvalue=value,
                 #region='ru_78',
                 #uik=55,
-                alarm=alarm,
+                is_incident=is_incident,
                 region=state.region.id,
                 uik=state.uik,
                 role=state.role,
@@ -152,19 +157,20 @@ class QuizWidget(Widget):
         
     @on('state.role')
     def revise_complaint_visibility(self):
-        if self.answer.alarm and not self.answer.revoked \
+        if self.answer.is_incident and not self.answer.revoked \
            and state.get('role') not in ('other', 'videonabl'):
             self.complaint_visible = True
         else:
             self.complaint_visible = False
+        logger.debug(f'complaint_visible = {self.complaint_visible}')
                 
                 
-    def check_precursor_answers(self):
+    def check_limiting_questions(self):
         """
         Проверить условия для отображения этого виджета (вопроса).
         Формат {'all': [{}, {}, ...]} или {'any': [{}, {}, ...]}.
         """
-        conditions = self.question.get('visible_if', {}).get('precursor_answers')
+        conditions = self.question.get('visible_if', {}).get('limiting_questions')
         if not conditions:
             return True
         
@@ -208,7 +214,7 @@ class QuizWidget(Widget):
             
     @on('state.elect_flags')
     def check_visibility(self, *a):
-        self.visible = bool(self.check_election_flags() and self.check_precursor_answers())
+        self.visible = bool(self.check_election_flags() and self.check_limiting_questions())
             
             
     def check_election_flags(self):
