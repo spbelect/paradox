@@ -13,7 +13,7 @@ coordinators = CoordinatorsScreen(name='coordinators')
 #tik_complaint = TikComplaintScreen(name='tik_complaint')
 complaint = ComplaintScreen(name='complaint')
 events_screen = EventsScreen(name='events')
-homescreen = HomeScreen(name='homescreen')
+homescreen = HomeScreen(name='home')
 position = PositionScreen(name='position')
 userprofile = UserProfileScreen(name='userprofile')
 

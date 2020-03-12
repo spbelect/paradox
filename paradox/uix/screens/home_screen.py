@@ -39,11 +39,11 @@ Builder.load_string('''
             #pos: self.pos
             #size: self.size
 
-<FormListScreen>:
+<HomeScreen>:
     FloatLayout:
         #Label:
             #pos_hint: {'top': 1}
-            #id: forms_loader
+            #id: topics_loader
             #text: "Анкеты обновляются..."
             #height: dp(14)
             #font_size: dp(14)
@@ -78,7 +78,7 @@ Builder.load_string('''
                             Label:
                                 #pos_hint: {'top': 1}
                                 pos: self.parent.pos
-                                id: forms_loader
+                                id: topics_loader
                                 text: "Анкеты обновляются..."
                                 #height: dp(14)
                                 font_size: sp(18)
@@ -194,29 +194,33 @@ class TopicItem(ButtonBehavior, Label):
 
 class HomeScreen(Screen):
     def build_topics(self):
-        for item in self.ids['general_forms'].children[:]:
-            self.ids['general_forms'].remove_widget(item)
-        topics = state.quiz_topics[state.country]
-        logger.debug(f'Rebuilding {len(topics)} quiz topics.')
-        for topic in topics:
-            self.ids['topics'].add_widget(TopicItem(
-                json=topic, id=topic['id'], on_release=self.on_topic_click
+        # Remove all current TopicItems
+        for item in self.ids.topics.children[:]:
+            self.ids.topics.remove_widget(item)
+            
+        logger.debug(f'Rebuilding {len(state.quiz_topics[state.country])} quiz topics.')
+        
+        for topic in state.quiz_topics[state.country]:
+            self.ids.topics.add_widget(TopicItem(
+                json=topic, id=topic.id, on_release=self.on_topic_click
             ))
+            
 
     def on_topic_click(self, item):
         self.manager.show_quiztopic(item.json)
     
+    
     def show_loader(self, f):
         @wraps(f)
         async def wrapped(*a, **kw):
-            self.ids.forms_loader.height = dp(20)
-            self.ids.forms_loader.opacity = 1
+            self.ids.topics_loader.height = dp(20)
+            self.ids.topics_loader.opacity = 1
             try:
                 return await f(*a, **kw)
             finally:
                 #logger.debug('hide loader')
-                self.ids.forms_loader.height = 0
-                self.ids.forms_loader.opacity = 0
+                self.ids.topics_loader.height = 0
+                self.ids.topics_loader.opacity = 0
         return wrapped
 
 

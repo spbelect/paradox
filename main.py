@@ -443,7 +443,7 @@ async def on_start(app):
     
     #state._pending_save_questions = set()
     
-    uix.homescreen.build_general()
+    uix.homescreen.build_topics()
         
     uix.events_screen.restore_past_events()
     logger.info('Restored past events.')
@@ -462,11 +462,11 @@ async def on_start(app):
     # This is the reverse of `limiting_questions` list, used in uix.quiz_widgets.base
     for dependant_question in state.questions.values():
         rules = dependant_question.get('visible_if', {}).get('limiting_questions', {})
-        for rule in (rules.any or rules.all or []):
+        for rule in (rules.get('any') or rules.get('all') or []):
             # Parent (limiting_question).
             parent = state.questions.get(rule.question_id, {})
-            # Add this dependant_question to the `dependant` list of parent.
-            parent.setdefault('dependants', []).append(question['id'])
+            # Add this dependant_question to the `dependants` list of its parent.
+            parent.setdefault('dependants', []).append(dependant_question['id'])
         
     #state.setdefault.quiz_topics.ru = quiz_topics
     # Update topics for current country.

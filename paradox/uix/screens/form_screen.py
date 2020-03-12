@@ -35,7 +35,7 @@ Builder.load_string('''
 #:include constants.kv
 #:import DampedScrollEffect kivy.effects.dampedscroll.DampedScrollEffect 
 
-<FormScreen>:
+<TopicScreen>:
     ScrollView:
         id: scrollview
         VBox:
@@ -89,7 +89,7 @@ Builder.load_string('''
 
 
 
-class FormScreen(Screen):
+class TopicScreen(Screen):
     json = ObjectProperty()
     load_finished = BooleanProperty(False)
 
@@ -97,7 +97,7 @@ class FormScreen(Screen):
         #pass
 
     def __init__(self, form, *args, **kwargs):
-        super(FormScreen, self).__init__(*args, **kwargs)
+        super(TopicScreen, self).__init__(*args, **kwargs)
         self.json = form
         #raise Exception()
         
