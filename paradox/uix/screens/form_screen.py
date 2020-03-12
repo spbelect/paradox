@@ -127,9 +127,9 @@ class FormScreen(Screen):
         self.load_finished = True
         
     def add_quizwidget(self, question):
-        if question['input_type'] == 'NUMBER':
+        if question['type'] == 'NUMBER':
             quizwidget = NumericInput(question=question, form=self)
-        elif question['input_type'] == 'YESNO':
+        elif question['type'] == 'YESNO':
             logger.debug(f'Adding quizwidget for {question}')
             quizwidget = YesNoCancel(question=question, form=self)
         else:

@@ -45,11 +45,11 @@ async def app():
             return Mock(
                 status_code=200,
                 json=lambda: [
-                    {'form_id': '1', 'name': 'ДО НАЧАЛА', 'inputs': [
+                    {'id': '1', 'name': 'ДО НАЧАЛА', 'inputs': [
                         {
                             'question_id': 'i1', 
                             'label': 'Вам предоставили', 
-                            'input_type': 'YESNO',
+                            'type': 'YESNO',
                             "incident_conditions": { "answer_equal_to": False },
                         }
                     ]}

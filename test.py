@@ -93,7 +93,7 @@ async def test_render(app):
     
     from paradox import uix
     #from paradox.uix.screens.position_screen import RegionChoice, RoleChoice
-    from paradox.uix.screens.formlist_screen import FormListItem
+    from paradox.uix.screens.home_screen import FormListItem
     from paradox.uix.quiz_widgets.base import QuizWidget
     from paradox.uix.complaint import ComplaintStatusChoice
     

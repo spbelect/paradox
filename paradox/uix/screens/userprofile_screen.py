@@ -86,7 +86,7 @@ Builder.load_string('''
             Button:
                 id: next
                 text: 'Продолжить'
-                on_release: root.manager.push_screen('formlist')
+                on_release: root.manager.push_screen('home')
                 background_color: darkgray
 
 ''')

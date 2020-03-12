@@ -337,13 +337,16 @@ mock_regions = {
     }
 }
 
-mock_forms = [{
+mock_quiz_topics = [{
+    "id": "14bf4a0a-30f4-4ed2-9bcb-9a16a65033d7",
+    "elections": None,
+    "name": "НАЧАЛО ПОДСЧЕТА",
     "questions": [
       {
         "id": "ecc1deb3-5fe7-48b3-a07c-839993e4563b",
         "label": "Неиспользованные бюллетени убраны в сейф или лежат на видном месте.",
         "fz67_text": "ст.456 п.2 Неиспользованные бюллетени бла бла бла\n",
-        "input_type": "YESNO",   # тип да\нет
+        "type": "YESNO",   # тип да\нет
         "incident_conditions": { "answer_equal_to": False },
         "example_uik_complaint": "жалоба: бла бла"
       },
@@ -351,7 +354,7 @@ mock_forms = [{
         "id": "b87436e0-e7f2-4453-b364-a952c0c7842d",
         "label": "Число проголосаваших досрочно",
         "fz67_text": "ст.123 п.9 Число проголосаваших досрочно бла бла бла\n",
-        "input_type": "NUMBER",  # тип число
+        "type": "NUMBER",  # тип число
         "incident_conditions": { "answer_greater_than": 100 },
         "visible_if": {
             "elect_flags": ["dosrochka"],  # показать только если есть активная кампания с досрочкой
@@ -361,7 +364,7 @@ mock_forms = [{
       {
         "id": "77532eb3-5fe7-48b3-a07c-cd9b35773709",
         "label": "Все досрочные бюллетени считаются отдельно.",
-        "input_type": "YESNO",
+        "type": "YESNO",
         # Считать ответ инцидетом если все заданные условия соблюдены
         "incident_conditions": { "answer_equal_to": False },
         # Показывать этот вопрос в анкете если:
@@ -393,14 +396,10 @@ mock_forms = [{
         "fz67_text": "ст. 778 ... \n",
       },
     ],
-    "form_id": "14bf4a0a-30f4-4ed2-9bcb-9a16a65033d7",
-    "elections": None,
-    "form_type": "GENERAL",
-    "name": "НАЧАЛО ПОДСЧЕТА"
   },
 ]
       
-@uix.formlist.show_loader
+@uix.homescreen.show_loader
 async def on_start(app):
     #raise Exception('bb')
     from django.conf import settings
@@ -418,6 +417,7 @@ async def on_start(app):
     if 'country' not in state:
         logger.info('Creating default state.')
     
+    # This event is used by paradox.client
     state._server_ping_success = asyncio.Event()
     state._server_ping_success.set()  # Assume success on app start.
 
@@ -426,9 +426,13 @@ async def on_start(app):
     state.setdefault('country', 'ru')
     state.setdefault('superior_ik', 'TIK')
     state.setdefault('tik', None)
-    state.setdefault('questions', {})
     state.setdefault('regions', {})
-    state.setdefault('forms', {'general': {'ru': []}})
+    
+    # Dict of questions by id { question.id: {"label": "", "type": "", ...}, ... }
+    state.setdefault('questions', {})
+    
+    # Dict of lists of quiz_topics by country. Topics list for each country is ordered.
+    state.setdefault('quiz_topics', {'ru': [], 'ua': [], 'kz': [], 'by': []})
     
     if not state.server:
         await client.get_server()
@@ -439,30 +443,36 @@ async def on_start(app):
     
     #state._pending_save_questions = set()
     
-    uix.formlist.build_general()
+    uix.homescreen.build_general()
         
     uix.events_screen.restore_past_events()
     logger.info('Restored past events.')
     
-    #formdata = (await client.recv_loop(f'{state.country}/forms/')).json()
-    #logger.info(formdata)
-    #formdata = {'ru': json.load(open('forms_general.json'))}
-    formdata = mock_forms
+    #quiz_topics = (await client.recv_loop(f'{state.country}/questions/')).json()
+    #logger.info(quiz_topics)
+    #quiz_topics = {'ru': json.load(open('forms_general.json'))}
+    quiz_topics = mock_quiz_topics
     
-    for form in formdata:
-        state.questions.update({x['id']: x for x in form['questions']})
+    # Update questions.
+    for topic in quiz_topics:
+        state.questions.update({q['id']: q for q in topic['questions']})
             
-    for question in state.questions.values():
-        #import ipdb; ipdb.sset_trace()
-        deps = question.get('visible_if', {}).get('limiting_questions', {})
-        for condition in (deps.get('any') or deps.get('all') or []):
-            precursor = state.questions.get(condition['question_id'], {})
-            precursor.setdefault('dependants', []).append(question['id'])
+    # Build each question dependants list - i.e. list of questions that may be
+    # hidden or displayed depending on the answer to the current question.
+    # This is the reverse of `limiting_questions` list, used in uix.quiz_widgets.base
+    for dependant_question in state.questions.values():
+        rules = dependant_question.get('visible_if', {}).get('limiting_questions', {})
+        for rule in (rules.any or rules.all or []):
+            # Parent (limiting_question).
+            parent = state.questions.get(rule.question_id, {})
+            # Add this dependant_question to the `dependant` list of parent.
+            parent.setdefault('dependants', []).append(question['id'])
         
-    state.setdefault('forms', {})
-    if not state.forms['general'].get(state.country) == formdata:
-        state.forms.general[state.country] = formdata
-        uix.formlist.build_general()
+    #state.setdefault.quiz_topics.ru = quiz_topics
+    # Update topics for current country.
+    if not state.quiz_topics.get(state.country) == quiz_topics:
+        state.quiz_topics[state.country] = quiz_topics
+        uix.homescreen.build_topics()
     
     regions = mock_regions
     #regions = (await client.recv_loop(f'{state.country}/regions/')).json()
@@ -484,139 +494,6 @@ async def on_start(app):
     app.app_has_started = True
     logger.info('Startup finished.')
 
-    
-def z(filename):
-    import os, google.auth
-    from google.auth.transport import requests
-    from google.auth import compute_engine
-    from datetime import datetime, timedelta
-    from google.cloud import storage
-
-    #auth_request = 
-    credentials, project = google.auth.default()
-    storage_client = storage.Client(project, credentials)
-    signed_blob_path = storage_client.lookup_bucket('ekc-uploads').blob(filename)
-    expires_at_ms = datetime.now() + timedelta(minutes=3600)
-    # This next line is the trick!
-    signing_credentials = compute_engine.IDTokenCredentials(requests.Request(), "", service_account_email=credentials.service_account_email)
-    return signed_blob_path.generate_signed_url(expires_at_ms, credentials=signing_credentials, version="v4")
-
-
-async def x():
-    from google.cloud import storage
-
-    # If you don't specify credentials when constructing the client, the
-    # client library will look for credentials in the environment.
-    storage_client = storage.Client()
-
-    # Make an authenticated API request
-    buckets = list(storage_client.list_buckets())
-    print(buckets)
-    
-
-    import requests_async as requests
-    #import requests
-    su = z('123.jpeg')
-    print(su)
-    res = await requests.post(su, 
-                  files={'file': ('123.jpeg', open('Screenshot_20190112_132357.jpeg', 'rb'))})
-    print(res.content)
-    res.raise_for_status()
-    print('ok')
-    
-async def xb():
-    from os.path import basename
-    import paradox.utils
-    import requests_async as requests
-    
-    from paradox.models import AnswerImage
-    #import paradox.utils
-    #import requests_async as requests
-    
-    #state.app_id='123'
-    image = AnswerImage.objects.first()
-    md5 = paradox.utils.md5_file('4.jpg')
-    try:
-        response = await requests.post('http://127.0.0.1:8000/api/v2/upload_request/', timeout=0.1, json={
-            'filename': image.md5 + '-4.jpeg',
-            'md5': image.md5,
-            'content-type': 'image/jpeg'
-        })
-    except requests.Timeout as e:
-        logger.debug(repr(e))
-        return
-    except (requests.ProxyError, requests.SSLError) as e:
-        logger.debug(repr(e))
-        return
-    except requests.ConnectionError as e:
-        #import ipdb; ipdb.sset_trace()
-        #if e.args and isinstance(e.args[0], OSError):
-            #if e.args[0].errno
-        logger.debug(repr(e))
-        return
-    except Exception as e:
-        logger.debug(repr(e))
-        return
-    print(1)
-    response.raise_for_status()
-    #import ipdb; ipdb.sset_trace()
-    response = response.json()
-    #import requests
-    res = await requests.post(response['url'], data=response['fields'], 
-                  files={'file': ('unused.jpeg', open(image.filepath, 'rb'))})
-    print(res.content)
-    res.raise_for_status()
-    print('ok')
-
-
-async def upl():
-    from os.path import basename
-    from paradox.models import AnswerImage
-    import paradox.utils
-    import requests_async as requests
-    
-    state.app_id='123'
-    image = AnswerImage.objects.first()
-    
-    #md5 = paradox.utils.md5_file(image.filepath)
-    #logger.info(f'{image.md5}, {md5}')
-    try:
-        response = await client.api_request('POST', 'upload_request/', {
-            'filename': image.md5 + basename(image.filepath),
-            'md5': image.md5,
-            'content-type': 'image/jpeg'
-        })
-    except Exception as e:
-        logger.error(repr(e))
-        #image.update(send_status='req_exception')
-        return
-    if not response.status_code == 200:
-        logger.error(repr(response))
-        #image.update(send_status=f'req_http_{response.status_code}')
-        return
-    
-    response = s3params = response.json()
-    #res = await requests.post(response['url'], data=response['fields'], 
-                  #files={'file': ('unused.jpeg', open(image.filepath, 'rb'))})
-    #print(res.content)
-    #res.raise_for_status()
-    #print('ok')
-    print(s3params)
-    try:
-        response = await client.client.post(
-            s3params['url'], data=s3params['fields'], 
-            files={'file': open(image.filepath, 'rb')}
-        )
-    except Exception as e:
-        logger.error(repr(e))
-        #image.update(send_status='upload_exception')
-        return
-    if not response.status_code == 204:
-        logger.error(repr(response))
-        logger.error(response.text)
-        import ipdb; ipdb.sset_trace()
-        #image.update(send_status=f'upload_http_{response.status_code}')
-        return
     
 if __name__ == '__main__':
     logger.info('__main__ started')

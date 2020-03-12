@@ -51,7 +51,7 @@ class Answer(Model):
     
     time_created = DateTimeField(default=now)
     
-    # sent/pending/post_exception/post_http_{NNN}/put_exception/put_http_{NNN}
+    # sent/pending/post_exception/post_http_{NNN}/patch_exception/patch_http_{NNN}
     send_status = CharField(max_length=40, default='pending')  
     
     time_sent = DateTimeField(null=True)

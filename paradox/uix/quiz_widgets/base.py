@@ -68,9 +68,9 @@ class QuizWidget(Widget):
             uix.screenmgr.push_screen('userprofile')
             return False
 
-        if self.question.input_type == 'YESNO':
+        if self.question.type == 'YESNO':
             AnswerType = BoolAnswer
-        elif self.question.input_type == 'NUMBER':
+        elif self.question.type == 'NUMBER':
             AnswerType = IntegerAnswer
             value = int(value) if value else None
                 
@@ -86,7 +86,7 @@ class QuizWidget(Widget):
         try:
             if self.answer and not self.answer.revoked:
                 msg = f'Отозвать предыдущее значение?'
-                if self.question.input_type == 'NUMBER':
+                if self.question.type == 'NUMBER':
                     msg += f' ({self.answer.value})'
                 if not await uix.confirm.yesno(msg):
                     return False
@@ -96,7 +96,7 @@ class QuizWidget(Widget):
                 uix.events_screen.add_event(answer)
                 logger.info(f'Revoke answer input: {self.question.id}. New value: {value}')
                 
-            if self.question.input_type == 'YESNO' and value is None:
+            if self.question.type == 'YESNO' and value is None:
                 # None отзывает предыдущее значение, не добавляя новое.
                 sibling_widgets.answer = answer
                 return True

@@ -283,19 +283,19 @@ def get_throttle_delay():
         
 async def _put_image(image):
     try:
-        response = await api_request('PUT', f'quiz_answers/{image.answer_id}/images/{image.md5}', {
+        response = await api_request('PATCH', f'quiz_answers/{image.answer_id}/images/{image.md5}', {
             #'type': image.type,
             #'time_created': image.time_created,
             'deleted': image.deleted,
             #'filename': image.md5 + basename(image.filepath),
         })
     except Exception as e:
-        image.update(send_status='put_exception')
+        image.update(send_status='patch_exception')
         if getattr(state, '_raise_all', None):
             raise e
         return
     if not response.status_code == 200:
-        image.update(send_status=f'put_http_{response.status_code}')
+        image.update(send_status=f'patch_http_{response.status_code}')
         return
     
     image.update(send_status='sent', time_sent=now())
@@ -312,7 +312,7 @@ async def answer_image_send_loop():
         toput = AnswerImage.objects.filter(toput)
         
         logger.info(
-            f'{topost.count()} images to post now. {toput.count()} images to put.'
+            f'{topost.count()} images to post now. {toput.count()} images to patch.'
             f' {waiting_answer} waiting for answer to be sent first.'
         )
         
@@ -387,14 +387,14 @@ async def answer_image_send_loop():
 async def _put_answer(answer):
     """ Return True on success """
     try:
-        response = await api_request('PUT', f'quiz_answers/{answer.id}/', {
+        response = await api_request('PATCH', f'quiz_answers/{answer.id}/', {
             'revoked': answer.revoked,
             'uik_complaint_status': answer.uik_complaint_status,
             'tik_complaint_status': answer.tik_complaint_status,
             'tik_complaint_text': answer.tik_complaint_text,
         })
     except Exception as e:
-        answer.update(send_status='put_exception')
+        answer.update(send_status='patch_exception')
         if getattr(state, '_raise_all', None):
             raise e
         return False
@@ -415,7 +415,7 @@ async def _put_answer(answer):
             logger.info(f'{response!r} {response.json()}')
         except:
             logger.info(repr(response))
-        answer.update(send_status=f'put_http_{response.status_code}')
+        answer.update(send_status=f'patch_http_{response.status_code}')
         return
     
     extra = {}
@@ -431,7 +431,7 @@ async def answer_send_loop():
         # Еще не отправленные ответы.
         topost = Answer.objects.filter(time_sent__isnull=True)
         
-        logger.info(f'{topost.count()} answers to post. {toput.count()} answers to put.')
+        logger.info(f'{topost.count()} answers to post. {toput.count()} answers to patch.')
         
         throttle_delay = get_throttle_delay()
             
@@ -550,7 +550,7 @@ mock_campaigns = {
  
 @on('state.region')
 @lock_or_exit()
-@uix.formlist.show_loader
+@uix.homescreen.show_loader
 @uix.coordinators.show_loader
 async def update_campaigns():
     await sleep(2)
@@ -637,77 +637,6 @@ async def update_elect_flags():
     logger.debug(f'{campaigns.count()} active campaigns.')
     logger.debug(f'Election flags: {list(state.elect_flags)}')
     
-    
-    
-#@uix.formlist.show_loader
-#@lock_wait('coordinator_sub')   
-#async def subscribe(id):
-    #while True:
-        #try:
-            #response = await asks.post(f'{state.server}/coordinators/{id}/subscribe/')
-        #except Exception as e:
-            #uix.coordinators.subscribe_error(id)
-        #else:
-            #if response.status_code == 200:
-                #break
-            #uix.coordinators.subscribe_error(id)
-        #trio.sleep(5)
-    
-    #coordinator = Coordinator.objects.get(id=id)
-    #if not coordinator.subscription == 'subing':
-        #return  # Пока ожидали http ответ, юзер отписался
-    
-    ##campaigns = 
-    ##filter = Q(campaign__in=campaigns) | Q(campaign__isnull=True)
-    ##Channel.objects.filter(filter, coordinator=id, actual=True)
-    #coordinator.channels.filter(campaign__isnull=True, actual=True).update(joined=True)
-    
-    #for campaign in Campaign.objects.positional().filter(coordinator=id):
-        #campaign.channels.filter(actual=True).update(joined=True)
-        
-        #formdata = await recv_loop(f'/campaigns/{campaign.id}/forms/')
-        
-        #for form in formdata:
-            #for input in form['inputs']:
-                #state.questions[input['id']] = input
-                    
-        #if not state.forms.campaign[campaign.id] == formdata:
-            #state.forms.campaign[campaign.id] = formdata
-            #uix.formlist.show_campaign_forms(campaign)
-        
-    #Coordinator.objects.filter(id=id).update(subscription='yes')
-    #uix.messages.show_channels(Channel.objects.filter(joined=True))
-    #uix.coordinators.subscribe_success(id)
-    
-            
-#async def on_unsubscribe(id):
-    #Coordinator.objects.filter(id=id).update(subscription='unsubing')
-    #unsubscribe(id)
-    
-    
-#@uix.formlist.show_loader
-#@lock_wait('coordinator_sub')
-#async def unsubscribe(id):
-    #while True:
-        #try:
-            #response = await asks.post(f'{state.server}/coordinators/{id}/unsubscribe/')
-        #except Exception as e:
-            #uix.coordinators.unsubscribe_error(id)
-        #else:
-            #if response.status_code == 200:
-                #break
-            #uix.coordinators.unsubscribe_error(id)
-        #trio.sleep(5)
-    
-    #if not Coordinator.objects.get(id=id).subscription == 'unsubing':
-        #return  # Пока ожидали http ответ, юзер подписался
-    
-    #for campaign in Campaign.objects.filter(coordinator=id):
-        #uix.formlist.remove_campaign_forms(campaign.id)
-    #Coordinator.objects.filter(id=id).update(subscription='no')
-    
-    
-
         
 async def recv_loop(url):
     while True:

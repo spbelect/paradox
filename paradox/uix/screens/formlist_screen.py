@@ -50,6 +50,7 @@ Builder.load_string('''
             #width: self.parent.width
             #size_hint_y: None
             #background_color: wheat4
+            
         BoxLayout:
             size: self.parent.size
             orientation: 'vertical'
@@ -88,35 +89,12 @@ Builder.load_string('''
             
 
                         VBox:
-                            id: general_forms
+                            id: topics
                             padding: 0
 
                         Widget:  # spacer
                             height: dp(60)
                             size_hint: 1, None
-
-                    #VBox:
-                        #padding: 0, dp(10)
-
-                        #background_color: lightgray
-
-                        #Label:
-                            #height: dp(20)
-                            #text_size: self.size
-                            #text: 'Итоговые протоколы'
-                            #font_size: sp(18)
-                            #color: white
-                            #background_color: lightgray
-
-                        #VBox:
-                            #id: federal_forms
-                            #background_color: lightgray
-                        #VBox:
-                            #id: regional_forms
-                            #background_color: lightgray
-                        #VBox:
-                            #id: local_forms
-                            #background_color: lightgray
 
             #Widget:  # spacer
 
@@ -154,7 +132,7 @@ Builder.load_string('''
 
                 Widget:  # horizontal spacer
 
-<FormListItem>:
+<TopicItem>:
     halign: 'left'
     split_str: ' '
     text_size: self.width, None
@@ -209,29 +187,24 @@ Builder.load_string('''
         #return cv2.flip(frame, 1).tostring()
 
 
-class FormListItem(ButtonBehavior, Label):
+class TopicItem(ButtonBehavior, Label):
     json = ObjectProperty()
     id = StringProperty()
-    
-    instances = InstanceManager()
-    #def on_release(self, *a):
-        #self.
 
 
-class FormListScreen(Screen):
-    def build_general(self):
+class HomeScreen(Screen):
+    def build_topics(self):
         for item in self.ids['general_forms'].children[:]:
             self.ids['general_forms'].remove_widget(item)
-        forms = state.forms.general[state.country]
-        logger.debug(f'Rebuilding {len(forms)} forms.')
-        for form in forms:
-            item = FormListItem(json=form, id=form['form_id'])
-            item.bind(on_release=self.on_form_click)
-            self.ids['general_forms'].add_widget(item)
+        topics = state.quiz_topics[state.country]
+        logger.debug(f'Rebuilding {len(topics)} quiz topics.')
+        for topic in topics:
+            self.ids['topics'].add_widget(TopicItem(
+                json=topic, id=topic['id'], on_release=self.on_topic_click
+            ))
 
-    def on_form_click(self, item):
-        self.manager.show_form(item.json)
-
+    def on_topic_click(self, item):
+        self.manager.show_quiztopic(item.json)
     
     def show_loader(self, f):
         @wraps(f)

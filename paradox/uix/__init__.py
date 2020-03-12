@@ -2,7 +2,7 @@ from .screens.screen_manager import ScreenManager
 
 from .screens.userprofile_screen import UserProfileScreen
 from .screens.position_screen import PositionScreen
-from .screens.formlist_screen import FormListScreen
+from .screens.home_screen import HomeScreen
 from .screens.events_screen import EventsScreen
 from .screens.coordinators_screen import CoordinatorsScreen
 #from .screens.tik_complaint_screen import TikComplaintScreen
@@ -13,7 +13,7 @@ coordinators = CoordinatorsScreen(name='coordinators')
 #tik_complaint = TikComplaintScreen(name='tik_complaint')
 complaint = ComplaintScreen(name='complaint')
 events_screen = EventsScreen(name='events')
-formlist = FormListScreen(name='formlist')
+homescreen = HomeScreen(name='homescreen')
 position = PositionScreen(name='position')
 userprofile = UserProfileScreen(name='userprofile')
 
@@ -24,10 +24,6 @@ sidepanel = SidePanel()
 
 from .quiz_widgets.base import QuizWidget
 #from kivy.app import App
-
-#position = None
-#formlist = None
-#side_panel = None
 
 #async def init():
     ## awkward way to break circular deps

@@ -46,7 +46,7 @@ Builder.load_string('''
 
     Button:
         text: 'Анкеты'
-        on_release: root.on_screen_click('formlist')
+        on_release: root.on_screen_click('home')
         background_color: teal
 
     Button:

@@ -49,7 +49,7 @@ from .userprofile_screen import UserProfileScreen
 from .position_screen import PositionScreen
 from .events_screen import EventsScreen
 from .form_screen import FormScreen
-from .formlist_screen import FormListScreen
+#from .home_screen import HomeScreen
 from .about_screen import AboutScreen
 
 
@@ -79,7 +79,7 @@ class ScreenManager(kivy.uix.screenmanager.ScreenManager):
             #self.init()
             
         #def init(self):
-        self.add_widget(uix.formlist)
+        self.add_widget(uix.homescreen)
         self.add_widget(HandBookScreen(name='handbook'))
         #uix.position = PositionScreen(name='position')
         self.add_widget(uix.position)
@@ -89,7 +89,7 @@ class ScreenManager(kivy.uix.screenmanager.ScreenManager):
         self.add_widget(AboutScreen(name='about'))
         self.add_widget(CommunicationScreen(name='communication'))
         self.add_widget(uix.userprofile)
-        self.push_screen('formlist')
+        self.push_screen('home')
         #self.push_screen('position')
         #schedule('core.screens_initialized')
 
@@ -103,9 +103,9 @@ class ScreenManager(kivy.uix.screenmanager.ScreenManager):
                 return
             #schedule('core.leave_position_screen')
 
-        if name == 'formlist':
             self.screen_history = []
-            self.current = 'formlist'
+        if name == 'home':
+            self.current = 'home'
         elif self.current != name:
             self.screen_history.append(name)
             self.current = name
@@ -117,7 +117,7 @@ class ScreenManager(kivy.uix.screenmanager.ScreenManager):
             self.current = self.screen_history[-1]
         elif len(self.screen_history) == 1:
             self.screen_history.pop()
-            self.current = 'formlist'
+            self.current = 'home'
 
     def on_current(self, *args):
         self.about_to_exit = False
@@ -158,12 +158,12 @@ class ScreenManager(kivy.uix.screenmanager.ScreenManager):
             self.add_widget(screen)
         self.current = 'error'
 
-    def show_form(self, form):
-        screen_name = f'form_{form["form_id"]}'
-        if not self.has_screen(screen_name):
-            self.add_widget(FormScreen(form, name=screen_name))
+    def show_quiztopic(self, topic):
+        name = f'topic_{topic.id}'
+        if not self.has_screen(name):
+            self.add_widget(TopicScreen(topic, name=name))
 
-        self.push_screen(screen_name)
+        self.push_screen(name)
 
     def show_handbook(self, title, text):
         if 'handbook' in self.screen_history:
@@ -179,10 +179,11 @@ class ScreenManager(kivy.uix.screenmanager.ScreenManager):
 
     @on('state.uik', 'state.region')
     def remove_formsreens(self):
-        self.screen_history = ['formlist']
+        self.screen_history = []
+        self.push_screen('home')
         #logger.debug(f'{self.screens}')
         for screen in self.screens:
-            if screen.name.startswith('form_'):
+            if screen.name.startswith('topic_'):
                 self.remove_widget(screen)
                 del screen
         import gc
