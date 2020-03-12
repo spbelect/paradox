@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
-
+"""
+Экран одного тематического раздела анкеты (например "НА ВЫЕЗДНОМ")
+Показывает список вопросов.
+"""
 from __future__ import unicode_literals
 
 import asyncio
@@ -35,9 +38,10 @@ Builder.load_string('''
 #:include constants.kv
 #:import DampedScrollEffect kivy.effects.dampedscroll.DampedScrollEffect 
 
-<TopicScreen>:
+<QuizTopicScreen>:
     ScrollView:
         id: scrollview
+        #on_touch_down: print(56)
         VBox:
             VBox:
                 spacing: dp(4)
@@ -89,7 +93,7 @@ Builder.load_string('''
 
 
 
-class TopicScreen(Screen):
+class QuizTopicScreen(Screen):
     json = ObjectProperty()
     load_finished = BooleanProperty(False)
 
@@ -97,7 +101,7 @@ class TopicScreen(Screen):
         #pass
 
     def __init__(self, form, *args, **kwargs):
-        super(TopicScreen, self).__init__(*args, **kwargs)
+        super(QuizTopicScreen, self).__init__(*args, **kwargs)
         self.json = form
         #raise Exception()
         

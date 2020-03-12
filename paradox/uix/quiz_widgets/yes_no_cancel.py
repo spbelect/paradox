@@ -45,6 +45,7 @@ Builder.load_string('''
         height: self.texture_size[1] + dp(10)
         text: self.parent.question.label
         color: black
+        #color: wheat4
         on_long_press: root.show_help()
         #on_release: print(66)
 

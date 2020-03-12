@@ -21,6 +21,11 @@
 '''NavigationDrawer
 ================
 
+NOTE: This is fixed version of NavigationDrawer that allows other widgets to properly receive 
+click events made within `touch_accept_width`. Original version prevented click event 
+propagation down to other widgets.
+ - Evstifeev Roman <someuniquename@gail.com> 2020-03-10
+
 The NavigationDrawer widget provides a hidden panel view designed to
 duplicate the popular Android layout.  The user views one main widget
 but can slide from the left of the screen to view a second, previously
@@ -548,11 +553,11 @@ class NavigationDrawer(StencilView):
 
     def on_touch_move(self, touch):
         if touch is self._touch:
-            for widget in touch.grab_list[:]:
-                if widget is not self:
-                    if hasattr(widget(), 'on_touch_cancel'):
-                        widget().on_touch_cancel(touch)
-                    touch.ungrab(widget())
+            #for widget in touch.grab_list[:]:
+                #if widget is not self:
+                    #if hasattr(widget(), 'on_touch_cancel'):
+                        #widget().on_touch_cancel(touch)
+                    #touch.ungrab(widget())
 
             dx = touch.x - touch.ox
             self._anim_progress = max(0, min(self._anim_init_progress + (dx / self.side_panel_width), 1))

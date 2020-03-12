@@ -48,8 +48,7 @@ from .error_screen import ErrorScreen
 from .userprofile_screen import UserProfileScreen
 from .position_screen import PositionScreen
 from .events_screen import EventsScreen
-from .form_screen import TopicScreen
-#from .home_screen import HomeScreen
+from .quiztopic_screen import QuizTopicScreen
 from .about_screen import AboutScreen
 
 
@@ -109,6 +108,7 @@ class ScreenManager(kivy.uix.screenmanager.ScreenManager):
         elif self.current != name:
             self.screen_history.append(name)
             self.current = name
+        print(self.screen_history)
 
     def pop_screen(self):
         self.transition.direction = 'right'
@@ -161,7 +161,7 @@ class ScreenManager(kivy.uix.screenmanager.ScreenManager):
     def show_quiztopic(self, topic):
         name = f'topic_{topic.id}'
         if not self.has_screen(name):
-            self.add_widget(TopicScreen(topic, name=name))
+            self.add_widget(QuizTopicScreen(topic, name=name))
 
         self.push_screen(name)
 
@@ -178,7 +178,7 @@ class ScreenManager(kivy.uix.screenmanager.ScreenManager):
         self.push_screen('complaint')
 
     @on('state.uik', 'state.region')
-    def remove_formsreens(self):
+    def remove_quiztopic_sreens(self):
         self.screen_history = []
         self.push_screen('home')
         #logger.debug(f'{self.screens}')

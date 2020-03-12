@@ -38,13 +38,13 @@ class Button(kivy.uix.button.Button):
     def ontouchdown(self, s, touch):
         if not self.collide_point(touch.x, touch.y):
             return False
-        Clock.schedule_once(self.do_long_touch, 0.1),
+        Clock.schedule_once(self.do_long_touch, 0.7),
 
     def ontouchup(self, *a):
         Clock.unschedule(self.do_long_touch)
 
     def ontouchmove(self, s, touch):
-        if abs(touch.ox - touch.x) > 20 and abs(touch.oy - touch.y) > 20:
+        if abs(touch.ox - touch.x) > 10 or abs(touch.oy - touch.y) > 10:
             Clock.unschedule(self.do_long_touch)
 
     def do_long_touch(self, *a):

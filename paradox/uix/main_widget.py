@@ -12,7 +12,7 @@ from loguru import logger
 #from .label import Label
 #from .button import Button
 
-from .navigationdrawer.navigationdrawer import NavigationDrawer
+from .navigationdrawer.navigationdrawer_fixed import NavigationDrawer
 #from .screens.screens import screens
 from paradox import uix
 
