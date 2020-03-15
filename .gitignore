@@ -8,3 +8,4 @@ winbuild/
 build/
 *.orig
 *.kate-swp
+*.sqlite

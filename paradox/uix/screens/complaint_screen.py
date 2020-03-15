@@ -37,8 +37,6 @@ from paradox.uix import float_message
 from paradox.uix.choices import Choice
 from paradox.uix.frozen_editor import FrozenEditor
 from paradox.uix.imagepicker import ImagePicker
-#from kivy.uix.textinput import TextInput
-#from
 
 
 Builder.load_string('''
@@ -54,6 +52,12 @@ Builder.load_string('''
     size_hint_y: None
     height: dp(15)
     
+    
+<BlueButton@Button>:
+    text: 'зачем писать жалобу'
+    color: lightblue
+    font_size: dp(20)
+                
 <ComplaintScreen>:
     ScrollView:
         id: scrollview
@@ -81,34 +85,22 @@ Builder.load_string('''
                     
             ComplaintSpacerSmall:
             
-            Button:
+            BlueButton:
                 text: 'зачем писать жалобу'
-                #text_size: self.width, None
-                color: lightblue
-                font_size: dp(20)
-                #height: self.font_size
                 content: open('paradox/zachem_pisat_jalobu.txt').read()
                 on_release: uix.screenmgr.show_handbook('ЗАЧЕМ НУЖНО ОБЖАЛОВАНИЕ', self.content)
             
             ComplaintSpacerSmall:
             
-            Button:
+            BlueButton:
                 text: 'правила обжалования'
-                #text_size: self.width, None
-                color: lightblue
-                font_size: dp(20)
-                #height: self.font_size
                 content: open('paradox/complaint_rules.txt').read()
                 on_release: uix.screenmgr.show_handbook('ПРАВИЛА ОБЖАЛОВАНИЯ', self.content)
 
             ComplaintSpacerSmall:
             
-            Button:
+            BlueButton:
                 text: 'пример жалобы'
-                #text_size: self.width, None
-                color: lightblue
-                font_size: dp(20)
-                #height: self.font_size
                 on_release: 
                     uix.screenmgr.show_handbook(root.answer.question.label, root.uik_complaint_text)
                 
@@ -156,33 +148,21 @@ Builder.load_string('''
                 Choice:
                     value: 'none'
                     text: 'не подавалась'
-                    #short_text: 'не подавалась'
-                    
                 Choice:
                     value: 'refuse_to_accept'
                     text: 'отказ принять жалобу'
-                    #short_text: 'отказ принять жалобу'
-                    
                 Choice:
                     value: 'refuse_to_resolve'
                     text: 'отказ рассмотрения жалобы'
                     short_text: 'отказ рассмотрения'
-                    
-                #Choice:
-                    #value: 'refuse_to_copy_reply'
-                    #text: 'отказ выдать копию решения'
-                    #short_text: 'отказ выдать копию решения'
-                    
                 Choice:
                     value: 'waiting_reply'
                     text: 'ожидание решения комиссии'
                     short_text: 'ожидание решения'
-                    
                 Choice:
                     value: 'got_unfair_reply'
                     text: 'получено неудовлетворительное решение'
                     short_text: 'получено неуд. решение'
-                    
                 Choice:
                     value: 'got_fair_reply'
                     text: 'получено удовлетворительное решение'
@@ -215,13 +195,13 @@ Builder.load_string('''
             #############################################
             
             VBox:
-                visible: not state.tik
+                visible: not state.tik or not state.tik.email
                 
                 Label:
                     height: self.font_size + compaint_spacing
                     font_size: dp(14)
                     color: lightgray
-                    text: 'У нас нет информации о ТИК для УИК %s' % state.uik
+                    text: 'У нас нет email адреса ТИК для УИК %s' % state.uik
                     
             VBox:
                 id: tik_block
@@ -246,13 +226,8 @@ Builder.load_string('''
                                 
                     ComplaintSpacerSmall:
                         
-                    Button:
-                        #halign: 'right'
-                        #text_size: self.width, None
-                        color: lightblue
+                    BlueButton:
                         text: 'составьте акт об отказе'
-                        font_size: dp(20)
-                        #height: dp(50)
                         on_release: uix.screenmgr.show_handbook('Составьте акт', root.refuse_akt_text())
 
                     ComplaintSpacerSmall:
@@ -284,7 +259,6 @@ Builder.load_string('''
                     Label:
                         font_size: dp(20)
                         height: self.font_size
-                        #text_size: self.width, None
                         text: 'кому подавали жалобу' if refuse_person.value else 'Укажите кому подавали жалобу'
                         color: lightgray if refuse_person.value else black
                         
@@ -311,8 +285,6 @@ Builder.load_string('''
                         Choice:
                             value: 'секретарь'
                             text: 'секретарь'
-                            
-                #VBox:
                     
                 ComplaintSpacerLarge:
 
@@ -321,7 +293,6 @@ Builder.load_string('''
                     color: wheat4
                     font_size: dp(20)
                     height: self.font_size
-                    #background_color: 
                     
                 ComplaintSpacerSmall:
                 
@@ -332,10 +303,10 @@ Builder.load_string('''
                     on_save: root.on_tik_text_input
                     
                 Button:
-                    disabled: tik_text_editor.disabled or not tik_text_editor.frozen
+                    text: 'Отправить на проверку'
+                    disabled: tik_text_editor.disabled or not tik_text_editor.frozen or not state.tik.email
                     #id: send_button
                     # TODO: отправить сразу если нет координаторов которые готовы проверить.
-                    text: 'Отправить на проверку'
                     on_release: root.on_send_pressed()
                     color: teal
                     disabled_color: lightgray  # Some kivy bug requires to set this explicitly
@@ -348,19 +319,13 @@ Builder.load_string('''
                     height: self.texture_size[1]  # Grow height to fit all text
                     
                 Label:
+                    text: 'Оператор проверит текст жалобы и может отправить email в тик, если нет ошибок. Укажите свой telegram адрес в профиле, чтобы оператор и представитель в ТИК мог с вами связаться.'
                     font_size: dp(16)
                     color: lightgray
                     # TODO: отправить сразу если нет координаторов которые готовы проверить.
-                    text: 'Оператор проверит текст жалобы и может отправить email в тик, если нет ошибок. Укажите свой telegram адрес в профиле, чтобы оператор и представитель в ТИК мог с вами связаться.'
                     split_str: ' '
                     height: self.texture_size[1]  # Grow height to fit all text
                     
-                #VBox:
-                    #height: height1
-                    #BoxLayout:
-                        #height: height1
-                        #spacing: dp(2)
-
             ComplaintSpacerLarge:
             
             Button:
@@ -381,9 +346,6 @@ Builder.load_string('''
                 color: teal
                 
             ComplaintSpacerSmall:
-            
-
-
 ''')
 
     
@@ -477,18 +439,15 @@ akt_stub = '''
 
 Акт
 
-Мы, нижеподписавшиеся, находясь в помещении УИК {answer.uik} {date}, приблизительно в {answer.time_created.hour} часов стали свидетелями того, как {role} {profile.first_name} {profile.last_name} обратился к (секретарю\председателю\...) с просьбой (принять\рассмотреть) жалобу на возможное нарушение.
+Мы, нижеподписавшиеся, находясь в помещении УИК {answer.uik} {date}, приблизительно в {answer.time_created.hour} часов стали свидетелями того, как наблюдатель\член комиссии\... {profile.first_name} {profile.last_name} обратился к (секретарю\председателю\...) с просьбой (принять\рассмотреть) жалобу на возможное нарушение.
 (Комиссия\председатель\...) (не стала рассматривать\отказалась принять жалобу\отказалась выдать копию решения\...)
 
 Дата: {date} Время: ____
 
-{profile.last_name} {profile.first_name} {profile.middle_name}, {role} <Подпись> тел.: +7 {profile.phone}
+{profile.last_name} {profile.first_name} {profile.middle_name}, статус (наблюдатель\член комиссии\...) <Подпись> тел.: +7 {profile.phone}
 <ФИО>, <Статус> <Подпись> <Телефон>
 <ФИО>, <Статус> <Подпись> <Телефон>
 ...
-'''
-
-complaint_rules = '''
 '''
 
 roles = {
@@ -516,7 +475,7 @@ class ComplaintScreen(Screen):
                 f'Также копия будет отправлена вам на адрес {state.profile.email}'
         else:
             self.ids.recipients.text = f'Сейчас нет активных координаторов и проходящих выборов '\
-                'в вашем регионе. Письмо не будет отправлено в тик.'
+                'в вашем регионе. Письмо не будет отправлено в ТИК.'
             
         if not answer.tik_complaint_status or answer.tik_complaint_status == 'none':
             self.ids.tik_send_status.text = 'ПРОВЕРЬТЕ ТЕКСТ ЖАЛОБЫ'
@@ -530,12 +489,9 @@ class ComplaintScreen(Screen):
         else:
             raise Exception(f"Unknown answer.tik_complaint_status {answer.tik_complaint_status}")
         
-        #self.ids.complaint_label.text = self.text
-        #self.ids['scrollview'].scroll_y = 1
         self.ids.uik_complaint_status.setchoice(answer.uik_complaint_status)
         
-        #print('conmpl2')
-        if state.get('tik'):
+        if state.tik:
             if answer.uik_complaint_status in ['got_unfair_reply', 'refuse_to_accept', 'refuse_to_resolve']:
                 self.ids.tik_block.visible = True
                 
@@ -545,8 +501,6 @@ class ComplaintScreen(Screen):
             self.ids.refuse_person.setchoice(answer.refuse_person)
             self.toggle_tik(answer.uik_complaint_status)
         self.build_uik_text()
-        
-        #await sleep(0.01)
         
         self.ids.uik_complaint_images.del_images()
         self.ids.uik_reply_images.del_images()
@@ -565,20 +519,11 @@ class ComplaintScreen(Screen):
                 uxitem = self.ids.refuse_akt_images.add_image(dbimage.filepath)
                 
             uxitem.dbid = dbimage.id
-            #await sleep(0.01)
-                #('tik_complaint', 'Подаваемые в ТИК жалобы'),
-                #('tik_reply', 'Ответы, решения от ТИК'),'
-        #self.ids.loader.opacity = 0
-                
-    #def __init__(self, *args, **kwargs):
-        #super().__init__(*args, **kwargs)
         
     def refuse_akt_text(self):
         return akt_stub.format(**self.context())
     
     def on_uik_complaint_status_input(self, value):
-        #logger.debug(f'{self.answer.id}, {value}')
-        #if value == 'ref'
         self.ids.scrollview.scroll_to(self.ids.uik_complaint_status)
         self.ids.tik_send_status.text = 'ПРОВЕРЬТЕ ТЕКСТ ЖАЛОБЫ'
         self.ids.tik_text_editor.disabled = False
@@ -587,7 +532,7 @@ class ComplaintScreen(Screen):
         
         
     def toggle_tik(self, uik_complaint_status):
-        if not state.get('tik'):
+        if not state.tik:
             return
         
         refuse = ['refuse_to_accept', 'refuse_to_resolve']  #, 'refuse_to_copy_reply']
@@ -666,7 +611,6 @@ class ComplaintScreen(Screen):
     def build_uik_text(self):
         if not self.answer:
             return
-        #quizwidget.question.example_uik_complaint
         self.uik_complaint_text = uik_complaint_stub.format(**self.context())
         
         
@@ -696,5 +640,4 @@ class ComplaintScreen(Screen):
         uix.float_message.show('Запрос отправляется')
         self.ids.tik_send_status.text = 'ЗАПРОС ОТПРАВЛЯЕТСЯ'
         self.ids.tik_text_editor.disabled = True
-        #self.ids.send_button.disabled = True
         

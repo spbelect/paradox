@@ -57,7 +57,7 @@ class Answer(Model):
     time_sent = DateTimeField(null=True)
     time_updated = DateTimeField()
     revoked = BooleanField(default=False)
-    refuse_person = TextField(null=True)
+    refuse_person = TextField(null=True)  # Кто отказал принять жалобу
     
     question_id = CharField(max_length=40)  # UUID
     question_label = TextField()
@@ -79,8 +79,8 @@ class Answer(Model):
         ('none', 'не подавалась'),
         ('request_pending', 'запрос отправляется'),
         ('request_sent', 'запрос отправлен'),
-        ('denied', 'отклонено'),
-        ('email_sent', 'email отправлен'),
+        ('denied', 'отклонено'),  # TODO
+        ('email_sent', 'email отправлен'),  # TODO
     ]
     uik_complaint_status = CharField(max_length=30, choices=UIK_COMPLAINT_STATUS, default='none')
     tik_complaint_status = CharField(max_length=30, choices=TIK_COMPLAINT_STATUS, default='none')
@@ -88,7 +88,7 @@ class Answer(Model):
     
     @property
     def question(self):
-        return state.get('questions', {}).get(self.question_id, {})
+        return state.questions.get(self.question_id, {})
     
     @property
     def value(self):
@@ -107,7 +107,7 @@ class Answer(Model):
     def __eq__(self, other):
         # Default django model only checks if pk are equal. We also need to check if value and 
         # revoked fields are equal, so that QuizWidget.answer property change is dispatched when 
-        # answer is changed.
+        # answer.value or answer.revoked is changed.
         return super().__eq__(other) and self.value == other.value and self.revoked == other.revoked
     
 class IntegerAnswer(Answer):
@@ -231,11 +231,5 @@ class AnswerImage(Model):
         ordering = ('time_created',)
         
     def save(self, *a, **kw):
-        
-        from paradox import uix
         self.md5 = paradox.utils.md5_file(self.filepath)
-        result = super().save(*a,**kw)
-         #= uix.imagepicker.instances.filter(id=self.uuid)
-        #if self.send_status == 'sent':
-            
-        return result
+        super().save(*a,**kw)
