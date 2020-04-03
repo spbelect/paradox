@@ -228,7 +228,7 @@ Builder.load_string('''
                         
                     BlueButton:
                         text: 'составьте акт об отказе'
-                        on_release: uix.screenmgr.show_handbook('Составьте акт', root.refuse_akt_text())
+                        on_release: uix.screenmgr.show_handbook('Составьте акт', root.akt_stub.format(**root.context()))
 
                     ComplaintSpacerSmall:
                     
@@ -305,7 +305,6 @@ Builder.load_string('''
                 Button:
                     text: 'Отправить на проверку'
                     disabled: tik_text_editor.disabled or not tik_text_editor.frozen or not state.tik.email
-                    #id: send_button
                     # TODO: отправить сразу если нет координаторов которые готовы проверить.
                     on_release: root.on_send_pressed()
                     color: teal
@@ -319,7 +318,7 @@ Builder.load_string('''
                     height: self.texture_size[1]  # Grow height to fit all text
                     
                 Label:
-                    text: 'Оператор проверит текст жалобы и может отправить email в тик, если нет ошибок. Укажите свой telegram адрес в профиле, чтобы оператор и представитель в ТИК мог с вами связаться.'
+                    text: 'Оператор проверит текст жалобы и может отправить email в тик, если нет ошибок. Укажите свой telegram адрес в профиле, чтобы оператор и представитель ТИК мог с вами связаться.'
                     font_size: dp(16)
                     color: lightgray
                     # TODO: отправить сразу если нет координаторов которые готовы проверить.
@@ -465,6 +464,7 @@ class ComplaintScreen(Screen):
     answer = ObjectProperty(None, allow_none=True)
     generated_tik_text = StringProperty('')
     uik_complaint_text = StringProperty(None, allow_none=True)
+    akt_stub = akt_stub
         
     def show(self, answer):
         self.answer = answer
@@ -480,10 +480,10 @@ class ComplaintScreen(Screen):
         if not answer.tik_complaint_status or answer.tik_complaint_status == 'none':
             self.ids.tik_send_status.text = 'ПРОВЕРЬТЕ ТЕКСТ ЖАЛОБЫ'
             self.ids.tik_text_editor.disabled = False
-        elif answer.tik_complaint_status == 'request_pending':
+        elif answer.tik_complaint_status == 'sending_to_moderator':
             self.ids.tik_send_status.text = 'ЗАПРОС ОТПРАВЛЯЕТСЯ'
             self.ids.tik_text_editor.disabled = True
-        elif answer.tik_complaint_status == 'request_sent':
+        elif answer.tik_complaint_status == 'moderating':
             self.ids.tik_send_status.text = 'ЗАПРОС ОТПРАВЛЕН'
             self.ids.tik_text_editor.disabled = True
         else:
@@ -499,7 +499,7 @@ class ComplaintScreen(Screen):
                     self.ids.refuse_person_block.visible = True
                     
             self.ids.refuse_person.setchoice(answer.refuse_person)
-            self.toggle_tik(answer.uik_complaint_status)
+            self.set_tik_block_visibility(answer.uik_complaint_status)
         self.build_uik_text()
         
         self.ids.uik_complaint_images.del_images()
@@ -520,22 +520,30 @@ class ComplaintScreen(Screen):
                 
             uxitem.dbid = dbimage.id
         
-    def refuse_akt_text(self):
-        return akt_stub.format(**self.context())
     
     def on_uik_complaint_status_input(self, value):
+        """ 
+        
+        """
+        self.answer.update(uik_complaint_status=value, time_updated=now())
         self.ids.scrollview.scroll_to(self.ids.uik_complaint_status)
+        
+        # Если запрос в ТИК уже был отправлен, позволить еще раз отредактировать 
+        # и отправить. 
         self.ids.tik_send_status.text = 'ПРОВЕРЬТЕ ТЕКСТ ЖАЛОБЫ'
         self.ids.tik_text_editor.disabled = False
-        self.answer.update(uik_complaint_status=value, time_updated=now())
-        self.toggle_tik(value)
+        self.set_tik_block_visibility(uik_complaint_status=value)
         
         
-    def toggle_tik(self, uik_complaint_status):
+    def set_tik_block_visibility(self, uik_complaint_status):
+        """
+        В зависимости от статуса обжалования в УИК, показать или нет блок обжалования в 
+        ТИК, и блок акта об отказе.
+        """
         if not state.tik:
             return
         
-        refuse = ['refuse_to_accept', 'refuse_to_resolve']  #, 'refuse_to_copy_reply']
+        refuse = ['refuse_to_accept', 'refuse_to_resolve']
         if uik_complaint_status not in ['got_unfair_reply'] + refuse:
             self.ids.tik_block.visible = False
             return
@@ -581,10 +589,10 @@ class ComplaintScreen(Screen):
             answer = self.answer,
             date = self.answer.time_created.strftime('%d.%m.%Y'),
             profile = state.profile,
-            refuse_person = self.ids.refuse_person.value or 'член комиссии',
+            refuse_person = self.answer.refuse_person or 'член комиссии',
             state = state, 
-            kogo = kogo[self.ids.refuse_person.value], 
-            komu = komu[self.ids.refuse_person.value],
+            kogo = kogo[self.answer.refuse_person], 
+            komu = komu[self.answer.refuse_person],
             role = role.format(answer=self.answer),
             region = state.regions.get(self.answer.region).name
         )
@@ -633,7 +641,7 @@ class ComplaintScreen(Screen):
                 return
             
         self.answer.update(
-            tik_complaint_status='request_pending',
+            tik_complaint_status='sending_to_moderator',
             tik_complaint_text=text,
             time_updated=now()
         )

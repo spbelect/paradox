@@ -27,7 +27,7 @@ from ..click_label import ClickLabel
 from ..vbox import VBox
 from paradox import utils
 from paradox import config
-from paradox.models import Campaign, Coordinator
+from paradox.models import Campaign, Organization
 
 
 Builder.load_string('''
@@ -38,7 +38,7 @@ Builder.load_string('''
 #:import state app_state.state
 
 
-<CoordinatorsScreen>:
+<OrganizationsScreen>:
     ScrollView:
         VBox:
             padding: '10dp'
@@ -64,9 +64,9 @@ Builder.load_string('''
                 id: content
                 
                 
-<CoordinatorItem>:
+<OrganizationItem>:
     Label:
-        text: root.coordinator.name
+        text: root.organization.name
         text_size: self.width, None
         #halign: 'left'
 
@@ -117,15 +117,15 @@ class ContactItem(BoxLayout):
     
     
     
-class CoordinatorItem(VBox):
-    coordinator = ObjectProperty()
+class OrganizationItem(VBox):
+    organization = ObjectProperty()
     
     def __init__(self, *a, **kw):
         super().__init__(*a, **kw)
-        self.add_phones(self.coordinator.phones)
-        self.add_channels(self.coordinator.external_channels)
+        self.add_phones(self.organization.phones)
+        self.add_channels(self.organization.external_channels)
         
-        for campaign in self.coordinator.campaigns.positional().current():
+        for campaign in self.organization.campaigns.positional().current():
             self.add_phones(campaign.phones)
             self.add_channels(campaign.external_channels)
             
@@ -153,19 +153,19 @@ class CoordinatorItem(VBox):
             ))
 
 
-class CoordinatorsScreen(Screen):
+class OrganizationsScreen(Screen):
     #def __init__(self, *a, **kw):
         #super().__init__(*a, **kw)
         
-    def show(self, coordinators):
+    def show(self, organizations):
         for item in self.ids.content.children[:]:
             self.ids.content.remove_widget(item)
             
-        for coord in coordinators:
+        for coord in organizations:
             if coord.campaigns.positional().current().exists():
                 if config.SHOW_TEST_COORDINATORS is False and 'test' in coord.name:
                     continue
-                self.ids.content.add_widget(CoordinatorItem(coordinator=coord))
+                self.ids.content.add_widget(OrganizationItem(organization=coord))
             
     @on('state.region', 'state.uik')
     def show_current(self):
@@ -176,10 +176,10 @@ class CoordinatorsScreen(Screen):
             self.ids.hint.text = 'УИК не выбран'
             return
         self.ids.hint.text = ''
-        #from paradox.models import Campaign, Coordinator
+        #from paradox.models import Campaign, Organization
         campaigns = Campaign.objects.positional().current()
         #logger.debug(f'Active campaigns: {campaigns.values()}')
-        self.show(Coordinator.objects.filter(campaigns__in=campaigns))
+        self.show(Organization.objects.filter(campaigns__in=campaigns))
     
     def show_loader(self, f):
         @wraps(f)

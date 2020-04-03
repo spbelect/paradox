@@ -77,10 +77,10 @@ class Answer(Model):
     ]
     TIK_COMPLAINT_STATUS = [
         ('none', 'не подавалась'),
-        ('request_pending', 'запрос отправляется'),
-        ('request_sent', 'запрос отправлен'),
-        ('denied', 'отклонено'),  # TODO
-        ('email_sent', 'email отправлен'),  # TODO
+        ('sending_to_moderator', 'отправляется модератору'),
+        ('moderating', 'ожидает модерации'),
+        ('denied', 'отклонено'),  # TODO - мы не получаем дальнейший статус от сервера.
+        ('email_sent', 'email отправлен'),  # TODO - мы не получаем дальнейший статус от сервера.
     ]
     uik_complaint_status = CharField(max_length=30, choices=UIK_COMPLAINT_STATUS, default='none')
     tik_complaint_status = CharField(max_length=30, choices=TIK_COMPLAINT_STATUS, default='none')
@@ -133,7 +133,7 @@ class BoolAnswer(Answer):
     #name = TextField()
     #joined = Bool(default=False)
     #actual = Bool(default=True)
-    #coordinator = FK(Coordinator, null=True)
+    #coordinator = FK(Organization, null=True)
     #campaign = FK(Campaign, null=True)
     #icon_url = TextField()
     #icon_local = TextField()
@@ -150,7 +150,7 @@ class BoolAnswer(Answer):
     #answer = FK(Answer)
     
     
-class Coordinator(Model):
+class Organization(Model):
     id = CharField(primary_key=True, max_length=40)  # UUID
     name = TextField()
     phones = TextField()  #json
@@ -175,7 +175,7 @@ class Campaign(Model):
     objects = CampaignQuerySet.as_manager()
     
     id = CharField(primary_key=True, max_length=40)  # UUID
-    coordinator = FK(Coordinator, 'campaigns')
+    coordinator = FK(Organization, 'campaigns')
     #subscription = CharField() # yes/no/subing/unsubing
     #active = BooleanField()  # shortcut for filtering current timerange
     fromtime = DateTimeField()

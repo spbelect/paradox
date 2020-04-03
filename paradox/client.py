@@ -20,7 +20,7 @@ import httpx
 
 from paradox import uix
 from paradox.uix import newversion_dialog
-from .models import Campaign, Coordinator, Answer, AnswerImage, AnswerUserComment
+from .models import Campaign, Organization, Answer, AnswerImage, AnswerUserComment
 from . import config
 from . import utils
 
@@ -62,8 +62,6 @@ except ImportError:
             state._server_ping_success.clear()
             create_task(check_servers())
             return
-            
-        #import ipdb; ipdb.sset_trace()
 
 
 async def check_new_version_loop():
@@ -76,11 +74,9 @@ async def check_new_version_loop():
         if response.status_code != 200:
             await sleep(2)
             continue
-        #import ipdb; ipdb.sset_trace()
         
         changelog = response.content.decode('utf8').strip()
         vstring = 'Версия %s' % config.version[0:3]
-        #import ipdb; ipdb.sset_trace()
         if vstring in changelog:
             try:
                 before, after = changelog.split(vstring)
@@ -165,7 +161,7 @@ async def api_request(method, url, data=None, timeout=15):
     
     await server_ping_success()
         
-    url = urljoin(state.server, urljoin('/api/v2', url))
+    url = urljoin(state.server, urljoin('/api/v3', url))
     logger.debug(f'{method} {url}')
     try:
         #state.server = 'http://8.8.8.8'
@@ -180,9 +176,6 @@ async def api_request(method, url, data=None, timeout=15):
     except Exception as e:
         create_task(check_servers())
         
-        #import ipdb; ipdb.sset_trace()
-        #raise
-        #logger.exception(e)
         if getattr(e, 'args', None) and isinstance(e.args[0], OSError):
             if getattr(e.args[0], 'errno', None) == 101:
                 raise
@@ -276,12 +269,12 @@ async def send_position():
 def get_throttle_delay():
     vote_dates = Campaign.objects.positional().current().values_list('vote_date', flat=True)
     if now().date() in list(vote_dates):
-        return 5
+        return 5    # В день голосования
     else:
-        return 0.1
+        return 0.1  # В любой другой день
         
         
-async def _put_image(image):
+async def _patch_image_meta(image):
     try:
         response = await api_request('PATCH', f'quiz_answers/{image.answer_id}/images/{image.md5}', {
             #'type': image.type,
@@ -303,23 +296,28 @@ async def _put_image(image):
 
 async def answer_image_send_loop():
     while True:
+        # Фото к еще не отправленным ответам. (будут отправлены только после отправки ответов)
         waiting_answer = AnswerImage.objects.filter(answer__time_sent__isnull=True).count()
         
-        topost = Q(time_sent__isnull=True) & Q(answer__time_sent__isnull=False)
-        topost = AnswerImage.objects.filter(topost).exclude(deleted=True)
+        # Фото которые пользователь обновил после того как они были отправлены. (напр. удалил)
+        topatch = AnswerImage.objects.filter(
+            Q(time_sent__isnull=False) & Q(time_sent__lt=F('time_updated'))
+        )
         
-        toput = Q(time_sent__isnull=False) & Q(time_sent__lt=F('time_updated'))
-        toput = AnswerImage.objects.filter(toput)
+        # Новые фото к уже отправленным ответам.
+        topost = AnswerImage.objects.exclude(deleted=True).filter(
+            Q(time_sent__isnull=True) & Q(answer__time_sent__isnull=False)
+        )
         
         logger.info(
-            f'{topost.count()} images to post now. {toput.count()} images to patch.'
+            f'{topost.count()} images to post now. {topatch.count()} images to patch.'
             f' {waiting_answer} waiting for answer to be sent first.'
         )
         
         throttle_delay = get_throttle_delay()
         
-        for image in toput:
-            await _put_image(image)
+        for image in topatch:
+            await _patch_image_meta(image)
             await sleep(throttle_delay)
             
         for image in topost:
@@ -384,14 +382,14 @@ async def answer_image_send_loop():
         await sleep(10)
             
             
-async def _put_answer(answer):
+async def _patch_answer(answer):
     """ Return True on success """
     try:
         response = await api_request('PATCH', f'quiz_answers/{answer.id}/', {
             'revoked': answer.revoked,
             'uik_complaint_status': answer.uik_complaint_status,
+            'tik_complaint_text': answer.tik_complaint_text ,
             'tik_complaint_status': answer.tik_complaint_status,
-            'tik_complaint_text': answer.tik_complaint_text,
         })
     except Exception as e:
         answer.update(send_status='patch_exception')
@@ -419,30 +417,32 @@ async def _put_answer(answer):
         return
     
     extra = {}
-    if answer.tik_complaint_status == 'request_pending':
-        extra = {'tik_complaint_status': 'request_sent'}
+    if answer.tik_complaint_status == 'sending_to_moderator':
+        extra = {'tik_complaint_status': 'moderating'}
     answer.update(send_status='sent', time_sent=now(), **extra)
 
 
 async def answer_send_loop():
     while True:
-        # Ответы которые пользователь обновил после того как они были отправлены. (напр. статус жалобы)
-        toput = Answer.objects.filter(time_sent__isnull=False, time_sent__lt=F('time_updated'))
+        # Ответы которые пользователь обновил после того как они были отправлены. 
+        # (напр. статус жалобы)
+        topatch = Answer.objects.filter(time_sent__isnull=False, time_sent__lt=F('time_updated'))
+        
         # Еще не отправленные ответы.
         topost = Answer.objects.filter(time_sent__isnull=True)
         
-        logger.info(f'{topost.count()} answers to post. {toput.count()} answers to patch.')
+        logger.info(f'{topost.count()} answers to post. {topatch.count()} answers to patch.')
         
         throttle_delay = get_throttle_delay()
             
-        for answer in chain(topost, toput):
+        for answer in chain(topost, topatch):
             quizwidgets = uix.QuizWidget.instances.filter(question__id=answer.question_id)
             quizwidgets.on_send_start(answer)
             await sleep(throttle_delay)
             
-        for answer in toput:
+        for answer in topatch:
             quizwidgets = uix.QuizWidget.instances.filter(question__id=answer.question_id)
-            if await _put_answer(answer):
+            if await _patch_answer(answer):
                 quizwidgets.on_send_success(answer)
             else:
                 quizwidgets.on_send_error(answer)
@@ -455,8 +455,8 @@ async def answer_send_loop():
                     'id': answer.id,
                     'question_id': answer.question_id,
                     'value': answer.value,
-                    'uik_complaint_status': answer.uik_complaint_status,
-                    'tik_complaint_status': answer.tik_complaint_status,
+                    'uik_complaint_status': answer.get_uik_complaint_status_display(),
+                    'tik_complaint_status': answer.get_tik_complaint_status_display(),
                     'tik_complaint_text': answer.tik_complaint_text,
                     'region': answer.region,
                     'uik': answer.uik,
@@ -476,7 +476,14 @@ async def answer_send_loop():
                 continue
             
             if response.status_code == 404:
-                # No such question
+                # На сервере нет такого вопроса или ответа.
+                #  Если нет такого вопроса - вероятно на сервере удалили старый вопрос. В идеале 
+                # на сервере вопросы удаляться совсем не должны, а только исключаться из анкеты. 
+                # Но пока идет активная разработка, и бывает что вопросы удаляются.
+                #  Если нет такого ответа - возможно на сервере удалили ответы после того как 
+                # юзер его отправил.
+                #  Скорее всего это неисправимые ошибки на сервере, так что помечаем ответ как 
+                # успешно отправленный, чтобы больше не пытаться.
                 logger.info(f'404, {response.json()}')
                 answer.update(send_status='sent', time_sent=now())
                 quizwidgets.on_send_success(answer)
@@ -491,7 +498,7 @@ async def answer_send_loop():
         await sleep(10)
         
         
-mock_campaigns = {
+mock_elections = {
     'campaigns': {
         '8446': {
             'election': '6b26',
@@ -559,48 +566,34 @@ async def update_campaigns():
         logger.info(f'Updating campaigns. Region: {getattr(region, "name", None)}, country: {country}')
         if not region or not country:
             break
-        #data = (await recv_loop(f'{country}/regions/{region.id}/campaigns/')).json()
-        data = mock_campaigns
+        #data = (await recv_loop(f'{region.id}/elections/?include_coordinators=true')).json()
+        data = mock_elections
         
         #logger.debug(data)
         ##Channel.objects.filter(coordinator__in=data['coordinators']).update(actual=False)
                 
-        for id, coordinator in data['coordinators'].items():
-            Coordinator.objects.update_or_create(id=id, defaults={
-                'name': coordinator['name'],
-                'phones': json.dumps(coordinator['phones'], ensure_ascii=False),
-                'external_channels': json.dumps(coordinator['external_channels'], ensure_ascii=False),
-            })
-            #for channel in coordinator['channels']:
-                #Channel.objects.update_or_create(id=channel['id'], {
-                    #'name': channel['name'],
-                    #'actual': True,
-                    #'coordinator': id,
-                #})
-        
-        for id, campaign in data['campaigns'].items():
-            election = data['elections'].get(campaign['election'])
-            #logger.debug(election)
-            Campaign.objects.update_or_create(id=id, defaults={
-                'country': country,
-                'election_name': election.get('name'),
-                'region': election.get('region'), 
-                'munokrug': election.get('munokrug'), 
-                'fromtime': dtparse(campaign['fromtime']),
-                'totime': dtparse(campaign['totime']),
-                'vote_date': dtparse(election['date']),
-                'coordinator_id': campaign['coordinator'],
-                'elect_flags': ','.join(election['flags']),
-                'phones': json.dumps(campaign['phones'], ensure_ascii=False),
-                'external_channels': json.dumps(campaign['external_channels'], ensure_ascii=False),
-            })
-            #for channel in campaign['channels']:
-                #Channel.objects.update_or_create(id=channel['id'], {
-                    #'name': channel['name'],
-                    #'actual': True,
-                    #'campaign': id,
-                    #'coordinator': campaign['coordinator']
-                #})
+        for election in data:
+            for coordinator in election['coordinators']:
+                Organization.objects.update_or_create(id=coordinator['org_id'], defaults={
+                    'name': coordinator['org_name'],
+                    #'phones': json.dumps(coordinator['phones'], ensure_ascii=False),
+                    #'external_channels': json.dumps(coordinator['external_channels'], ensure_ascii=False),
+                })
+                #logger.debug(election)
+                camp = coordinator['campaign']
+                Campaign.objects.update_or_create(id=id, defaults={
+                    'country': country,
+                    'election_name': election.get('name'),
+                    'region': election.get('region'), 
+                    'munokrug': election.get('munokrug'), 
+                    'fromtime': dtparse(camp['fromtime']),
+                    'totime': dtparse(camp['totime']),
+                    'vote_date': dtparse(election['date']),
+                    'coordinator_id': coordinator['org_id'],
+                    'elect_flags': ','.join(election['flags']),
+                    'phones': json.dumps(camp['phones'], ensure_ascii=False),
+                    'external_channels': json.dumps(camp['channels'], ensure_ascii=False),
+                })
         
         if (region, country) == (state.region, state.country):
             break  # Пока ожидали http ответ, регион не изменился, продолжим
@@ -623,8 +616,8 @@ async def update_campaigns():
     #if campaigns.count() == 0:
         #uix.formlist.show_no_campaign_notice()
         
-    uix.coordinators.show(Coordinator.objects.filter(campaigns__in=campaigns))
-    #uix.coordinators.show(Coordinator.objects.all())
+    uix.coordinators.show(Organization.objects.filter(campaigns__in=campaigns))
+    #uix.coordinators.show(Organization.objects.all())
     logger.debug('Update campaigns finished')
     
     

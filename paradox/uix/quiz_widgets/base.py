@@ -129,7 +129,7 @@ class QuizWidget(Widget):
             uix.events_screen.add_event(answer)
             
             #campaigns = Campaign.objects.positional().filter(active=True, subscription='yes')
-            #answer.coordinators = [x.coordinator.id for x in campaigns]
+            #answer.organizations = [x.organization.id for x in campaigns]
             
             sibling_widgets.answer = answer
         #except Exception as e:

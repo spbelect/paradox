@@ -82,7 +82,7 @@ class ScreenManager(kivy.uix.screenmanager.ScreenManager):
         self.add_widget(HandBookScreen(name='handbook'))
         #uix.position = PositionScreen(name='position')
         self.add_widget(uix.position)
-        self.add_widget(uix.coordinators)
+        self.add_widget(uix.organizations)
         self.add_widget(uix.events_screen)
         self.add_widget(uix.complaint)
         self.add_widget(AboutScreen(name='about'))
