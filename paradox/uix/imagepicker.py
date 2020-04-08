@@ -225,10 +225,16 @@ class ImageAddButton(ImageButton):
         
     @utils.asynced
     async def pick_file(self, *a):
-        self.modal.dismiss()
-        if not await utils.ask_permissions('WRITE_EXTERNAL_STORAGE', 'READ_EXTERNAL_STORAGE'):
-            return
-        paradox.gallery.user_select_image(self.on_file_picked)
+        if platform == 'android':
+            self.modal.dismiss()
+            if not await utils.ask_permissions('WRITE_EXTERNAL_STORAGE', 'READ_EXTERNAL_STORAGE'):
+                return
+            paradox.gallery.user_select_image(self.on_file_picked)
+        else:
+            filepath = filechooser.open_file()
+            if filepath:
+                self.parent.dispatch('on_image_picked', filepath[0])
+                
         
     def on_file_picked(self, file):
         from paradox import client

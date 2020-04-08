@@ -201,8 +201,11 @@ class HomeScreen(Screen):
         logger.debug(f'Rebuilding {len(state.quiz_topics[state.country])} quiz topics.')
         
         for topic in state.quiz_topics[state.country]:
+            if not topic.name or not topic.id:
+                logger.error(topic)
+                continue
             self.ids.topics.add_widget(TopicItem(
-                json=topic, id=topic.id, on_release=self.on_topic_click
+                json=topic, id=str(topic.id), on_release=self.on_topic_click
             ))
             
 

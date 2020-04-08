@@ -448,10 +448,10 @@ async def on_start(app):
     uix.events_screen.restore_past_events()
     logger.info('Restored past events.')
     
-    #quiz_topics = (await client.recv_loop(f'{state.country}/questions/')).json()
-    #logger.info(quiz_topics)
+    #quiz_topics = mock_quiz_topics
+    quiz_topics = (await client.recv_loop(f'{state.country}/questions/')).json()
+    logger.info(quiz_topics)
     #quiz_topics = {'ru': json.load(open('forms_general.json'))}
-    quiz_topics = mock_quiz_topics
     
     # Update questions.
     for topic in quiz_topics:
@@ -474,8 +474,8 @@ async def on_start(app):
         state.quiz_topics[state.country] = quiz_topics
         uix.homescreen.build_topics()
     
-    regions = mock_regions
-    #regions = (await client.recv_loop(f'{state.country}/regions/')).json()
+    #regions = mock_regions
+    regions = (await client.recv_loop(f'{state.country}/regions/')).json()
     ###regions = {f'ru_{x["id"]}': dict(x, id=f'ru_{x["id"]}') for x in json.load(open('regions.json'))}
         
     #logger.debug(regions)

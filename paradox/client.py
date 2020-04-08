@@ -152,6 +152,7 @@ async def check_servers():
         await get_server()
     else:
         logger.info('Server connection ok.')
+        state._server_ping_success.set()
 
 
 async def api_request(method, url, data=None, timeout=15):
@@ -161,7 +162,7 @@ async def api_request(method, url, data=None, timeout=15):
     
     await server_ping_success()
         
-    url = urljoin(state.server, urljoin('/api/v3', url))
+    url = urljoin(state.server, urljoin('/api/v3/', url))
     logger.debug(f'{method} {url}')
     try:
         #state.server = 'http://8.8.8.8'
@@ -275,8 +276,11 @@ def get_throttle_delay():
         
         
 async def _patch_image_meta(image):
+    """
+    Пользователь изменил флаг "удален".
+    """
     try:
-        response = await api_request('PATCH', f'quiz_answers/{image.answer_id}/images/{image.md5}', {
+        response = await api_request('PATCH', f'answers/{image.answer_id}/images/{image.md5}', {
             #'type': image.type,
             #'time_created': image.time_created,
             'deleted': image.deleted,
@@ -326,7 +330,7 @@ async def answer_image_send_loop():
                 response = await api_request('POST', 'upload_request/', {
                     'filename': image.md5 + basename(image.filepath),
                     'md5': image.md5,
-                    'content-type': 'image/jpeg'
+                    'content_type': 'image/jpeg'
                 })
             except Exception as e:
                 logger.error(repr(e))
@@ -359,7 +363,7 @@ async def answer_image_send_loop():
                 continue
             
             try:
-                response = await api_request('POST', f'quiz_answers/{image.answer_id}/images/', {
+                response = await api_request('POST', f'answers/{image.answer_id}/images/', {
                     'type': image.type,
                     'timestamp': image.time_created.isoformat(),
                     'deleted': image.deleted,
@@ -371,6 +375,22 @@ async def answer_image_send_loop():
                 if getattr(state, '_raise_all', None):
                     raise e
                 continue
+            if response.status_code == 404:
+                try:
+                    logger.info(f'{response!r} {response.json()}')
+                except:
+                    logger.info(repr(response))
+                    image.update(send_status=f'post_http_404')
+                    continue
+                else:
+                    err = response.json()
+                    if isinstance(err, dict) and err.get('status') == 'no such answer':
+                        #   На сервере нет такого ответа - возможно на сервере удалили ответ 
+                        # после того как юзер его отправил.
+                        #   Скорее всего это неисправимая ошибка, так что помечаем как 
+                        # успешно отправленную, чтобы больше не пытаться.
+                        image.update(send_status='sent', time_sent=now())
+                        continue
             if not response.status_code == 200:
                 logger.error(repr(response))
                 image.update(send_status=f'post_http_{response.status_code}')
@@ -385,11 +405,11 @@ async def answer_image_send_loop():
 async def _patch_answer(answer):
     """ Return True on success """
     try:
-        response = await api_request('PATCH', f'quiz_answers/{answer.id}/', {
+        response = await api_request('PATCH', f'answers/{answer.id}/', {
             'revoked': answer.revoked,
-            'uik_complaint_status': answer.uik_complaint_status,
+            'uik_complaint_status': answer.get_uik_complaint_status_display(),
             'tik_complaint_text': answer.tik_complaint_text ,
-            'tik_complaint_status': answer.tik_complaint_status,
+            'tik_complaint_status': answer.get_tik_complaint_status_display(),
         })
     except Exception as e:
         answer.update(send_status='patch_exception')
@@ -397,29 +417,36 @@ async def _patch_answer(answer):
             raise e
         return False
     if response.status_code == 404:
-        # На сервере нет такого вопроса или ответа.
-        #  Если нет такого вопроса - вероятно на сервере удалили старый вопрос. В идеале на сервере 
-        # вопросы удаляться совсем не должны, а только исключаться из анкеты. Но пока идет активная
-        # разработка, и бывает что вопросы удаляются.
-        #  Если нет такого ответа - возможно на сервере удалили ответы после того как юзер его 
-        # отправил.
-        #  Скорее всего это неисправимые ошибки на сервере, так что помечаем ответ как успешно
-        # отправленный, чтобы больше не пытаться.
-        logger.info(f'404, {response!r} {response.json()}')
-        answer.update(send_status='sent', time_sent=now())
-        return True
+        try:
+            logger.info(f'{response!r} {response.json()}')
+        except:
+            logger.info(repr(response))
+            answer.update(send_status=f'post_http_404')
+            return False
+        else:
+            err = response.json()
+            if isinstance(err, dict) and err.get('status') == 'no such answer':
+                #   На сервере нет такого ответа - возможно на сервере удалили ответ 
+                # после того как юзер его отправил.
+                #   Скорее всего это неисправимая ошибка, так что помечаем ответ как 
+                # успешно отправленный, чтобы больше не пытаться.
+                answer.update(send_status='sent', time_sent=now())
+                return True
+            else:
+                answer.update(send_status=f'post_http_404')
+                return False
     elif not response.status_code == 200:
         try:
             logger.info(f'{response!r} {response.json()}')
         except:
             logger.info(repr(response))
+            
         answer.update(send_status=f'patch_http_{response.status_code}')
-        return
+        return False
     
-    extra = {}
-    if answer.tik_complaint_status == 'sending_to_moderator':
-        extra = {'tik_complaint_status': 'moderating'}
-    answer.update(send_status='sent', time_sent=now(), **extra)
+    # Статус 200, успешно отпрвлен.
+    answer.update(send_status='sent', time_sent=now())
+    return True
 
 
 async def answer_send_loop():
@@ -451,7 +478,7 @@ async def answer_send_loop():
         for answer in topost:
             quizwidgets = uix.QuizWidget.instances.filter(question__id=answer.question_id)
             try:
-                response = await api_request('POST', 'quiz_answers/', {
+                response = await api_request('POST', 'answers/', {
                     'id': answer.id,
                     'question_id': answer.question_id,
                     'value': answer.value,
@@ -476,66 +503,75 @@ async def answer_send_loop():
                 continue
             
             if response.status_code == 404:
-                # На сервере нет такого вопроса или ответа.
-                #  Если нет такого вопроса - вероятно на сервере удалили старый вопрос. В идеале 
-                # на сервере вопросы удаляться совсем не должны, а только исключаться из анкеты. 
-                # Но пока идет активная разработка, и бывает что вопросы удаляются.
-                #  Если нет такого ответа - возможно на сервере удалили ответы после того как 
-                # юзер его отправил.
-                #  Скорее всего это неисправимые ошибки на сервере, так что помечаем ответ как 
-                # успешно отправленный, чтобы больше не пытаться.
-                logger.info(f'404, {response.json()}')
-                answer.update(send_status='sent', time_sent=now())
-                quizwidgets.on_send_success(answer)
+                try:
+                    logger.info(f'{response!r} {response.json()}')
+                except:
+                    logger.info(repr(response))
+                    answer.update(send_status=f'post_http_404')
+                    quizwidgets.on_send_error(answer)
+                else:
+                    err = response.json()
+                    if isinstance(err, dict) and err.get('status') == 'no such question':
+                        #   На сервере нет такого вопроса - вероятно на сервере удалили 
+                        # старый вопрос. В идеале на сервере вопросы удаляться совсем не 
+                        # должны, а только исключаться из анкеты. Но пока идет активная
+                        # разработка, и бывает что вопросы удаляются.
+                        #   Скорее всего это неисправимая ошибка, так что помечаем ответ как 
+                        # успешно отправленный, чтобы больше не пытаться.
+                        answer.update(send_status='sent', time_sent=now())
+                        quizwidgets.on_send_success(answer)
+                    else:
+                        answer.update(send_status=f'post_http_404')
+                        quizwidgets.on_send_error(answer)
+                        
             elif not response.status_code == 201:
                 logger.info(repr(response))
                 answer.update(send_status=f'post_http_{response.status_code}')
                 quizwidgets.on_send_error(answer)
             else:
+                logger.debug(f'{answer.question.id} {answer.question.label} sent successfully.')
                 answer.update(send_status='sent', time_sent=now())
                 quizwidgets.on_send_success(answer)
+                #quizwidgets.on_send_error(answer)
             await sleep(throttle_delay)
-        await sleep(10)
+        await sleep(5)
         
         
-mock_elections = {
-    'campaigns': {
-        '8446': {
-            'election': '6b26',
-            'coordinator': '724',
-            'fromtime': '2018.07.22T00:00',
-            'totime': '2059.12.22T00:00',
-            #'channels': [
-                #{'type': 'readonly', 'uuid': '51', 'name': 'НП NEWS МО Дачное', 'icon': 'http://'},
-                #{'type': 'groupchat', 'uuid':'724', 'name': 'НП чат МО Дачное', 'icon': 'http://'},
-            #],
-            'external_channels': [{
-                'type': 'tg', 'name': 'НП чат Кировский рн', 'url': 'https://t.me/mobile_kir',
-            }],
-            'phones': [{'name': 'НП Кировский', 'number': '88121111'}],
-        },
-    },
-    'elections': {
-        '6b26': {
-            'name': 'Выборы Депутатов МО Дачное',
-            'date': '2018.09.08', 
-            'munokrug': '6ab3-d1c23',
-            'flags': ['otkrep', 'mestonah', 'dosrochka'],
-            'region': 'ru_78'
-        },  
-        'f674': {
-            'name': 'Выборы президента'
-        }},
-    'coordinators': {'724':  {
-        'name': 'Наблюдатели Петербурга',
-        'external_channels': [{
-            'type': 'tg', 
-            'name': 'Общий чат СПб и ЛО', 
-            'url': 'https://t.me/mobile_spb_lo',
-            'region': '78',
-        }],
-        'phones': [{'name': 'НП Коллцентр lasrjaosjrh lwjg alwj', 'number': '88129535326'}],
-        #'channels': [
+mock_elections = [
+    {
+        'name': 'Выборы президента',
+        'date': '2018.09.08',
+        'coordinators': []
+    }, 
+    {
+        'name': 'Выборы Депутатов МО Дачное',
+        'date': '2018.09.08', 
+        'munokrug': '6ab3-d1c23',
+        'flags': ['otkrep', 'mestonah', 'dosrochka'],
+        'region': 'ru_78',
+        'coordinators': [{
+            'org_id': '754',
+            'org_name': 'Наблюдатели Петербурга',
+            'campaign': {
+                'id': '8446',
+                'fromtime': '2018.07.22T00:00',
+                'totime': '2059.12.22T00:00',
+                'channels': [{
+                    'type': 'tg', 'name': 'НП чат Кировский рн', 'url': 'https://t.me/mobile_kir',
+                }],
+                'phones': [{'name': 'НП Кировский', 'number': '88121111'}],
+            },
+        }]
+}]
+        
+        #'external_channels': [{
+            #'type': 'tg', 
+            #'name': 'Общий чат СПб и ЛО', 
+            #'url': 'https://t.me/mobile_spb_lo',
+            #'region': '78',
+        #}],
+        #'phones': [{'name': 'НП Коллцентр lasrjaosjrh lwjg alwj', 'number': '88129535326'}],
+        ##'channels': [
                 #{
                     #'uuid': '7246',
                     #'type': 'readonly',
@@ -551,14 +587,14 @@ mock_elections = {
                     #'icon': 'http://'
                 #},
             #]
-        }
-    }
-}
+        #}
+    #}
+#}
  
 @on('state.region')
 @lock_or_exit()
 @uix.homescreen.show_loader
-@uix.coordinators.show_loader
+@uix.organizations.show_loader
 async def update_campaigns():
     await sleep(2)
     while True:
@@ -581,7 +617,7 @@ async def update_campaigns():
                 })
                 #logger.debug(election)
                 camp = coordinator['campaign']
-                Campaign.objects.update_or_create(id=id, defaults={
+                Campaign.objects.update_or_create(id=camp['id'], defaults={
                     'country': country,
                     'election_name': election.get('name'),
                     'region': election.get('region'), 
@@ -616,7 +652,7 @@ async def update_campaigns():
     #if campaigns.count() == 0:
         #uix.formlist.show_no_campaign_notice()
         
-    uix.coordinators.show(Organization.objects.filter(campaigns__in=campaigns))
+    uix.organizations.show(Organization.objects.filter(campaigns__in=campaigns))
     #uix.coordinators.show(Organization.objects.all())
     logger.debug('Update campaigns finished')
     

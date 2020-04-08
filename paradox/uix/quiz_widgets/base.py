@@ -105,6 +105,7 @@ class QuizWidget(Widget):
             
             # Проверим является ли ответ инцидентом.
             is_incident = False
+            #import ipdb; ipdb.sset_trace()
             for condition, badvalue in self.question.incident_conditions.items():
                 if condition == 'answer_equal_to':
                     is_incident = bool(value == badvalue)
@@ -137,7 +138,10 @@ class QuizWidget(Widget):
             #self.show_cur_state()
             #raise e
         finally:
-            sibling_widgets.status_text = 'отправляется'
+            if self.answer.send_status == 'sent':
+                sibling_widgets.status_text = ' '
+            else:
+                sibling_widgets.status_text = 'отправляется'
             
             ## Enable previously disabled quizwidgets of same question
             #state._pending_save_questions.difference_update({self.question.id})
@@ -201,6 +205,7 @@ class QuizWidget(Widget):
             return False
         value = None if answer.revoked else answer.value
         
+        #print(rules)
         if 'answer_equal_to' in rules:
             return rules['answer_equal_to'] == value
         if 'answer_greater_than' in rules:
@@ -248,7 +253,10 @@ class QuizWidget(Widget):
         pass
     
     def on_send_success(self, answer):
-        if self.answer.id == answer.id:
+        #import ipdb; ipdb.sset_trace()
+        logger.debug(f'{self.answer.id} {answer.id}')
+        if str(self.answer.id) == str(answer.id):
+            self.answer.send_status = 'sent'
             self.status_text = ''   # Отправлен последний (текущий) ответ.
         else:
             self.status_text = 'отправляется'   # Еще не все ответы отправлены.

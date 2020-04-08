@@ -110,6 +110,11 @@ class Answer(Model):
         # answer.value or answer.revoked is changed.
         return super().__eq__(other) and self.value == other.value and self.revoked == other.revoked
     
+    def update(self, **kw):
+        if kw.get('send_status') == 'sent' and self.tik_complaint_status == 'sending_to_moderator':
+            kw['tik_complaint_status'] = 'moderating'
+        super().update(**kw)
+            
 class IntegerAnswer(Answer):
     rawvalue = IntegerField(null=True)
     
@@ -184,7 +189,7 @@ class Campaign(Model):
     country = CharField(max_length=2)
     region = CharField(max_length=6, null=True)
     munokrug = CharField(max_length=40, null=True)  # UUID Муниципльного округа
-    elections_name = TextField(null=True)
+    election_name = TextField(null=True)
     phones = TextField()  #json
     external_channels = TextField()  #json
     elect_flags = TextField()
