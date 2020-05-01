@@ -65,8 +65,9 @@ class TopLoader(Widget):
         self.anim.start(self.ids.dot)
         
 def show_loader():
-    Window.loader = TopLoader(y=Window.height-dp(5))
-    Window.add_widget(Window.loader)
+    if not hasattr(Window, 'loader'):
+        Window.loader = TopLoader(y=Window.height-dp(5))
+        Window.add_widget(Window.loader)
     
 def hide_loader():
     if hasattr(Window, 'loader'):
@@ -77,6 +78,14 @@ def hide_loader():
 from inspect import iscoroutinefunction
 
 def show(f):
+    """
+    Decorator. Wraps sync and async functions. Usage:
+    
+        @uix.top_loader.show
+        def my_long_task():
+            pass
+            
+    """
     if iscoroutinefunction(f):
         async def wrapped(*a, **kw):
             show_loader()

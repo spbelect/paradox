@@ -15,6 +15,7 @@ idna==2.8
 lockorator==0.1
 loguru==0.2.5
 minidjango==2.2.3.dev20190701035504
+Pillow==7.1.2
 plyer==1.4.0
 Pygments==2.4.2
 python-dateutil==2.8.0

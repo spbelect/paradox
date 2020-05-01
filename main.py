@@ -450,7 +450,7 @@ async def on_start(app):
     
     #quiz_topics = mock_quiz_topics
     quiz_topics = (await client.recv_loop(f'{state.country}/questions/')).json()
-    logger.info(quiz_topics)
+    #logger.info(quiz_topics)
     #quiz_topics = {'ru': json.load(open('forms_general.json'))}
     
     # Update questions.

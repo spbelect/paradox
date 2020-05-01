@@ -1,5 +1,5 @@
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from uuid import uuid4
 
 from django.db.models import (
@@ -173,7 +173,12 @@ class CampaignQuerySet(QuerySet):
 
     def current(self):
         now = datetime.now().astimezone()
-        return self.filter(fromtime__lt=now, totime__gt=now)
+        #return self.filter(fromtime__lt=now, totime__gt=now)
+    
+        return self.filter(
+            vote_date__gt = now - timedelta(days=60),
+            vote_date__lt = now + timedelta(days=10)
+        )
     
     
 class Campaign(Model):
@@ -183,8 +188,8 @@ class Campaign(Model):
     coordinator = FK(Organization, 'campaigns')
     #subscription = CharField() # yes/no/subing/unsubing
     #active = BooleanField()  # shortcut for filtering current timerange
-    fromtime = DateTimeField()
-    totime = DateTimeField()
+    #fromtime = DateTimeField()
+    #totime = DateTimeField()
     vote_date = DateField()
     country = CharField(max_length=2)
     region = CharField(max_length=6, null=True)

@@ -138,10 +138,11 @@ class QuizWidget(Widget):
             #self.show_cur_state()
             #raise e
         finally:
-            if self.answer.send_status == 'sent':
-                sibling_widgets.status_text = ' '
-            else:
-                sibling_widgets.status_text = 'отправляется'
+            if self.answer:
+                if self.answer.send_status == 'sent':
+                    sibling_widgets.status_text = ' '
+                else:
+                    sibling_widgets.status_text = 'отправляется'
             
             ## Enable previously disabled quizwidgets of same question
             #state._pending_save_questions.difference_update({self.question.id})

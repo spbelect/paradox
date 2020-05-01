@@ -134,14 +134,15 @@ class OrganizationItem(VBox):
             'vk': 'img/vkontakte-256.png',
             'fb': 'img/fb_icon_325x325.png',
             'tg': 'img/Telegram_alternative_logo.png',
-            'wa': 'img/whatsapp.png'
+            'wa': 'img/whatsapp.png',
+            'uk': 'img/whatsapp.png'
         }
                 
         for channel in json.loads(channels or '[]'):
             self.ids.contacts.add_widget(ContactItem(
-                image=images[channel['type']],
-                text='[color=#4AABFF][ref={url}]{name}[/ref][/color]'.format(**channel),
-                on_ref_press=ContactItem.open_url
+                image = images.get(channel['type'], None),
+                text = '[color=#4AABFF][ref={url}]{name}[/ref][/color]'.format(**channel),
+                on_ref_press = ContactItem.open_url
             ))
             
     def add_phones(self, phones):

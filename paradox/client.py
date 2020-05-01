@@ -327,7 +327,7 @@ async def answer_image_send_loop():
         for image in topost:
             await sleep(throttle_delay)
             try:
-                response = await api_request('POST', 'upload_request/', {
+                response = await api_request('POST', 'upload_slot/', {
                     'filename': image.md5 + basename(image.filepath),
                     'md5': image.md5,
                     'content_type': 'image/jpeg'
@@ -336,7 +336,7 @@ async def answer_image_send_loop():
                 logger.error(repr(e))
                 image.update(send_status='req_exception')
                 if getattr(state, '_raise_all', None):
-                    raise e
+                    raise e   # For testing
                 continue
             if not response.status_code == 200:
                 logger.error(repr(response))
@@ -354,7 +354,7 @@ async def answer_image_send_loop():
                 logger.error(repr(e))
                 image.update(send_status='upload_exception')
                 if getattr(state, '_raise_all', None):
-                    raise e
+                    raise e   # For testing
                 continue
             if not response.status_code in (200, 201, 204):
                 logger.error(repr(response))
@@ -373,7 +373,7 @@ async def answer_image_send_loop():
                 logger.error(repr(e))
                 image.update(send_status='post_exception')
                 if getattr(state, '_raise_all', None):
-                    raise e
+                    raise e   # For testing
                 continue
             if response.status_code == 404:
                 try:
@@ -414,7 +414,7 @@ async def _patch_answer(answer):
     except Exception as e:
         answer.update(send_status='patch_exception')
         if getattr(state, '_raise_all', None):
-            raise e
+            raise e   # For testing
         return False
     if response.status_code == 404:
         try:
@@ -498,7 +498,7 @@ async def answer_send_loop():
                 quizwidgets.on_send_error(answer)
                 #print(state.get('_raise_all'))
                 if getattr(state, '_raise_all', None):
-                    raise e
+                    raise e   # For testing
                 await sleep(throttle_delay)
                 continue
             
@@ -554,43 +554,15 @@ mock_elections = [
             'org_name': 'Наблюдатели Петербурга',
             'campaign': {
                 'id': '8446',
-                'fromtime': '2018.07.22T00:00',
-                'totime': '2059.12.22T00:00',
                 'channels': [{
-                    'type': 'tg', 'name': 'НП чат Кировский рн', 'url': 'https://t.me/mobile_kir',
+                    'type': 'tg', 'name': 'НП чат Кировский рн', 'value': 'https://t.me/mobile_kir',
                 }],
-                'phones': [{'name': 'НП Кировский', 'number': '88121111'}],
+                'phones': [{'name': 'НП Кировский', 'value': '88121111'}],
             },
         }]
 }]
         
-        #'external_channels': [{
-            #'type': 'tg', 
-            #'name': 'Общий чат СПб и ЛО', 
-            #'url': 'https://t.me/mobile_spb_lo',
-            #'region': '78',
-        #}],
-        #'phones': [{'name': 'НП Коллцентр lasrjaosjrh lwjg alwj', 'number': '88129535326'}],
-        ##'channels': [
-                #{
-                    #'uuid': '7246',
-                    #'type': 'readonly',
-                    #'name': 'НП NEWS Спб',
-                    #'region': '78',
-                    #'icon': 'http://'
-                #},
-                #{
-                    #'uuid': '886',
-                    #'type': 'groupchat',
-                    #'name': 'НП чат Спб',
-                    #'region': '78',
-                    #'icon': 'http://'
-                #},
-            #]
-        #}
-    #}
-#}
- 
+        
 @on('state.region')
 @lock_or_exit()
 @uix.homescreen.show_loader
@@ -602,28 +574,25 @@ async def update_campaigns():
         logger.info(f'Updating campaigns. Region: {getattr(region, "name", None)}, country: {country}')
         if not region or not country:
             break
+        
         #data = (await recv_loop(f'{region.id}/elections/?include_coordinators=true')).json()
         data = mock_elections
-        
         #logger.debug(data)
-        ##Channel.objects.filter(coordinator__in=data['coordinators']).update(actual=False)
-                
+        
         for election in data:
             for coordinator in election['coordinators']:
                 Organization.objects.update_or_create(id=coordinator['org_id'], defaults={
                     'name': coordinator['org_name'],
-                    #'phones': json.dumps(coordinator['phones'], ensure_ascii=False),
-                    #'external_channels': json.dumps(coordinator['external_channels'], ensure_ascii=False),
                 })
-                #logger.debug(election)
+                
                 camp = coordinator['campaign']
                 Campaign.objects.update_or_create(id=camp['id'], defaults={
-                    'country': country,
                     'election_name': election.get('name'),
+                    'country': country,
                     'region': election.get('region'), 
                     'munokrug': election.get('munokrug'), 
-                    'fromtime': dtparse(camp['fromtime']),
-                    'totime': dtparse(camp['totime']),
+                    #'fromtime': dtparse(camp['fromtime']),
+                    #'totime': dtparse(camp['totime']),
                     'vote_date': dtparse(election['date']),
                     'coordinator_id': coordinator['org_id'],
                     'elect_flags': ','.join(election['flags']),
