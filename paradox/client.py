@@ -552,12 +552,27 @@ mock_elections = [
         'coordinators': [{
             'org_id': '754',
             'org_name': 'Наблюдатели Петербурга',
+            'contacts': [
+                {
+                    'type': 'tg', 
+                    'name': 'НП общий чат', 
+                    'value': 'https://t.me/spbelect_mobile',
+                },
+            ],
             'campaign': {
                 'id': '8446',
-                'channels': [{
-                    'type': 'tg', 'name': 'НП чат Кировский рн', 'value': 'https://t.me/mobile_kir',
-                }],
-                'phones': [{'name': 'НП Кировский', 'value': '88121111'}],
+                'contacts': [
+                    {
+                        'type': 'tg', 
+                        'name': 'НП чат Кировский рн', 
+                        'value': 'https://t.me/mobile_kir',
+                    },
+                    {
+                        'type': 'ph', 
+                        'name': 'НП Кировский', 
+                        'value': '88121111'
+                    }
+                ],
             },
         }]
 }]
@@ -575,14 +590,15 @@ async def update_campaigns():
         if not region or not country:
             break
         
-        #data = (await recv_loop(f'{region.id}/elections/?include_coordinators=true')).json()
-        data = mock_elections
+        data = (await recv_loop(f'{region.id}/elections/?include_coordinators=true')).json()
+        #data = mock_elections
         #logger.debug(data)
         
         for election in data:
             for coordinator in election['coordinators']:
                 Organization.objects.update_or_create(id=coordinator['org_id'], defaults={
                     'name': coordinator['org_name'],
+                    'contacts': json.dumps(coordinator['contacts'], ensure_ascii=False),
                 })
                 
                 camp = coordinator['campaign']
@@ -596,8 +612,7 @@ async def update_campaigns():
                     'vote_date': dtparse(election['date']),
                     'coordinator_id': coordinator['org_id'],
                     'elect_flags': ','.join(election['flags']),
-                    'phones': json.dumps(camp['phones'], ensure_ascii=False),
-                    'external_channels': json.dumps(camp['channels'], ensure_ascii=False),
+                    'contacts': json.dumps(camp['contacts'], ensure_ascii=False),
                 })
         
         if (region, country) == (state.region, state.country):

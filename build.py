@@ -52,7 +52,6 @@ def cli(**kwargs):
     state.adb = f'{state.sdk_dir}/platform-tools/adb'
     state.adb = 'adb'
     
-    
     #state.arch = 'armeabi-v7a'
     #state.arch = 'x86'
     

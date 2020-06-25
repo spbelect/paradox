@@ -271,7 +271,7 @@ class ParadoxApp(App):
         super().run()
         logger.info('ParadoxApp.run() finished')
         
-    async def async_run(self):
+    async def async_run(self, async_lib):
         #import ipdb; ipdb.sset_trace()
         from kivy.base import async_runTouchApp
         #async with trio.open_nursery() as nursery:
@@ -482,8 +482,9 @@ async def on_start(app):
     state.regions.update(regions)
     logger.info('Regions updated.')
     if state.region:
+        #import ipdb; ipdb.sset_trace()
         if not state.region == state.regions.get(state.region.id):
-            logger.debug(f'Setting region to {state.regions.get(state.region.id)}')
+            logger.debug(f'Setting region to {state.region.id}')
             state.region = state.regions.get(state.region.id)
     
     uix.events_screen.restore_past_events()

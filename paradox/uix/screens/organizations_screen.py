@@ -122,36 +122,41 @@ class OrganizationItem(VBox):
     
     def __init__(self, *a, **kw):
         super().__init__(*a, **kw)
-        self.add_phones(self.organization.phones)
-        self.add_channels(self.organization.external_channels)
+        contacts = json.loads(self.organization.contacts or '[]')
+        self.add_phones(contacts)
+        self.add_channels(contacts)
         
+        #import ipdb; ipdb.sset_trace()
         for campaign in self.organization.campaigns.positional().current():
-            self.add_phones(campaign.phones)
-            self.add_channels(campaign.external_channels)
+            contacts = json.loads(campaign.contacts or '[]')
+            self.add_phones(contacts)
+            self.add_channels(contacts)
             
-    def add_channels(self, channels):
+    def add_channels(self, contacts):
         images = {
             'vk': 'img/vkontakte-256.png',
             'fb': 'img/fb_icon_325x325.png',
             'tg': 'img/Telegram_alternative_logo.png',
             'wa': 'img/whatsapp.png',
-            'uk': 'img/whatsapp.png'
+            'uk': ''
         }
                 
-        for channel in json.loads(channels or '[]'):
-            self.ids.contacts.add_widget(ContactItem(
-                image = images.get(channel['type'], None),
-                text = '[color=#4AABFF][ref={url}]{name}[/ref][/color]'.format(**channel),
-                on_ref_press = ContactItem.open_url
-            ))
+        for contact in contacts:
+            if not contact['type'] == 'ph':
+                self.ids.contacts.add_widget(ContactItem(
+                    image = images.get(contact['type'], None),
+                    text = '[color=#4AABFF][ref={value}]{name}[/ref][/color]'.format(**contact),
+                    on_ref_press = ContactItem.open_url
+                ))
             
-    def add_phones(self, phones):
-        for phone in json.loads(phones or '[]'):
-            self.ids.contacts.add_widget(ContactItem(
-                image='img/Phone.png',
-                text='[color=#4AABFF][ref={number}]{name} {number}[/ref][/color]'.format(**phone),
-                on_ref_press=ContactItem.call
-            ))
+    def add_phones(self, contacts):
+        for contact in contacts:
+            if contact['type'] == 'ph':
+                self.ids.contacts.add_widget(ContactItem(
+                    image='img/Phone.png',
+                    text='[color=#4AABFF][ref={value}]{name} {value}[/ref][/color]'.format(**contact),
+                    on_ref_press=ContactItem.call
+                ))
 
 
 class OrganizationsScreen(Screen):
@@ -162,11 +167,11 @@ class OrganizationsScreen(Screen):
         for item in self.ids.content.children[:]:
             self.ids.content.remove_widget(item)
             
-        for coord in organizations:
-            if coord.campaigns.positional().current().exists():
-                if config.SHOW_TEST_COORDINATORS is False and 'test' in coord.name:
+        for org in organizations:
+            if org.campaigns.positional().current().exists():
+                if config.SHOW_TEST_COORDINATORS is False and 'test' in org.name:
                     continue
-                self.ids.content.add_widget(OrganizationItem(organization=coord))
+                self.ids.content.add_widget(OrganizationItem(organization=org))
             
     @on('state.region', 'state.uik')
     def show_current(self):

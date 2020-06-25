@@ -88,6 +88,7 @@ async def test_render(app):
     #window = EventLoop.window
     await app.wait_clock_frames(5)
 
+    #import ipdb; ipdb.sset_trace()
     from app_state import state
     state._raise_all = True
     

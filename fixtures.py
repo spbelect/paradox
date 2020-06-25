@@ -6,10 +6,11 @@ import time
 import os.path
 import asyncio
 from os.path import dirname
-from kivy.tests import async_sleep
+#from kivy.tests import async_sleep
+
 from kivy.tests import UnitKivyApp
 from kivy.tests.common import GraphicUnitTest, UnitTestTouch
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, AsyncMock, patch
 from loguru import logger
 
 from asyncio import sleep
@@ -21,7 +22,6 @@ apps = []
 
 
 
-from asynctest import CoroutineMock
 @pytest.fixture()
 async def app():
     from django.conf import settings
@@ -87,8 +87,9 @@ async def app():
             asyncio.get_running_loop()._kivyrunning = False
         
                 
-    patch('paradox.client.client', Mock(request=CoroutineMock(side_effect=request))).start()
-    patch('paradox.client.get_server', CoroutineMock()).start()
+    patch('paradox.client.client', Mock(request=AsyncMock(side_effect=request))).start()
+    patch('paradox.client.get_server', AsyncMock()).start()
+    patch('app_state.State.autopersist', Mock())).start()
     gc.collect()
     if apps:
         last_app, last_request = apps.pop()
@@ -143,13 +144,13 @@ async def app():
     #patch('main.aexc_handler', aexc_handler).start()
     #patch('main.state.autopersist', Mock(side_effect=Exception('err'))).start()
     #patch('main.state.autopersist', Mock()).start()
-    main.state.autopersist = Mock(side_effect=lambda *a: print('Mock autopersist'))
     
     from main import ParadoxApp
     class App(UnitKivyApp, ParadoxApp):
         def __init__(self, **kwargs):
+            #import ipdb; ipdb.sset_trace()
             ParadoxApp.__init__(self, **kwargs)
-
+            
             ##def started_app(*largs):
                 ##self.app_has_started = True
             #self.funbind('on_start')
@@ -159,7 +160,7 @@ async def app():
             from kivy.clock import Clock
             frames_start = Clock.frames
             while Clock.frames < frames_start + n:
-                await async_sleep(sleep_time)
+                await sleep(sleep_time)
                     
         async def text_input(self, text):
             for char in text:
@@ -212,6 +213,7 @@ async def app():
     app = App()
     #app = App()
 
+    #import ipdb; ipdb.sset_trace()
     loop = asyncio.get_event_loop()
     loop.create_task(app.async_run())
 
@@ -219,7 +221,7 @@ async def app():
     
     ts = time.perf_counter()
     while loop._kivyrunning and not app.app_has_started:
-        await async_sleep(0.5)
+        await sleep(0.5)
         #print(1)
         #if time.perf_counter() - ts >= 10:
             #raise TimeoutError()
@@ -232,7 +234,6 @@ async def app():
 
     stopTouchApp()
     
-
     #ts = time.perf_counter()
     #while not app.app_has_stopped:
         #await async_sleep(.1)

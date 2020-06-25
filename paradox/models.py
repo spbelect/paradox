@@ -158,8 +158,7 @@ class BoolAnswer(Answer):
 class Organization(Model):
     id = CharField(primary_key=True, max_length=40)  # UUID
     name = TextField()
-    phones = TextField()  #json
-    external_channels = TextField()  #json
+    contacts = TextField()  #json
     
     
 class CampaignQuerySet(QuerySet):
@@ -176,8 +175,8 @@ class CampaignQuerySet(QuerySet):
         #return self.filter(fromtime__lt=now, totime__gt=now)
     
         return self.filter(
-            vote_date__gt = now - timedelta(days=60),
-            vote_date__lt = now + timedelta(days=10)
+            vote_date__gt = now,
+            vote_date__lt = now + timedelta(days=60)
         )
     
     
@@ -195,8 +194,7 @@ class Campaign(Model):
     region = CharField(max_length=6, null=True)
     munokrug = CharField(max_length=40, null=True)  # UUID Муниципльного округа
     election_name = TextField(null=True)
-    phones = TextField()  #json
-    external_channels = TextField()  #json
+    contacts = TextField()  #json
     elect_flags = TextField()
     #channels = ManyToManyField(Channel)
     
