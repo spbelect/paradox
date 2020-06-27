@@ -13,6 +13,8 @@ from kivy.tests.common import GraphicUnitTest, UnitTestTouch
 from unittest.mock import Mock, AsyncMock, patch
 from loguru import logger
 
+import respx
+
 from asyncio import sleep
 #__all__ = ('kivy_app', )
 
@@ -23,7 +25,18 @@ apps = []
 
 
 @pytest.fixture()
+async def mocked_api():
+    with respx.mock(base_url="http://127.0.0.1:8000", assert_all_mocked=True) as respx_mock:
+        respx_mock.get("/users/", content=[], alias="list_users")
+        yield respx_mock
+
+
+@pytest.fixture()
 async def app():
+    
+    from app_state import state
+    state._raise_all = True
+    
     from django.conf import settings
     import os
     from os.path import exists
@@ -41,13 +54,13 @@ async def app():
         if config.SERVER_ADDRESS.endswith('/'):
             config.SERVER_ADDRESS = config.SERVER_ADDRESS[:-1]
         url = url.split(config.SERVER_ADDRESS)[-1]
-        if url == '/api/v2/ru/forms/':
+        if url == '/api/v3/ru/questions/':
             return Mock(
-                status_code=200,
-                json=lambda: [
+                status_code = 200,
+                json = lambda: [
                     {'id': '1', 'name': 'ДО НАЧАЛА', 'inputs': [
                         {
-                            'question_id': 'i1', 
+                            'id': 'i1', 
                             'label': 'Вам предоставили', 
                             'type': 'YESNO',
                             "incident_conditions": { "answer_equal_to": False },
@@ -55,7 +68,7 @@ async def app():
                     ]}
                 ]
             )
-        elif url == f'/api/v2/ru/regions/':
+        elif url == f'/api/v3/ru/regions/':
             return Mock(
                 status_code=200,
                 json=lambda: {
@@ -64,22 +77,35 @@ async def app():
                     ]}
                 }
             )
-        elif url == f'/api/v2/ru/regions/ru_47/campaigns/':
+        elif url == f'/api/v3/ru/regions/ru_47/elections/?include_coordinators=true':
             return Mock(
-                status_code=200,
-                json=lambda: {
-                    'campaigns': {},
-                    'elections': {},
-                    'coordinators': {},
-                }
-            )
-        elif url == f'/api/v2/position/':
+                status_code = 200,
+                json = lambda: [{
+                    'name': 'Выборы Депутатов МО Дачное',
+                    'date': '2018.09.08', 
+                    'munokrug': '6ab3-d1c23',
+                    'flags': ['otkrep', 'mestonah', 'dosrochka'],
+                    'region': 'ru_78',
+                    'coordinators': [{
+                        'org_id': '754',
+                        'org_name': 'Наблюдатели Петербурга',
+                        'contacts': [{'type': 'tg', 'name': 'НП общий чат', 'value': 'https://t.me/spbelect_mobile',},],
+                        'campaign': {
+                            'id': '8446',
+                            'contacts': [
+                                {'type': 'tg', 'name': 'НП чат Кировский рн', 'value': 'https://t.me/mobile_kir',},
+                                {'type': 'ph', 'name': 'НП Кировский', 'value': '88121111'}
+                            ],
+                        },
+                    }]
+            }])
+        elif url == f'/api/v3/position/':
             return Mock(status_code=200, json=lambda: {})
-        elif url == f'/api/v2/userprofile/':
+        elif url == f'/api/v3/userprofile/':
             return Mock(status_code=200, json=lambda: {})
-        elif url == f'/api/v2/quiz_answers/':
+        elif url == f'/api/v3/quiz_answers/':
             return Mock(status_code=201, json=lambda: {})
-        elif url.startswith(f'/api/v2/quiz_answers/'):
+        elif url.startswith(f'/api/v3/quiz_answers/'):
             return Mock(status_code=200, json=lambda: {})
         else:
             raise Exception(f'unknown url {url}')
@@ -87,15 +113,17 @@ async def app():
             asyncio.get_running_loop()._kivyrunning = False
         
                 
-    patch('paradox.client.client', Mock(request=AsyncMock(side_effect=request))).start()
+    #from paradox import client
+    #patch('paradox.client.client', Mock(request=AsyncMock(side_effect=request))).start()
     patch('paradox.client.get_server', AsyncMock()).start()
-    patch('app_state.State.autopersist', Mock())).start()
+    patch('app_state.State.autopersist', Mock()).start()
     gc.collect()
     if apps:
         last_app, last_request = apps.pop()
         assert last_app() is None, \
             'Memory leak: failed to release app for test ' + repr(last_request)
 
+    #import ipdb; ipdb.sset_trace()
     from os import environ
     #environ['KIVY_USE_DEFAULTCONFIG'] = '1'
 

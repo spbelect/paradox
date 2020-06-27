@@ -43,12 +43,13 @@ from loguru import logger
 logger.add(sys.stderr, colorize=True)
 state._appstate_autocreate = True
 
+import kivy
 #from typing import Dict, List
 #from pydantic import BaseModel, ValidationError
 
 from paradox import config
 #from util import delay
-import label
+from label import Label
 import button
 import textinput
 
@@ -65,6 +66,8 @@ if platform in ['linux', 'windows']:
 #Window.softinput_mode = 'pan'
 
 # https://github.com/kuri65536/python-for-android/issues/71
+# dumbdbm on SD card (FAT) devices, tries to use chmod, resulting in
+# error. This monkey-patch workarounds the issue.
 def chmod(*a, **kw):
     pass
 os.chmod = chmod
@@ -110,60 +113,7 @@ Builder.load_file('base.kv')
 
 state._config = config
 
-
-
-    
-    
-def handle_traceback(err):
-    from requests import post
-    from os.path import join
-    _traceback = traceback.format_tb(err.__traceback__)
-    message = u''.join(_traceback) + '\n' + repr(err) + '\n' + str(err)
-    logger.error(message)
-    try:
-        server = state.get('server', config.SERVER_ADDRESS)
-        post(join(server, 'api/v2/errors/'), json={
-            'app_id': state.get('app_id', '666'),
-            #'hash': md5(_traceback.encode('utf-8')).hexdigest(),
-            'timestamp': datetime.utcnow().isoformat(),
-            'traceback': message
-        })
-    except:
-        pass
-    uix.screenmgr.show_error_screen(message)
-    
-    
-def exchook(type, err, traceback):
-    #import ipdb; ipdb.sset_trace()
-    if str(err) == 'Event loop stopped before Future completed.':
-        return
-    handle_traceback(err)
-    
-def aexc_handler(loop, context):
-    # TODO: 
-    # File "/home/u1/.local/share/python-for-android/build/other_builds/python3-libffi-openssl-sqlite3/arm64-v8a__ndk_target_21/python3/Lib/ssl.py", line 763, in do_handshake
-    # SSLZeroReturnError(6, 'TLS/SSL connection has been closed (EOF) (_ssl.c:1051)')
-    # TLS/SSL connection has been closed (EOF) (_ssl.c:1051)
-    # 
-    # TODO: which one is https://bugs.python.org/issue36709 ?
-    #‘message’: Error message;
-    #‘exception’ (optional): Exception object;
-    #‘future’ (optional): asyncio.Future instance;
-    #‘handle’ (optional): asyncio.Handle instance;
-    #‘protocol’ (optional): Protocol instance;
-    #‘transport’ (optional): Transport instance;
-    #‘socket’ (optional): socket.socket instance.
-    logger.info(context['message'])
-    if 'write error on socket transport' in context['message']:
-        return
-    if context['message'] in [
-        'Event loop stopped before Future completed.',
-        'Task was destroyed but it is pending!']:
-        return
-    handle_traceback(context['exception'])
-    
-    
-sys.excepthook = exchook
+import exception_handler
 
 class ParadoxApp(App):
     errors = ListProperty([])
@@ -174,12 +124,11 @@ class ParadoxApp(App):
 
     def __init__(self, *a, **kw):
         super().__init__(*a, **kw)
-        #import ipdb; ipdb.sset_trace()
         logger.debug(f'ParadoxApp created: {self}')
         
     def build(self):
         #import ipdb; ipdb.sset_trace()
-        ExceptionManager.add_handler(self)
+        kivy.base.ExceptionManager.add_handler(exception_handler.KivyExcHandler())
         Clock.max_iteration = 1000
         #print(Clock.max_iteration)
         #if platform == 'android':
@@ -188,7 +137,7 @@ class ParadoxApp(App):
             
         try:
             loop = asyncio.get_running_loop()
-            loop.set_exception_handler(aexc_handler)
+            loop.set_exception_handler(exception_handler.aioloop_exc_handler)
 
             logger.info('Build started')
             state.user_data_dir = self.user_data_dir
@@ -260,10 +209,6 @@ class ParadoxApp(App):
         #self.screens.on_resume()
         #pass
 
-    def handle_exception(self, err):
-        handle_traceback(err)
-        return ExceptionManager.PASS
-
         
     def run(self):
         '''Launches the app in standalone mode.
@@ -271,7 +216,7 @@ class ParadoxApp(App):
         super().run()
         logger.info('ParadoxApp.run() finished')
         
-    async def async_run(self, async_lib):
+    async def async_run(self, async_lib=None):
         #import ipdb; ipdb.sset_trace()
         from kivy.base import async_runTouchApp
         #async with trio.open_nursery() as nursery:
@@ -455,7 +400,13 @@ async def on_start(app):
     
     # Update questions.
     for topic in quiz_topics:
-        state.questions.update({q['id']: q for q in topic['questions']})
+        try:
+            state.questions.update({q['id']: q for q in topic['questions']})
+        except Exception as e:
+            logger.error(repr(e))
+            uix.float_message.show('Ошибка при обновлении анкет')
+            uix.homescreen.ids.topics.add_widget(Label(text='Ошибка при обновлении анкет'))
+            break
             
     # Build each question dependants list - i.e. list of questions that may be
     # hidden or displayed depending on the answer to the current question.
@@ -481,8 +432,8 @@ async def on_start(app):
     #logger.debug(regions)
     state.regions.update(regions)
     logger.info('Regions updated.')
-    if state.region:
-        #import ipdb; ipdb.sset_trace()
+    if state.region.id:
+        import ipdb; ipdb.sset_trace()
         if not state.region == state.regions.get(state.region.id):
             logger.debug(f'Setting region to {state.region.id}')
             state.region = state.regions.get(state.region.id)

@@ -17,6 +17,7 @@ from lockorator.asyncio import lock_or_exit
 from loguru import logger
 #from trio import sleep
 import httpx
+import httpcore
 
 from paradox import uix
 from paradox.uix import newversion_dialog
@@ -119,9 +120,9 @@ async def ping_loop():
     while True:
         try:
             return await client.get(state.server, timeout=15)
-        except httpx.Timeout as e:
+        except httpcore.TimeoutException as e:
             pass
-        except ConnectionRefusedError as e:
+        except httpcore.NetworkError as e:
             # Сеть недоступна.
             logger.debug(repr(e))
         except Exception as e:
@@ -161,7 +162,7 @@ async def api_request(method, url, data=None, timeout=15):
         await sleep(5)
     
     await server_ping_success()
-        
+    
     url = urljoin(state.server, urljoin('/api/v3/', url))
     logger.debug(f'{method} {url}')
     try:
@@ -170,7 +171,7 @@ async def api_request(method, url, data=None, timeout=15):
             method, url, timeout=timeout,
             json=dict(data, app_id=state.app_id) if data else None
         )
-    except httpx.Timeout as e:
+    except httpcore.TimeoutException as e:
         logger.debug(repr(e))
         create_task(check_servers())
         raise
@@ -656,10 +657,11 @@ async def recv_loop(url):
         try:
             response = await api_request('GET', url)
         except Exception as e:
-            logger.error(repr(e))
             if getattr(state, '_raise_all', None):
                 raise e
-            await sleep(5)
+            else:
+                logger.error(repr(e))
+                await sleep(5)
         else:
             if response.status_code == 200:
                 return response

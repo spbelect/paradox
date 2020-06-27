@@ -6,7 +6,7 @@ import pytest_asyncio
 import asyncio
 from asyncio import sleep
 
-from fixtures import app 
+from fixtures import app, mocked_api
 
 #def x(self):
     ##import ipdb; ipdb.sset_trace()
@@ -68,7 +68,7 @@ async def get(widget, **kwargs):
     
 #@pytest.mark.django_db
 @pytest.mark.asyncio
-async def test_render(app):
+async def test_render(mocked_api, app):
 
     #from main import ParadoxApp
 
@@ -89,8 +89,6 @@ async def test_render(app):
     await app.wait_clock_frames(5)
 
     #import ipdb; ipdb.sset_trace()
-    from app_state import state
-    state._raise_all = True
     
     from paradox import uix
     #from paradox.uix.screens.position_screen import RegionChoice, RoleChoice
