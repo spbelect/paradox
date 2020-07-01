@@ -5,6 +5,7 @@ import json
 import time
 import os.path
 import asyncio
+from datetime import date
 from os.path import dirname
 #from kivy.tests import async_sleep
 
@@ -26,8 +27,75 @@ apps = []
 
 @pytest.fixture()
 async def mocked_api():
-    with respx.mock(base_url="http://127.0.0.1:8000", assert_all_mocked=True) as respx_mock:
-        respx_mock.get("/users/", content=[], alias="list_users")
+    #from paradox import config
+    #if config.SERVER_ADDRESS.endswith('/'):
+        #config.SERVER_ADDRESS = config.SERVER_ADDRESS[:-1]
+        
+    with respx.mock(base_url="http://127.0.0.1:8000/api/v3/", assert_all_mocked=True) as respx_mock:
+        
+        respx_mock.get("ru/questions/", alias="list_questions", content=[
+            {'id': '1', 'name': 'ДО НАЧАЛА', 'questions': [
+                {
+                    'id': 'i1', 
+                    'label': 'Вам предоставили', 
+                    'type': 'YESNO',
+                    "incident_conditions": { "answer_equal_to": False },
+                }
+            ]}
+        ])
+                
+        respx_mock.get("ru/regions/", content={
+            'ru_47': {'id': 'ru_47', 'name': 'Ленинградская обл', 'munokruga': [], 'tiks': [
+                {'name': '№ 11', 'uik_ranges': [[1,9999]], 'email': 'tik001@ya.ru'}
+            ]}
+        })
+            
+        respx_mock.get("ru_47/elections/", content=[
+            {
+                'name': 'Выборы Депутатов МО Дачное',
+                'date': date.today().strftime('%Y.%m.%d'), 
+                'munokrug': '6ab3-d1c23',
+                'flags': ['otkrep', 'mestonah', 'dosrochka'],
+                'region': 'ru_78',
+                'coordinators': [{
+                    'org_id': '754',
+                    'org_name': 'Наблюдатели Петербурга',
+                    'contacts': [{'type': 'tg', 'name': 'НП общий чат', 'value': 'https://t.me/spbelect_mobile',},],
+                    'campaign': {
+                        'id': '8446',
+                        'contacts': [
+                            {'type': 'tg', 'name': 'НП чат Кировский рн', 'value': 'https://t.me/mobile_kir',},
+                            {'type': 'ph', 'name': 'НП Кировский', 'value': '88121111'}
+                        ],
+                    },
+                    }]
+            },
+            {
+                'name': 'Выборы ЛО',
+                'date': date.today().strftime('%Y.%m.%d'), 
+                'flags': ['otkrep', ],
+                'region': 'ru_47',
+                'coordinators': [{
+                    'org_id': '754',
+                    'org_name': 'Наблюдатели Петербурга',
+                    'contacts': [{'type': 'tg', 'name': 'НП общий чат', 'value': 'https://t.me/spbelect_mobile',},],
+                    'campaign': {
+                        'id': '1111',
+                        'contacts': [
+                            {'type': 'tg', 'name': 'НП чат ЛО', 'value': 'https://t.me/mobile_LO',},
+                            {'type': 'ph', 'name': 'НП ЛО', 'value': '88127777'}
+                        ],
+                    },
+                    }]
+            },
+        ])
+                    
+        respx_mock.post("position/", content=[])
+        
+        respx_mock.post("userprofile/", content=[])
+        #respx_mock.post("quiz_answers/", content=[])
+        respx_mock.post("answers/", content=[])
+        
         yield respx_mock
 
 
@@ -47,81 +115,16 @@ async def app():
     
     
     import main
-    from paradox import config
-    #from paradox import client
-    server = 'http://127.0.0.1:8000'
-    def request(method, url, *a, **kw):
-        if config.SERVER_ADDRESS.endswith('/'):
-            config.SERVER_ADDRESS = config.SERVER_ADDRESS[:-1]
-        url = url.split(config.SERVER_ADDRESS)[-1]
-        if url == '/api/v3/ru/questions/':
-            return Mock(
-                status_code = 200,
-                json = lambda: [
-                    {'id': '1', 'name': 'ДО НАЧАЛА', 'inputs': [
-                        {
-                            'id': 'i1', 
-                            'label': 'Вам предоставили', 
-                            'type': 'YESNO',
-                            "incident_conditions": { "answer_equal_to": False },
-                        }
-                    ]}
-                ]
-            )
-        elif url == f'/api/v3/ru/regions/':
-            return Mock(
-                status_code=200,
-                json=lambda: {
-                    'ru_47': {'id': 'ru_47', 'name': 'Ленинградская обл', 'munokruga': [], 'tiks': [
-                        {'name': '№ 11', 'uik_ranges': [[1,9999]]}
-                    ]}
-                }
-            )
-        elif url == f'/api/v3/ru/regions/ru_47/elections/?include_coordinators=true':
-            return Mock(
-                status_code = 200,
-                json = lambda: [{
-                    'name': 'Выборы Депутатов МО Дачное',
-                    'date': '2018.09.08', 
-                    'munokrug': '6ab3-d1c23',
-                    'flags': ['otkrep', 'mestonah', 'dosrochka'],
-                    'region': 'ru_78',
-                    'coordinators': [{
-                        'org_id': '754',
-                        'org_name': 'Наблюдатели Петербурга',
-                        'contacts': [{'type': 'tg', 'name': 'НП общий чат', 'value': 'https://t.me/spbelect_mobile',},],
-                        'campaign': {
-                            'id': '8446',
-                            'contacts': [
-                                {'type': 'tg', 'name': 'НП чат Кировский рн', 'value': 'https://t.me/mobile_kir',},
-                                {'type': 'ph', 'name': 'НП Кировский', 'value': '88121111'}
-                            ],
-                        },
-                    }]
-            }])
-        elif url == f'/api/v3/position/':
-            return Mock(status_code=200, json=lambda: {})
-        elif url == f'/api/v3/userprofile/':
-            return Mock(status_code=200, json=lambda: {})
-        elif url == f'/api/v3/quiz_answers/':
-            return Mock(status_code=201, json=lambda: {})
-        elif url.startswith(f'/api/v3/quiz_answers/'):
-            return Mock(status_code=200, json=lambda: {})
-        else:
-            raise Exception(f'unknown url {url}')
-            asyncio.get_running_loop().stop()
-            asyncio.get_running_loop()._kivyrunning = False
-        
-                
+
     #from paradox import client
     #patch('paradox.client.client', Mock(request=AsyncMock(side_effect=request))).start()
     patch('paradox.client.get_server', AsyncMock()).start()
     patch('app_state.State.autopersist', Mock()).start()
     gc.collect()
-    if apps:
-        last_app, last_request = apps.pop()
-        assert last_app() is None, \
-            'Memory leak: failed to release app for test ' + repr(last_request)
+    #if apps:
+        #last_app_weakref, last_request = apps.pop()
+        #assert last_app_weakref() is None, \
+            #'Memory leak: failed to release app for test ' + repr(last_request)
 
     #import ipdb; ipdb.sset_trace()
     from os import environ
@@ -131,8 +134,10 @@ async def app():
     from kivy.config import Config
     #Config.set('graphics', 'width', '320')
     #Config.set('graphics', 'height', '240')
-    for items in Config.items('input'):
-        Config.remove_option('input', items[0])
+    
+    # disable mouse and keyboard
+    #for items in Config.items('input'):
+        #Config.remove_option('input', items[0])
 
     from kivy.core.window import Window
     from kivy.context import Context
@@ -162,16 +167,21 @@ async def app():
     asyncio.get_running_loop()._kivyrunning = True
     
     def throw(err):
-        asyncio.get_running_loop().stop()
-        asyncio.get_running_loop()._kivyrunning = False
+        try:
+            asyncio.get_running_loop().stop()
+            asyncio.get_running_loop()._kivyrunning = False
+        except:
+            pass
         #asyncio.get_running_loop().close()
         #global running
         #running = False
         raise err
-    patch('main.handle_traceback', throw).start()
-    #patch('main.aexc_handler', aexc_handler).start()
-    #patch('main.state.autopersist', Mock(side_effect=Exception('err'))).start()
-    #patch('main.state.autopersist', Mock()).start()
+    patch('paradox.exception_handler.common_exc_handler', throw).start()
+    patch('paradox.exception_handler.send_debug_message', Mock()).start()
+    
+    ###patch('main.aexc_handler', aexc_handler).start()
+    ###patch('main.state.autopersist', Mock(side_effect=Exception('err'))).start()
+    ###patch('main.state.autopersist', Mock()).start()
     
     from main import ParadoxApp
     class App(UnitKivyApp, ParadoxApp):
@@ -198,6 +208,7 @@ async def app():
             await self.wait_clock_frames(20)
                 
         async def click(self, widget):
+            await sleep(0.1)
             for x in range(20):
                 if getattr(widget, 'disabled', False) is False:
                     break
@@ -238,12 +249,20 @@ async def app():
             touch.touch_up()
             await self.wait_clock_frames(30)
         
+    #Window.create_window()
+    #Window.register()
+    #Window.initialized = True
+    #Window.canvas.clear()
+
     app = App()
     #app = App()
 
     #import ipdb; ipdb.sset_trace()
     loop = asyncio.get_event_loop()
     loop.create_task(app.async_run())
+    
+    #from kivy.clock import Clock
+    #Clock._max_fps = 0
 
     await app.wait_clock_frames(20)
     
@@ -274,8 +293,8 @@ async def app():
 
     # release all the resources
     #del context
-    apps.append((weakref.ref(app), request))
-    del app
+    #apps.append((weakref.ref(app), request))
+    #del app
     patch.stopall()
     
     gc.collect()

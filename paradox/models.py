@@ -175,7 +175,7 @@ class CampaignQuerySet(QuerySet):
         #return self.filter(fromtime__lt=now, totime__gt=now)
     
         return self.filter(
-            vote_date__gt = now,
+            vote_date__gte = now,
             vote_date__lt = now + timedelta(days=60)
         )
     

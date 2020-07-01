@@ -25,6 +25,7 @@ from button import Button
 from paradox import utils
 from paradox import gallery
 from paradox import camera
+from paradox import exception_handler
 from paradox.uix.vbox import VBox
 from paradox.uix.hbox import HBox
 from paradox.uix.imagebutton import ImageButton
@@ -237,8 +238,8 @@ class ImageAddButton(ImageButton):
                 
         
     def on_file_picked(self, file):
-        from paradox import client
-        client.send_debug(f'on_file_picked {file}')
+        
+        paradox.exception_handler.send_debug_message(f'on_file_picked {file}')
         if file:
             if file.startswith('file://'):
                 file = file[7:]
@@ -269,8 +270,7 @@ class ImageAddButton(ImageButton):
 
     #@utils.asynced
     def on_photo_taken(self, file):
-        from paradox import client
-        client.send_debug(f'on_photo_taken {file}')
+        paradox.exception_handler.send_debug_message(f'on_photo_taken {file}')
         #move(filename, state.user_data_dir + '/')
         logger.debug(f'aaa {file}')
         #await sleep(0.5)

@@ -26,7 +26,7 @@ Builder.load_string('''
 
 
 <YesNoCancel>:
-    disabled: not self.form.load_finished or not self.visible
+    disabled: not self.screen.load_finished or not self.visible
     size_hint_y: None
     #width: 0.9 * getattr(self.parent, 'width', 10)
     padding_y: 0
@@ -83,10 +83,10 @@ Builder.load_string('''
             
         
     VBox:
-        #id: complaint
         #visible: root.complaint_visible
         
         Button:
+            id: complaint
             height: dp(30)
             font_size: dp(24)
             color: teal

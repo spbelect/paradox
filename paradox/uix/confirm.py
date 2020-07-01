@@ -1,6 +1,7 @@
 from asyncio import Event
 from kivy.lang import Builder
 
+import getinstance
 from kivy.properties import StringProperty
 from kivy.properties import ObjectProperty
 from kivy.uix.modalview import ModalView
@@ -72,6 +73,7 @@ Builder.load_string('''
             height: height1
             size_hint_y: None
             Button:
+                id: yes
                 background_color: lightgray
                 color: black
                 text: root.yes
@@ -94,6 +96,8 @@ class ConfirmModal(ModalView):
     text = StringProperty()
     yes = StringProperty()
     no = StringProperty()
+    
+    instances = getinstance.InstanceManager()
 
     def __init__(self, *a, **kw):
         super().__init__(*a, **kw)
@@ -113,4 +117,8 @@ class ConfirmModal(ModalView):
 
 async def yesno(text):
     modal = ConfirmModal(text=text, yes='Да', no='Нет')
-    return await modal.wait()
+    result = await modal.wait()
+    del modal
+    import gc
+    gc.collect()
+    return result

@@ -37,6 +37,7 @@ Builder.load_string('''
             color: black
 
         Button:
+            id: edit_button
             text: 'Редактировать текст'
             on_release: root.frozen = False
             color: teal
@@ -61,6 +62,7 @@ Builder.load_string('''
             size_hint_y: None
         
         Button:
+            id: save
             color: teal
             text: 'Сохранить'
             on_release: root.on_save_cilck()

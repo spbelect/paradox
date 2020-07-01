@@ -33,7 +33,7 @@ Builder.load_string('''
 
 
 <TrueNoneFalse>:
-    disabled: not self.form.load_finished or not self.visible
+    disabled: not self.screen.load_finished or not self.visible
     size_hint_y: None
     #width: 0.9 * getattr(self.parent, 'width', 10)
     padding_y: 0

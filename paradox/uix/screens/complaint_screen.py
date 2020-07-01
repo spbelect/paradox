@@ -300,9 +300,10 @@ Builder.load_string('''
                     id: tik_text_editor
                     text: getattr(root.answer, 'tik_complaint_text', None) or root.generated_tik_text
                     #text: root.generated_tik_text
-                    on_save: root.on_tik_text_input
+                    on_save: root.on_tik_text_input(text=args[-1])
                     
                 Button:
+                    id: send_tik_complaint
                     text: 'Отправить на проверку'
                     disabled: tik_text_editor.disabled or not tik_text_editor.frozen or not state.tik.email
                     # TODO: отправить сразу если нет координаторов которые готовы проверить.
@@ -328,6 +329,7 @@ Builder.load_string('''
             ComplaintSpacerLarge:
             
             Button:
+                id: back
                 text: '< Назад'
                 on_press: root.manager.pop_screen()
                 #halign: 'left'
@@ -470,6 +472,7 @@ class ComplaintScreen(Screen):
         self.answer = answer
         vote_dates = Campaign.objects.positional().current().values_list('vote_date', flat=True)
         #today = now().date()
+        #import ipdb; ipdb.sset_trace()
         if now().date() in list(vote_dates):
             self.ids.recipients.text = f'После проверки оператором email будет отправлен в ТИК по адресу {state.tik.email}. '\
                 f'Также копия будет отправлена вам на адрес {state.profile.email}'
@@ -623,6 +626,7 @@ class ComplaintScreen(Screen):
         
         
     def on_tik_text_input(self, text):
+        import ipdb; ipdb.sset_trace()
         if not text == self.generated_tik_text:
             # Юзер изменил текст
             self.answer.update(tik_complaint_text=self.ids.tik_text_editor.text)

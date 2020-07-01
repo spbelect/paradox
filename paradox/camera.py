@@ -9,7 +9,8 @@ def take_picture(filepath, on_complete):
     from jnius import autoclass
     from jnius import cast
     from android import activity
-    from paradox import client
+    from paradox import exception_handler
+    
     
     
     Intent = autoclass('android.content.Intent')
@@ -22,7 +23,7 @@ def take_picture(filepath, on_complete):
 
     def on_activity_result(requestCode, resultCode, intent):
         if requestCode != 0x123:
-            client.send_debug(f'got {requestCode}')
+            paradox.exception_handler.send_debug_message(f'got {requestCode}')
             return
         
         activity.unbind(on_activity_result=on_activity_result)

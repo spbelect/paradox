@@ -94,6 +94,10 @@ class ScreenManager(kivy.uix.screenmanager.ScreenManager):
 
 
     def push_screen(self, name):
+        if self.current == 'error':
+            return
+        logger.debug(f'push scrren "{name}". Screen_history: {self.screen_history}')
+        #import ipdb; ipdb.sset_trace()
         self.transition.direction = 'left'
         #if self.current == 'userprofile' and name != 'userprofile':
             #schedule('core.leave_userprofile_screen')
@@ -108,7 +112,6 @@ class ScreenManager(kivy.uix.screenmanager.ScreenManager):
         elif self.current != name:
             self.screen_history.append(name)
             self.current = name
-        print(self.screen_history)
 
     def pop_screen(self):
         self.transition.direction = 'right'
@@ -180,7 +183,8 @@ class ScreenManager(kivy.uix.screenmanager.ScreenManager):
     @on('state.uik', 'state.region')
     def remove_quiztopic_sreens(self):
         self.screen_history = []
-        self.push_screen('home')
+        if self.current.startswith('topic_'):
+            self.push_screen('home')
         #logger.debug(f'{self.screens}')
         for screen in self.screens:
             if screen.name.startswith('topic_'):

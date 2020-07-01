@@ -46,7 +46,8 @@ Builder.load_string('''
                         size: self.parent.size
                         background_color: wheat4
     
-
+                VBox:
+                    id: messages
                 VBox:
                     id: topics
                     padding: 0

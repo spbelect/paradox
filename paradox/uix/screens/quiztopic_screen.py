@@ -24,10 +24,6 @@ from kivy.core.window import Window
 from kivy.effects.dampedscroll import DampedScrollEffect
 from loguru import logger
 
-from ..quiz_widgets.yes_no_cancel import YesNoCancel
-from ..quiz_widgets.multibool_input import MultiBoolInput
-from ..quiz_widgets.true_none_false import TrueNoneFalse
-from ..quiz_widgets.numeric_input import NumericInput
 from ..vbox import VBox
 from paradox.models import Answer, Campaign
 from paradox.uix import top_loader
@@ -131,11 +127,13 @@ class QuizTopicScreen(Screen):
         self.load_finished = True
         
     def add_quizwidget(self, question):
+        from paradox.uix import quiz_widgets
+        
         if question['type'] == 'NUMBER':
-            quizwidget = NumericInput(question=question, form=self)
+            quizwidget = uix.quiz_widgets.NumericInput(question=question, screen=self)
         elif question['type'] == 'YESNO':
             logger.debug(f'Adding quizwidget for {question}')
-            quizwidget = YesNoCancel(question=question, form=self)
+            quizwidget = uix.quiz_widgets.YesNoCancel(question=question, screen=self)
         else:
             return
         self.ids.content.add_widget(quizwidget)

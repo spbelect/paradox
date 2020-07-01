@@ -47,7 +47,9 @@ import kivy
 #from typing import Dict, List
 #from pydantic import BaseModel, ValidationError
 
+import paradox
 from paradox import config
+from paradox import exception_handler
 #from util import delay
 from label import Label
 import button
@@ -93,6 +95,9 @@ else:
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "django_settings")
 django.setup()
 
+from django import conf
+from django.core import management
+
 if platform == 'linux':
     if 'TZ' in os.environ:
         del os.environ['TZ']  # use local timezone instead of django default setting
@@ -113,10 +118,9 @@ Builder.load_file('base.kv')
 
 state._config = config
 
-import exception_handler
 
 class ParadoxApp(App):
-    errors = ListProperty([])
+    #errors = ListProperty([])
     app_has_started = False
 
     #def build_config(self, config):
@@ -128,7 +132,6 @@ class ParadoxApp(App):
         
     def build(self):
         #import ipdb; ipdb.sset_trace()
-        kivy.base.ExceptionManager.add_handler(exception_handler.KivyExcHandler())
         Clock.max_iteration = 1000
         #print(Clock.max_iteration)
         #if platform == 'android':
@@ -136,16 +139,13 @@ class ParadoxApp(App):
             #autoclass('org.kivy.android.PythonActivity').mActivity.removeLoadingScreen()
             
         try:
-            loop = asyncio.get_running_loop()
-            loop.set_exception_handler(exception_handler.aioloop_exc_handler)
-
             logger.info('Build started')
-            state.user_data_dir = self.user_data_dir
-            for filename in glob('forms_*.json') + ['regions.json', 'mo_78.json']:
-                path = join(self.user_data_dir, filename)
-                if not exists(path):
-                    logger.debug('copying %s to %s' % (filename, self.user_data_dir))
-                    copyfile(filename, path)
+            #state.user_data_dir = self.user_data_dir
+            #for filename in glob('forms_*.json') + ['regions.json', 'mo_78.json']:
+                #path = join(self.user_data_dir, filename)
+                #if not exists(path):
+                    #logger.debug('copying %s to %s' % (filename, self.user_data_dir))
+                    #copyfile(filename, path)
 
             ####state._nursery.start_soon(on_start)
             asyncio.create_task(on_start(self))
@@ -175,14 +175,12 @@ class ParadoxApp(App):
 
         except Exception as e:
             try:
-                handle_traceback(e)
+                paradox.exception_handler.send_debug_message(repr(e))
             except:
                 pass
 
+            logger.error(repr(e))
             from kivy.uix.label import Label
-
-            if platform in ['linux', 'windows']:
-                Window.size = (420, 800)
 
             self.label = Label()
             self.label.text_size = Window.width - 20, None
@@ -190,12 +188,6 @@ class ParadoxApp(App):
             self.label.color = (155,55,55,1)
             self.label.text = u'Произошла ошибка. Разработчики были уведомлены об этом.'
             return self.label
-
-    def build_error_screen(self, msg):
-        from paradox.uix.screens.error_screen import ErrorScreen
-        scr = ErrorScreen(message=msg)
-        Clock.schedule_once(lambda *a: Window._set_size((Window.width, Window.height + 1)))
-        return scr
 
     def on_pause(self):
         print('PAUSE')
@@ -210,22 +202,27 @@ class ParadoxApp(App):
         #pass
 
         
-    def run(self):
-        '''Launches the app in standalone mode.
-        '''
-        super().run()
-        logger.info('ParadoxApp.run() finished')
+    #def run(self):
+        #""" Launches the app in standalone mode. """
+        ##super().run()
+        #logger.info('ParadoxApp.run() finished')
+        
         
     async def async_run(self, async_lib=None):
-        #import ipdb; ipdb.sset_trace()
+        
+        loop = asyncio.get_running_loop()
+        loop.set_exception_handler(paradox.exception_handler.aioloop_exc_handler)
+
+        kivy.base.ExceptionManager.add_handler(paradox.exception_handler.KivyExcHandler())
+        
         from kivy.base import async_runTouchApp
         #async with trio.open_nursery() as nursery:
             #state._nursery = nursery
+        #Clock.init_async_lib('asyncio')
         self._run_prepare()
         
         await async_runTouchApp()
-        #logger.info('Cancelling async tasks')
-        #nursery.cancel_scope.cancel()
+        
         logger.info('App about to exit')
         self.stop()
         logger.info('App stopped')
@@ -238,7 +235,6 @@ class ParadoxApp(App):
 from paradox import uix
 from paradox import client
 
-from django.core.management import call_command
 
 mock_regions = {
     'ru_47': {
@@ -346,15 +342,18 @@ mock_quiz_topics = [{
       
 @uix.homescreen.show_loader
 async def on_start(app):
-    #raise Exception('bb')
-    from django.conf import settings
-    logger.info(f"Using db {settings.DATABASES['default']}")
+    logger.info(f"Using db {django.conf.settings.DATABASES['default']}")
     
     await sleep(0.2)
     logger.info('Start migration.')
-    call_command('migrate')
+    django.core.management.call_command('migrate')
     logger.info('Finished migration.')
     await sleep(0.1)
+    
+    
+    # Initialize application state
+    state._server_ping_success = asyncio.Event()
+    state._server_ping_success.set()  # Assume success on app start.
     
     statefile = join(app.user_data_dir, 'state.db.shelve')
     logger.info(f'Reading state from {statefile}')
@@ -362,10 +361,6 @@ async def on_start(app):
     if 'country' not in state:
         logger.info('Creating default state.')
     
-    # This event is used by paradox.client
-    state._server_ping_success = asyncio.Event()
-    state._server_ping_success.set()  # Assume success on app start.
-
     state.setdefault('app_id', randint(10 ** 19, 10 ** 20 - 1))
     state.setdefault('profile', {})    
     state.setdefault('country', 'ru')
@@ -384,29 +379,33 @@ async def on_start(app):
     
     await sleep(0.2)
     
+    
     asyncio.create_task(client.check_new_version_loop())
     
-    #state._pending_save_questions = set()
-    
     uix.homescreen.build_topics()
-        
     uix.events_screen.restore_past_events()
     logger.info('Restored past events.')
+    
+    
+    logger.info('Updating questions.')
     
     #quiz_topics = mock_quiz_topics
     quiz_topics = (await client.recv_loop(f'{state.country}/questions/')).json()
     #logger.info(quiz_topics)
     #quiz_topics = {'ru': json.load(open('forms_general.json'))}
     
-    # Update questions.
+    # Update state.questions - build dict by id for all questions of all received quiz_topics.
     for topic in quiz_topics:
         try:
             state.questions.update({q['id']: q for q in topic['questions']})
         except Exception as e:
             logger.error(repr(e))
             uix.float_message.show('Ошибка при обновлении анкет')
-            uix.homescreen.ids.topics.add_widget(Label(text='Ошибка при обновлении анкет'))
-            break
+            uix.homescreen.ids.messages.add_widget(Label(
+                text='Ошибка при обновлении анкет. Возможно вы используете старую версию программы.'    
+            ))
+            paradox.exception_handler.send_debug_message(e)
+            return
             
     # Build each question dependants list - i.e. list of questions that may be
     # hidden or displayed depending on the answer to the current question.
@@ -419,7 +418,6 @@ async def on_start(app):
             # Add this dependant_question to the `dependants` list of its parent.
             parent.setdefault('dependants', []).append(dependant_question['id'])
         
-    #state.setdefault.quiz_topics.ru = quiz_topics
     # Update topics for current country.
     if not state.quiz_topics.get(state.country) == quiz_topics:
         state.quiz_topics[state.country] = quiz_topics
@@ -433,7 +431,6 @@ async def on_start(app):
     state.regions.update(regions)
     logger.info('Regions updated.')
     if state.region.id:
-        import ipdb; ipdb.sset_trace()
         if not state.region == state.regions.get(state.region.id):
             logger.debug(f'Setting region to {state.region.id}')
             state.region = state.regions.get(state.region.id)
@@ -451,7 +448,4 @@ if __name__ == '__main__':
     logger.info('__main__ started')
     app = ParadoxApp()
     asyncio.run(app.async_run())
-    #app.run()
-    #trio.run(ParadoxApp().async_run)
-    #asyncio.run(upl())
-    #asyncio.run(xb())
+

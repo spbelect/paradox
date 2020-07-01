@@ -1,11 +1,12 @@
 from datetime import timedelta
 from itertools import groupby
 from asyncio import sleep
+from typing import Union
 
+import getinstance
 from app_state import state, on
 from django.db.models import Q
 from django.utils.timezone import now
-from getinstance import InstanceManager
 from kivy.properties import StringProperty, BooleanProperty, ObjectProperty, Property
 from kivy.clock import Clock
 from kivy.uix.widget import Widget
@@ -16,19 +17,22 @@ from paradox import uix
 from paradox import utils
 from paradox.uix import float_message
 from paradox.uix import confirm
+from paradox.uix.screens.quiztopic_screen import QuizTopicScreen
 #from paradox.uix.complaint import Complaint
 
 
 class QuizWidget(Widget):
-    question = ObjectProperty()
-    form = ObjectProperty()
-    value = ObjectProperty(None, allownone=True)
-    answer = ObjectProperty(None, allownone=True)
-    instances = InstanceManager()
+    question: dict          = ObjectProperty()  # {'id': 1, 'label': 'Вброс', ...}
+    screen: QuizTopicScreen = ObjectProperty()
+    value: Union[int, bool] = ObjectProperty(None, allownone=True)
+    answer: Answer          = ObjectProperty(None, allownone=True)
+    
     flags_match = BooleanProperty(True)
     conditions_ok = BooleanProperty(True)
     complaint_visible = BooleanProperty(False)
     status_text = StringProperty('')
+    
+    instances = getinstance.InstanceManager()
     
     
     def __init__(self, *args, **kwargs):

@@ -1,25 +1,33 @@
 import sys
+import traceback
+from urllib.parse import urljoin
+from datetime import datetime
+from typing import Union
 
+from app_state import state
 from kivy.base import ExceptionManager
 from loguru import logger
+#from requests import post
+import httpx
 import kivy
 
 from paradox import config
 
 
-def send_error_message(message):
-    from requests import post
-    from urllib.parse import urljoin
+def send_debug_message(data: Union[Exception, str]):
+    if isinstance(data, Exception):
+        _traceback = traceback.format_tb(data.__traceback__)
+        data = ''.join(_traceback) + f'\n {data!r} \n {data!s}'
+        
     try:
         server = state.get('server', config.SERVER_ADDRESS)
-        post(urljoin(server, 'api/v2/errors/'), json={
+        httpx.post(urljoin(server, 'api/v3/errors/'), json={
             'app_id': state.get('app_id', '666'),
-            #'hash': md5(_traceback.encode('utf-8')).hexdigest(),
             'timestamp': datetime.utcnow().isoformat(),
-            'traceback': message
+            'traceback': data
         })
-    except:
-        pass
+    except Exception as e:
+        logger.error(f'Failed to send debug message: \n {e!r}')
     
     
 def common_exc_handler(err):
@@ -30,7 +38,7 @@ def common_exc_handler(err):
         return
     _traceback = traceback.format_tb(err.__traceback__)
     message = u''.join(_traceback) + '\n' + repr(err) + '\n' + str(err)
-    send_error_message(message)
+    send_debug_message(message)
     logger.error(message)
     from paradox import uix
     uix.screenmgr.show_error_screen(message)

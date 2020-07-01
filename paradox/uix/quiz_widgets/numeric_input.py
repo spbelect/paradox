@@ -28,7 +28,7 @@ Builder.load_string('''
 <NumericInput>:
     size_hint_y: None
     
-    disabled: not self.form.load_finished or not self.visible
+    disabled: not self.screen.load_finished or not self.visible
     padding: 0
     spacing: 0
     #width: 0.9 * getattr(self.parent, 'width', 10)
