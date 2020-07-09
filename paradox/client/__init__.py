@@ -1,4 +1,4 @@
-from .base import get_server, recv_loop, check_new_version_loop
+from .base import rotate_server, recv_loop, check_new_version_loop
 
 from .get_campaigns import get_campaigns
 from .post_patch_answer import  answer_send_loop

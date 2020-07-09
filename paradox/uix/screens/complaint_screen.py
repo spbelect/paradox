@@ -626,7 +626,6 @@ class ComplaintScreen(Screen):
         
         
     def on_tik_text_input(self, text):
-        import ipdb; ipdb.sset_trace()
         if not text == self.generated_tik_text:
             # Юзер изменил текст
             self.answer.update(tik_complaint_text=self.ids.tik_text_editor.text)
