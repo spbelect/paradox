@@ -43,8 +43,7 @@ except ImportError:
         """
         Заглушка. Сервер не изменяет, только сбрасывает флаг _server_ping_success.
         """
-        import ipdb; ipdb.sset_trace()
-        logger.debug('Setting server to {paradox.config.SERVER_ADDRESS}')
+        logger.info(f'Setting state.server to {paradox.config.SERVER_ADDRESS=}')
         state.server = paradox.config.SERVER_ADDRESS
         state._server_ping_success.clear()
         create_task(reconnect())
