@@ -15,7 +15,7 @@ dependencies = [
     "httpx==0.27.*",  # Wait for https://github.com/lundberg/respx/pull/278
     "hyperframe==5.2.0",
     "idna==2.8",
-    "Kivy<=2.3.0",
+    "Kivy==2.3.*",
     "Kivy-Garden==0.1.4",
     "lockorator==0.1",
     "loguru",
