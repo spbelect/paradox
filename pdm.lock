@@ -5,22 +5,23 @@
 groups = ["default", "debug", "dev", "test"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:3e451366fa31dce5c470e395a57a738603ce65f50cc1a532fe580e2a6746d538"
+content_hash = "sha256:873c0ed6f3083da22ee32fc7d76f03ec9046e7d694674b985d4ae58ee1fe57a7"
 
 [[metadata.targets]]
 requires_python = ">=3.11"
 
 [[package]]
 name = "ansimarkup"
-version = "1.4.0"
+version = "2.1.0"
+requires_python = ">=3.6"
 summary = "Produce colored terminal text with an xml-like markup"
 groups = ["default"]
 dependencies = [
     "colorama",
 ]
 files = [
-    {file = "ansimarkup-1.4.0-py2.py3-none-any.whl", hash = "sha256:06365e3ef89a12734fc408b2449cb4642d5fe2e603e95e7296eff9e98a0fe0b4"},
-    {file = "ansimarkup-1.4.0.tar.gz", hash = "sha256:174d920481416cec8d5a707af542d6fba25a1df1c21d8996479c32ba453649a4"},
+    {file = "ansimarkup-2.1.0-py3-none-any.whl", hash = "sha256:51ab9f3157125c53e93d8fd2e92df37dfa1757c9f2371ed48554e111c7d4401a"},
+    {file = "ansimarkup-2.1.0.tar.gz", hash = "sha256:7b3e3d93fecc5b64d23a6e8eb96dbc8b0b576a211829d948afb397d241a8c51b"},
 ]
 
 [[package]]

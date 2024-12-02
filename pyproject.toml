@@ -6,7 +6,6 @@ authors = [
     {name = "Evstifeev Roman", email = "someuniquename@gmail.com"},
 ]
 dependencies = [
-    "ansimarkup==1.4.0",
     "app-state>=0.5",
     "better-exceptions-fork==0.2.1.post6",
     "certifi==2019.6.16",
