@@ -1,5 +1,6 @@
 from asyncio import sleep
 from itertools import chain, cycle
+from datetime import datetime, UTC
 
 from app_state import state, on
 from django.db.models import Q, F
@@ -38,7 +39,7 @@ async def _patch_answer(answer):
                 # после того как юзер его отправил.
                 #   Скорее всего это неисправимая ошибка, так что помечаем ответ как 
                 # успешно отправленный, чтобы больше не пытаться.
-                answer.update(send_status='sent', time_sent=now())
+                answer.update(send_status='sent', time_sent=datetime.now(UTC))
                 return True
             else:
                 answer.update(send_status=f'post_http_404')
@@ -53,7 +54,7 @@ async def _patch_answer(answer):
         return False
     
     # Статус 200, успешно отпрвлен.
-    answer.update(send_status='sent', time_sent=now())
+    answer.update(send_status='sent', time_sent=datetime.now(UTC))
     return True
 
 
@@ -129,7 +130,7 @@ async def answer_send_loop():
                         # разработка, и бывает что вопросы удаляются.
                         #   Скорее всего это неисправимая ошибка, так что помечаем ответ как 
                         # успешно отправленный, чтобы больше не пытаться.
-                        answer.update(send_status='sent', time_sent=now())
+                        answer.update(send_status='sent', time_sent=datetime.now(UTC))
                         quizwidgets.on_send_success(answer)
                     else:
                         answer.update(send_status=f'post_http_404')
@@ -141,7 +142,7 @@ async def answer_send_loop():
                 quizwidgets.on_send_error(answer)
             else:
                 logger.debug(f'{answer.question.id} {answer.question.label} sent successfully.')
-                answer.update(send_status='sent', time_sent=now())
+                answer.update(send_status='sent', time_sent=datetime.now(UTC))
                 quizwidgets.on_send_success(answer)
                 #quizwidgets.on_send_error(answer)
             await sleep(throttle_delay)
