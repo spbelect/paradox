@@ -7,7 +7,6 @@ authors = [
 ]
 dependencies = [
     "app-state>=0.5",
-    "better-exceptions-fork==0.2.1.post6",
     "certifi==2019.6.16",
     "chardet==3.0.4",
     "colorama==0.4.1",

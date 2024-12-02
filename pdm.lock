@@ -5,24 +5,10 @@
 groups = ["default", "debug", "dev", "test"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:873c0ed6f3083da22ee32fc7d76f03ec9046e7d694674b985d4ae58ee1fe57a7"
+content_hash = "sha256:1cd827d6469daef1c441e6c3a5ccf2a2ae71ec8f024d4a02103d5ec26d447b57"
 
 [[metadata.targets]]
 requires_python = ">=3.11"
-
-[[package]]
-name = "ansimarkup"
-version = "2.1.0"
-requires_python = ">=3.6"
-summary = "Produce colored terminal text with an xml-like markup"
-groups = ["default"]
-dependencies = [
-    "colorama",
-]
-files = [
-    {file = "ansimarkup-2.1.0-py3-none-any.whl", hash = "sha256:51ab9f3157125c53e93d8fd2e92df37dfa1757c9f2371ed48554e111c7d4401a"},
-    {file = "ansimarkup-2.1.0.tar.gz", hash = "sha256:7b3e3d93fecc5b64d23a6e8eb96dbc8b0b576a211829d948afb397d241a8c51b"},
-]
 
 [[package]]
 name = "anyio"
@@ -68,20 +54,6 @@ dependencies = [
 files = [
     {file = "asttokens-2.4.1-py2.py3-none-any.whl", hash = "sha256:051ed49c3dcae8913ea7cd08e46a606dba30b79993209636c4875bc1d637bc24"},
     {file = "asttokens-2.4.1.tar.gz", hash = "sha256:b03869718ba9a6eb027e134bfdf69f38a236d681c83c160d510768af11254ba0"},
-]
-
-[[package]]
-name = "better-exceptions-fork"
-version = "0.2.1.post6"
-summary = "Pretty and helpful exceptions, automatically"
-groups = ["default"]
-dependencies = [
-    "ansimarkup>=1.3.0",
-    "colorama; sys_platform == \"win32\"",
-    "pygments>=2.2.0",
-]
-files = [
-    {file = "better_exceptions_fork-0.2.1.post6.tar.gz", hash = "sha256:5f0983da51e956dbdaf8b9a3d10e2774b382ce6c6ff2e54685c33e2dbe8f1472"},
 ]
 
 [[package]]
