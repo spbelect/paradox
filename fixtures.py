@@ -9,11 +9,12 @@ from datetime import date
 from os.path import dirname
 #from kivy.tests import async_sleep
 
-from kivy.tests import UnitKivyApp
+from kivy.tests.async_common import UnitKivyApp
 from kivy.tests.common import GraphicUnitTest, UnitTestTouch
 from unittest.mock import Mock, AsyncMock, patch
 from loguru import logger
 
+import pytest_asyncio
 import respx
 
 from asyncio import sleep
@@ -24,16 +25,20 @@ from asyncio import sleep
 apps = []
 
 
-
-@pytest.fixture()
+@pytest_asyncio.fixture
 async def mocked_api():
     #from paradox import config
     #if config.SERVER_ADDRESS.endswith('/'):
         #config.SERVER_ADDRESS = config.SERVER_ADDRESS[:-1]
         
-    with respx.mock(base_url="http://127.0.0.1:8000/api/v3/", assert_all_mocked=True) as respx_mock:
-        
-        respx_mock.get("ru/questions/", alias="list_questions", content=[
+    with respx.mock(
+        base_url="http://127.0.0.1:8000/api/v3/",
+        assert_all_mocked=True,
+        assert_all_called=False
+          ) as respx_mock:
+
+        # print('mock ru/questions/')
+        respx_mock.get("/ru/questions/", name="list_questions").respond(json=[
             {'id': '1', 'name': 'ДО НАЧАЛА', 'questions': [
                 {
                     'id': 'i1', 
@@ -44,13 +49,13 @@ async def mocked_api():
             ]}
         ])
                 
-        respx_mock.get("ru/regions/", content={
+        respx_mock.get("ru/regions/").respond(json={
             'ru_47': {'id': 'ru_47', 'name': 'Ленинградская обл', 'munokruga': [], 'tiks': [
                 {'name': '№ 11', 'uik_ranges': [[1,9999]], 'email': 'tik001@ya.ru'}
             ]}
         })
             
-        respx_mock.get("ru_47/elections/", content=[
+        respx_mock.get("ru_47/elections/").respond(json=[
             {
                 'name': 'Выборы Депутатов МО Дачное',
                 'date': date.today().strftime('%Y.%m.%d'), 
@@ -90,18 +95,21 @@ async def mocked_api():
             },
         ])
                     
-        respx_mock.post("position/", content=[])
+        respx_mock.post("position/").respond(json=[])
         
-        respx_mock.post("userprofile/", content=[])
-        #respx_mock.post("quiz_answers/", content=[])
-        respx_mock.post("answers/", content=[])
+        respx_mock.post("userprofile/").respond(json=[])
+        #respx_mock.post("quiz_answers/").respond(json=[])
+        respx_mock.post("answers/").respond(json=[])
         
+        # print('all mocked')
         yield respx_mock
 
 
-@pytest.fixture()
+
+@pytest_asyncio.fixture
 async def app():
     
+    # import ipdb; ipdb.sset_trace()
     from app_state import state
     state._raise_all = True
     
@@ -110,7 +118,7 @@ async def app():
     from os.path import exists
     db = settings.DATABASES['default']['NAME']
     if exists(db):
-        print(123123)
+        print('removing db')
         os.remove(db)
     
     
@@ -153,6 +161,8 @@ async def app():
     from kivy.base import stopTouchApp
     from kivy import kivy_data_dir
 
+    from kivy.clock import Clock
+    Clock.init_async_lib('asyncio')
     #context = Context(init=False)
     #context['Clock'] = ClockBase(async_lib='asyncio')
     #context['Factory'] = FactoryBase.create_from(Factory)
@@ -181,6 +191,7 @@ async def app():
         #global running
         #running = False
         raise err
+
     patch('paradox.exception_handler.common_exc_handler', throw).start()
     patch('paradox.exception_handler.send_debug_message', Mock()).start()
     
@@ -189,6 +200,7 @@ async def app():
     ###patch('main.state.autopersist', Mock()).start()
     
     from main import ParadoxApp
+
     class App(UnitKivyApp, ParadoxApp):
         def __init__(self, **kwargs):
             #import ipdb; ipdb.sset_trace()
@@ -213,11 +225,11 @@ async def app():
             await self.wait_clock_frames(20)
                 
         async def click(self, widget):
-            await sleep(0.1)
-            for x in range(20):
+            await sleep(0.01)
+            for x in range(200):
                 if getattr(widget, 'disabled', False) is False:
                     break
-                await sleep(0.1)
+                await sleep(0.01)
             else:
                 raise Exception(f'Widget {widget} is disabled')
                 
@@ -252,8 +264,21 @@ async def app():
             #if window and window.canvas:
                 #window.canvas.ask_update()
             touch.touch_up()
-            await self.wait_clock_frames(30)
+            await sleep(0.1)
+            # await self.wait_clock_frames(30)
         
+    def _force_refresh(*args):
+        from kivy.base import EventLoop
+        win = EventLoop.window
+        if win and win.canvas:
+            win.canvas.ask_update()
+
+        for i in range(5):
+            EventLoop.idle()
+
+    # from kivy.clock import Clock
+    # Clock.schedule_interval(_force_refresh, 1)
+
     #Window.create_window()
     #Window.register()
     #Window.initialized = True
@@ -269,7 +294,7 @@ async def app():
     #from kivy.clock import Clock
     #Clock._max_fps = 0
 
-    await app.wait_clock_frames(20)
+    await app.wait_clock_frames(10)
     
     ts = time.perf_counter()
     while loop._kivyrunning and not app.app_has_started:
@@ -278,7 +303,7 @@ async def app():
         #if time.perf_counter() - ts >= 10:
             #raise TimeoutError()
 
-    await app.wait_clock_frames(5)
+    await app.wait_clock_frames(3)
     
 
     #import ipdb; ipdb.sset_trace()
