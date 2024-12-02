@@ -35,6 +35,9 @@ class Button(kivy.uix.button.Button):
             on_touch_move=self.ontouchmove
         )
 
+    def __repr__(self):
+        return f"Button <{self.text}>"
+
     def ontouchdown(self, s, touch):
         if not self.collide_point(touch.x, touch.y):
             return False
