@@ -54,11 +54,14 @@ async def answer_image_send_loop():
             Q(time_sent__isnull=True) & Q(answer__time_sent__isnull=False)
         )
         
-        logger.info(
-            f'{topost.count()} images to post now. {topatch.count()} images to patch.'
-            f' {waiting_answer} waiting for answer to be sent first.'
-        )
-        
+        if topost.count() or topatch.count() or waiting_answer:
+            logger.info(
+                f'{topost.count()} images to post now. {topatch.count()} images to patch.'
+                f' {waiting_answer} waiting for answer to be sent first.'
+            )
+        else:
+            logger.debug('0 images to post or patch.')
+
         throttle_delay = base.get_throttle_delay()
         
         for image in topatch:

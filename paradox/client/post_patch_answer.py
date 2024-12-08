@@ -27,9 +27,9 @@ async def _patch_answer(answer):
         return False
     if response.status_code == 404:
         try:
-            logger.info(f'{response!r} {response.json()}')
+            logger.warning(f'{response!r} {response.json()}')
         except:
-            logger.info(repr(response))
+            logger.warning(repr(response))
             answer.update(send_status=f'post_http_404')
             return False
         else:
@@ -70,7 +70,10 @@ async def answer_send_loop():
         # Еще не отправленные ответы.
         topost = Answer.objects.filter(time_sent__isnull=True)
         
-        logger.info(f'{topost.count()} answers to post. {topatch.count()} answers to patch.')
+        if topost.count() or topatch.count():
+            logger.info(f'{topost.count()} answers to post. {topatch.count()} answers to patch.')
+        else:
+            logger.debug(f'0 answers to post or patch.')
         
         throttle_delay = base.get_throttle_delay()
             
