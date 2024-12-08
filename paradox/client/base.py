@@ -44,8 +44,10 @@ except ImportError:
         Заглушка. Сервер не изменяет, только сбрасывает флаг _server_ping_success.
         """
         logger.info(f'Setting state.server to {paradox.config.SERVER_ADDRESS=}')
-        state.server = paradox.config.SERVER_ADDRESS
+        if not state.server == paradox.config.SERVER_ADDRESS:
+            state.server = paradox.config.SERVER_ADDRESS
         state._server_ping_success.clear()
+        await sleep(10)
         create_task(reconnect())
         return
 
@@ -69,7 +71,11 @@ async def _ping_loop():
         except httpcore.NetworkError as e:
             # Сеть недоступна.
             logger.debug(repr(e))
+        # except httpx.ConnectError as e:
+        #     # Failed to establish a connection.
+        #     logger.debug(repr(e))
         except Exception as e:
+            # Not a network error, assume server issue. Raise it to force server rotation.
             raise
         else:
             state._server_ping_success.set()
@@ -94,7 +100,7 @@ async def reconnect():
         logger.info('Server ping timeout.')
         await rotate_server()
     except Exception as e:
-        logger.info(e)
+        logger.warning(e)
         await rotate_server()
     else:
         logger.info('Server connection ok.')
@@ -170,6 +176,8 @@ async def recv_loop(url):
     while True:
         try:
             response = await api_request('GET', url)
+        except httpx.RequestError as e:
+            logger.error(f'{e!r} {e.request}')
         except Exception as e:
             if getattr(state, '_raise_all', None):
                 raise e
