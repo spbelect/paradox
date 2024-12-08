@@ -1,7 +1,8 @@
 from app_state import state
 from asyncio import sleep
+from collections.abc import Iterable
 from kivy.tests.common import GraphicUnitTest, UnitTestTouch
-from unittest import TestCase
+from unittest import TestCase, skip
 from unittest.mock import patch, Mock, ANY
 import pytest
 import pytest_asyncio
@@ -9,45 +10,6 @@ import asyncio
 
 from fixtures import app, mocked_api
 
-#def x(self):
-    ##import ipdb; ipdb.sset_trace()
-    #self.test_released = True
-    
-#@pytest.mark.asyncio
-#class XXTestCase(GraphicUnitTest):
-
-    #async def test_render2(self):
-        #from kivy.uix.button import Button
-
-        ## with GraphicUnitTest.render() you basically do this:
-        ## runTouchApp(Button()) + some setup before
-        #button = Button()
-        #self.render(button)
-
-        ## wait_instance your Window instance safely
-        #from kivy.base import EventLoop
-        #EventLoop.ensure_window()
-        #window = EventLoop.window
-
-        #touch = UnitTestTouch(
-            #*[s / 2.0 for s in window.size]
-        #)
-
-        ## bind something to test the touch with
-        #button.bind(on_release=x)
-        ##button.bind(
-            ##on_release=lambda instance: setattr(
-                ##instance, 'test_released', True
-            ##)
-        ##)
-
-        ## then let's touch the Window's center
-        #touch.touch_down()
-        #touch.touch_up()
-        #self.assertTrue(button.test_released)
-        #await sleep(5000)
-        
-#class ZZMyTestCase(GraphicUnitTest):
 
 async def retry(fn, *args, **kw):
     for x in range(30):
@@ -81,18 +43,16 @@ async def wait_instance(widget, **kwargs):
 #def props(**kw):
     #return 
                      
-## matchall(x) returns True if x matches all attributes provided in kwargs
-#matchall = lambda x: all((getattr(x, k) == v) for k, v in kwargs.items())
-    
                      
-async def wait_listitem(iterable, **kwargs): 
+async def wait_listitem[T](iterable: Iterable[T], **kwargs) -> T:
     """
-    Usage:
+    Wait for any item in the given iterable to have matching attributes provided
+    in kwargs. Return first matching item or raise Exception on timeout.
     
-    Wait for a child widget of mywidget, which has attribute called 
+    Example below waits for a child widget of mywidget, which has attribute called
     'text' with value 'mytext', and then return it:
     
-        child = await wait_listitem(mywidget.children, text='mytext')
+    >> child = await wait_listitem(mywidget.children, text='mytext')
         
     """
     for x in range(30):
@@ -106,6 +66,8 @@ async def wait_listitem(iterable, **kwargs):
                      
 #@pytest.mark.django_db
 #async def lol(mocked_api, app):
+# async def test_render(mocked_api):
+
 @pytest.mark.asyncio
 async def test_render(mocked_api, app):
 
@@ -116,7 +78,7 @@ async def test_render(mocked_api, app):
     #app = ParadoxApp()
     #loop = asyncio.get_event_loop()
     #loop.create_task(app.async_run())
-    
+
     #app.root = app.build()
     #runTouchApp()
     #self.render(app.root)
@@ -125,47 +87,50 @@ async def test_render(mocked_api, app):
     #from kivy.base import EventLoop
     #EventLoop.ensure_window()
     #window = EventLoop.window
-    await app.wait_clock_frames(5)
+
+    # await app.wait_clock_frames(5)
+    await sleep(0.1)
+    # import ipdb; ipdb.sset_trace()
 
     #import ipdb; ipdb.sset_trace()
-    
+
     from paradox import uix
     #from paradox.uix.screens.position_screen import RegionChoice, RoleChoice
     #from paradox.uix.screens.home_screen import FormListItem
     from paradox.uix.quiz_widgets.base import QuizWidget
     from paradox.uix.confirm import ConfirmModal
-    
-    await sleep(3)
-    
+
+    await sleep(0.1)
+
     #await app.click(uix.homescreen.ids.menu_button)
-    
-    
+
+
     #await app.click(uix.sidepanel.ids.region)
     ##print(uix.position.ids.region_choices)
-    
-    
+
+
     ## Экран позиции.
     ## Кликнуть на список регионов.
     #await app.click(uix.position.ids.regions)
-    
+
     ## Кликнуть на "Лен область"
     #await app.click(await retry(uix.position.ids.regions.getchoice, 'ru_47'))
-    
+
     ## Кликнуть "выбрать статус"
     #await app.click(uix.position.ids.roles)
-    
+
     ## Кликнуть на "ПРГ"
     #await app.click(await retry(uix.position.ids.roles.getchoice, 'prg'))
-    
+
     ## Кликнуть на "Номер УИК"
     #await app.click(uix.position.ids.uik)
     ## Ввести 1803
     #await app.text_input('1803')
-        
+
     ## Кликнуть "Продолжить"
     #await app.click(uix.position.ids.next)
-    
-    
+
+
     ## Экран профиля.
     #await app.click(uix.userprofile.ids.first_name)
     #await app.text_input('name')
@@ -178,7 +143,7 @@ async def test_render(mocked_api, app):
     #await app.text_input('9061234567')
     ## Кликнуть "Продолжить"
     #await app.click(uix.userprofile.ids.next)
-    
+
     state.update(
         profile=dict(email='a@ya.ru', first_name='2', last_name='3', phone='4', middle_name='5', telegram=''),
         region=state.regions['ru_47'],
@@ -186,41 +151,53 @@ async def test_render(mocked_api, app):
         uik='244'
     )
     # Подождать пока кампании будут получены с сервера.
-    await sleep(4) 
+    await sleep(2)
     
-    
+
+    # await sleep(2000)
     ### Главный экран.
     # Кликнуть на тематический раздел анкеты.
     await app.click(await wait_listitem(uix.homescreen.ids.topics.children, id='1'))
-    
-    
+
+
+
     ### Экран вопросов (тематический раздел анкеты).
     # Кликнуть на ответ "Нет".
     quizwidget = await wait_instance(QuizWidget, question__id='i1')
     await app.click(quizwidget.ids.no)
-    
+
+    await sleep(1)
+    # import ipdb; ipdb.sset_trace()
     # Кликнуть на "Обжаловать".
     await app.click(quizwidget.ids.complaint)
-    
-    
+    await sleep(1.2)
+
+
     ### Экран обжалования.
     # Кликнуть на "Статус жалобы".
     await app.click(uix.complaint.ids.uik_complaint_status)
-    
+
+    await sleep(0.2)
     # Кликнуть на "Отказ принять".
     await app.click(uix.complaint.ids.uik_complaint_status.getchoice('refuse_to_accept'))
     #await app.click(await wait_instance(ComplaintStatusChoice, value='refuse_to_accept'))
-    
+
     #fromscreen = uix.screenmgr.get_screen('form_1')
     #uix.complaint.ids.scrollview.scroll_to(uix.complaint.ids.tik_text_editor)
-    
+
+    # await sleep(0.1)
+    # Click "Why complaint is needed"
+    # await app.click(uix.complaint.ids.handbook_why_complaint)
+
     #await app.click(quizwidget.complaint.ids.preview_tik_complaint)
-    
+    # import ipdb; ipdb.sset_trace()
+    await sleep(0.2)
     uix.complaint.ids.scrollview.scroll_to(uix.complaint.ids.tik_text_editor.ids.edit_button)
     await sleep(2)  # scroll animation
-    
+
+    # Click "Edit complaint text"
     await app.click(uix.complaint.ids.tik_text_editor.ids.edit_button)
-    
+
     uix.complaint.ids.scrollview.scroll_to(uix.complaint.ids.tik_text_editor.ids.textinput)
     await sleep(2)  # scroll animation
     
@@ -290,3 +267,25 @@ async def test_render(mocked_api, app):
     #sleep(10)
     #self.assertTrue(button.test_released)
 
+
+
+@skip
+def test_respx():
+    pass
+    # import httpx
+    # import respx
+    # with respx.mock(
+    #     # base_url="http://127.0.0.1:8000/api/v3/",
+    #     assert_all_mocked=True,
+    #     assert_all_called=False
+    #       ) as respx_mock:
+    #
+    #     # print('mock ru/questions/')
+    #     respx_mock.get("http://127.0.0.1:8000/api/v3/ru/questions/").respond(json=[])
+    #     # # respx_mock.get("http://127.0.0.1:8000/api/v3/ru/questions/").mock(side_effect=httpx.ConnectError)
+    #
+    #     # import ipdb; ipdb.sset_trace()
+    #     httpxclient = httpx.AsyncClient()
+    #     result = await httpxclient.get('http://127.0.0.1:8000/api/v3/ru/questions/')
+    #     print("AAAAAA")
+    #     return
