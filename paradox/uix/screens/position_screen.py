@@ -91,7 +91,8 @@ Builder.load_string('''
                 ChoicePicker:
                     id: roles
                     choice: self.getchoice(state.role)
-                    height: self.texture_size[1]
+                    # TODO: find generic solution to trigger choice after kv loaded
+                    on_kv_post: self.choice = self.getchoice(state.role)
                     modal_header: 'Ваш статус:'
                     text: 'выберите статус'
                     halign: 'left'
