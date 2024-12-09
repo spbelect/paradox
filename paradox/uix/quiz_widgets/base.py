@@ -166,7 +166,7 @@ class QuizWidget(Widget):
         
     @on('state.role')
     def revise_complaint_visibility(self):
-        if self.answer.is_incident and not self.answer.revoked \
+        if self.answer and self.answer.is_incident and not self.answer.revoked \
            and state.get('role') not in ('other', 'videonabl'):
             self.complaint_visible = True
         else:
@@ -259,6 +259,21 @@ class QuizWidget(Widget):
     
     def on_send_success(self, answer):
         #import ipdb; ipdb.sset_trace()
+
+        # TODO:   File "/home/z/pproj/paradox_dev/paradox/client/post_patch_answer.py", line 149, in answer_send_loop
+        #     quizwidgets.on_send_success(answer)
+        # File "/home/z/pproj/paradox_dev/.venv/lib/python3.12/site-packages/getinstance.py", line 102, in __call__
+        #     getattr(instance, self.name)(*a, **kw)
+        # File "/home/z/pproj/paradox_dev/paradox/uix/quiz_widgets/base.py", line 262, in on_send_success
+        #     logger.debug(f'{self.answer.id} {answer.id}')
+        #                     ^^^^^^^^^^^^^^
+        #
+        # AttributeError("'NoneType' object has no attribute 'id'")
+
+        if not self.answer:
+            logger.error(f'on_send_success {answer=}, while {self.answer=}')
+            return    # TODO
+
         logger.debug(f'{self.answer.id} {answer.id}')
         if str(self.answer.id) == str(answer.id):
             self.answer.send_status = 'sent'
