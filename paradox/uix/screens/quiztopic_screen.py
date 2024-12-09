@@ -110,11 +110,14 @@ class QuizTopicScreen(Screen):
     @uix.top_loader.show
     async def build(self):
         await sleep(0.05)
-        logger.debug(f'building form {self.json["name"]}')
-        for question in self.json.get('questions', []):
-            #if not question.get('help_text'):
-                #question['help_text'] = txt
-            
+        # logger.debug(f'building form {self.json["name"]}')
+        questions = self.json.get('questions', [])
+        if questions:
+            logger.info(f'{self.json["name"]}: adding {len(questions)} questions')
+        else:
+            logger.warning(f'{self.json["name"]}: no questions in json: {self.json}')
+
+        for question in questions:
             self.add_quizwidget(state.questions.get(question['id']))
             await sleep(0.01)
 
