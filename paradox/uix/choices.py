@@ -56,6 +56,7 @@ Builder.load_string('''
     height: height1
     size_hint_y: None
     text_size: self.width, None
+    #on_kv_post: self.choice = self.getchoice(self.value)
     
     #text: self.choice.short_text if self.choice else ''
     #value: self.choice.value if self.choice else None
@@ -83,6 +84,12 @@ class Choice(Button):
     value = ObjectProperty(None, allownone=True)
     #fff = 0
 
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        return f"Choice <{self.short_text or self.text}>"
+
     #def __init__(self, *args, **kwargs):
         #super().__init__(*args, **kwargs)
         #if not self.short_text:
@@ -92,7 +99,11 @@ class Choice(Button):
         if parent is None and hasattr(self, 'instances'):
             #logger.debug(f'Widget parnet is None, remove {self}.')
             self._instances_weakset.remove(self)
-            
+        # if parent:
+        #     logger.debug(f"{self.parent=} {self.text=} {self.short_text=} {self.value=}")
+        # else:
+        #     logger.debug(f"{self.text=} {self.short_text=} {self.value=}")
+
     #def on_size(self, *args, **kwargs):
         ##super(Choice, self).on_size(*args, **kwargs)
         #Choice.fff += 1
@@ -117,6 +128,7 @@ class ChoicePicker(Button):
         pass
         
     def on_choice(self, *a):
+        # logger.debug(f'{a}')
         if self.choice:
             self.text = self.choice.short_text or self.choice.text
             self.value = self.choice.value
@@ -126,6 +138,7 @@ class ChoicePicker(Button):
 
     def add_widget(self, child):
         self.modal.ids.list.add_widget(child)
+        # logger.debug(f'{self.text=} {child=}')
 
     def remove_choice(self, value):
         for child in self.modal.ids.list.children[:]:
@@ -146,8 +159,10 @@ class ChoicePicker(Button):
     def getchoice(self, value):
         for child in self.modal.ids.list.children[:]:
             if child.value == value:
+                # logger.debug(f'{value=} found')
                 return child
-            
+        # logger.debug(f'{value=} not found {len(self.modal.ids.list.children)}')
+
     def setchoice(self, value):
         self.choice = self.getchoice(value)
         
