@@ -30,22 +30,43 @@ def send_debug_message(data: Union[Exception, str]):
         logger.error(f'Failed to send debug message: \n {e!r}')
     
     
-def common_exc_handler(err):
+
+def sys_excepthook(err, trace_back=None):
     """
     Send traceback to server, show error screen.
     """
     if str(err) == 'Event loop stopped before Future completed.':
         return
-    _traceback = traceback.format_tb(err.__traceback__)
-    message = u''.join(_traceback) + '\n' + repr(err) + '\n' + str(err)
+
+
+    if not trace_back:
+        trace_back = traceback.format_tb(err.__traceback__)
+    message = u''.join(trace_back) + '\n' + repr(err) + '\n' + str(err)
     send_debug_message(message)
-    logger.error(message)
+    logger.exception(err)
+
+    # https://github.com/kivy/kivy/issues/2458
+    #
+    # 2024-12-07 14:45:23.425 | ERROR    | paradox.exception_handler:sys_excepthook:44 -   File "kivy/_clock.pyx", line 649, in kivy._clock.CyClockBase._process_events
+    #   File "kivy/_clock.pyx", line 218, in kivy._clock.ClockEvent.tick
+    #   File "/home/z/pproj/paradox_dev/.venv/lib64/python3.12/site-packages/kivy/animation.py", line 364, in _update
+    #     setattr(widget, key, value)
+    #   File "kivy/weakproxy.pyx", line 35, in kivy.weakproxy.WeakProxy.__setattr__
+    #   File "kivy/weakproxy.pyx", line 28, in kivy.weakproxy.WeakProxy.__ref__
+    #
+    # ReferenceError('weakly-referenced object no longer exists')
+    # weakly-referenced object no longer exists
+    #
+    # TODO: Seems to be non-disruptive
+    if isinstance(err, ReferenceError):
+        return
+
     from paradox import uix
     uix.screenmgr.show_error_screen(message)
     
     
 # Handle errors before kivy event loop is started.
-sys.excepthook = lambda type, err, traceback: common_exc_handler(err)
+sys.excepthook = lambda type, err, traceback: sys_excepthook(err, trace_back=traceback)
 
 
 def aioloop_exc_handler(loop, context: dict):
@@ -60,6 +81,8 @@ def aioloop_exc_handler(loop, context: dict):
       ‘protocol’ (optional): Protocol instance;
       ‘transport’ (optional): Transport instance;
       ‘socket’ (optional): socket.socket instance.
+
+    bound by loop.set_exception_handler() in main.py
     """
     
     # TODO: investigate
@@ -80,14 +103,15 @@ def aioloop_exc_handler(loop, context: dict):
         'Task was destroyed but it is pending!']:
         return
     
-    common_exc_handler(context['exception'])
+    sys_excepthook(context['exception'])
     
     
 class KivyExcHandler:
     """
     Handle errors during kivy event loop execution.
+    Assigned by kivy.base.ExceptionManager.add_handler() in main.py
     """
     def handle_exception(self, err):
-        common_exc_handler(err)
+        sys_excepthook(err)
         return kivy.base.ExceptionManager.PASS
  

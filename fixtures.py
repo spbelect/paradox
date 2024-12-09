@@ -192,7 +192,7 @@ async def app():
         #running = False
         raise err
 
-    patch('paradox.exception_handler.common_exc_handler', throw).start()
+    patch('paradox.exception_handler.sys_excepthook', throw).start()
     patch('paradox.exception_handler.send_debug_message', Mock()).start()
     
     ###patch('main.aexc_handler', aexc_handler).start()
