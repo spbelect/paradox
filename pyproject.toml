@@ -56,6 +56,11 @@ build = [
 requires = ["pdm-backend"]
 build-backend = "pdm.backend"
 
+[tool.setuptools.packages.find]
+# p4a tries to install paradox with setuptools and encounters this bug:
+# https://github.com/pypa/setuptools/issues/4076
+# "pip install . creates infinite nested build/lib/build/lib/..."
+exclude = ["build*"]
 
 [tool.pdm]
 distribution = true
