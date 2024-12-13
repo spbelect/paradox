@@ -45,6 +45,12 @@ debug = [
 dev = [
     "-e file:///${PROJECT_ROOT}/../app_state#egg=app_state"
 ]
+build = [
+    "django-environ>=0.11.2",
+    "click>=8.1.7",
+    "Cython>=3.0.11",
+    "rich>=13.9.4",
+]
 
 [build-system]
 requires = ["pdm-backend"]
