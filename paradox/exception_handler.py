@@ -1,8 +1,9 @@
 import sys
-import traceback
 from urllib.parse import urljoin
 from datetime import datetime
 from typing import Union
+from traceback import format_tb
+
 
 from app_state import state
 from kivy.base import ExceptionManager
@@ -16,7 +17,7 @@ from paradox import config
 
 def send_debug_message(data: Union[Exception, str]):
     if isinstance(data, Exception):
-        _traceback = traceback.format_tb(data.__traceback__)
+        _traceback = format_tb(data.__traceback__)
         data = ''.join(_traceback) + f'\n {data!r} \n {data!s}'
         
     try:
@@ -31,17 +32,15 @@ def send_debug_message(data: Union[Exception, str]):
     
     
 
-def sys_excepthook(err, trace_back=None):
+def sys_excepthook(err, traceback=None):
     """
     Send traceback to server, show error screen.
     """
     if str(err) == 'Event loop stopped before Future completed.':
         return
 
-
-    if not trace_back:
-        trace_back = traceback.format_tb(err.__traceback__)
-    message = u''.join(trace_back) + '\n' + repr(err) + '\n' + str(err)
+    traceback = u''.join(format_tb(traceback or err.__traceback__))
+    message = f"{traceback}\n{err!r}\n{err}"
     send_debug_message(message)
     logger.exception(err)
 
@@ -57,6 +56,19 @@ def sys_excepthook(err, trace_back=None):
     # ReferenceError('weakly-referenced object no longer exists')
     # weakly-referenced object no longer exists
     #
+    # ipdb> widget
+    # <WeakProxy to None>
+    # ipdb> self
+    # <kivy.animation.Animation object at 0x7f08f88f8d70>
+    # ipdb> key
+    # 'x'
+    # ipdb> isinstance(widget, WeakProxy)
+    # True
+    # ipdb> len(dir(widget))
+    # 0
+    # ipdb> isinstance(widget, WeakProxy) and not len(dir(widget))
+    # True
+
     # TODO: Seems to be non-disruptive
     if isinstance(err, ReferenceError):
         return
@@ -66,7 +78,7 @@ def sys_excepthook(err, trace_back=None):
     
     
 # Handle errors before kivy event loop is started.
-sys.excepthook = lambda type, err, traceback: sys_excepthook(err, trace_back=traceback)
+sys.excepthook = lambda type, err, traceback: sys_excepthook(err, traceback)
 
 
 def aioloop_exc_handler(loop, context: dict):
