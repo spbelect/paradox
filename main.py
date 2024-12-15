@@ -134,51 +134,65 @@ class ParadoxApp(App):
     def __init__(self, *a, **kw):
         super().__init__(*a, **kw)
         logger.debug(f'ParadoxApp created: {self}')
-        
-    def build(self):
-        #import ipdb; ipdb.sset_trace()
+
+
+    def _build(self):
         Clock.max_iteration = 1000
-        #print(Clock.max_iteration)
+
+        # Initialize application state
+        state._server_ping_success = asyncio.Event()
+        state._server_ping_success.set()  # Assume success on app start.
+
+        # import ipdb; ipdb.sset_trace()
+        if 'country' not in state:
+            logger.info('Creating default state.')
+
+        state.setdefault('server', None)
+        state.setdefault('app_id', randint(10 ** 19, 10 ** 20 - 1))
+        state.setdefault('profile', {})
+        state.setdefault('country', 'ru')
+        state.setdefault('superior_ik', 'TIK')
+        state.setdefault('tik', None)
+        state.setdefault('uik', None)
+        # state.setdefault('role', None)
+        state.setdefault('role', 'prg')
+        state.setdefault('munokrug', {})
+        state.setdefault('region', {})
+        state.setdefault('regions', {})
+
+        # Dict of questions by id { question.id: {"label": "", "type": "", ...}, ... }
+        state.setdefault('questions', {})
+
+        # Dict of lists of quiz_topics by country. Topics list for each country is ordered.
+        state.setdefault('quiz_topics', {'ru': [], 'ua': [], 'kz': [], 'by': []})
+
+        from paradox import uix
+        Window.bind(on_keyboard=uix.screenmgr.hook_keyboard)
+
+        import main_task
+        asyncio.create_task(main_task.main(self))
+
         #if platform == 'android':
             #from jnius import autoclass
             #autoclass('org.kivy.android.PythonActivity').mActivity.removeLoadingScreen()
-            
-        try:
-            logger.info('Build started')
-            #state.user_data_dir = self.user_data_dir
-            #for filename in glob('forms_*.json') + ['regions.json', 'mo_78.json']:
-                #path = join(self.user_data_dir, filename)
-                #if not exists(path):
-                    #logger.debug('copying %s to %s' % (filename, self.user_data_dir))
-                    #copyfile(filename, path)
 
-            ####state._nursery.start_soon(on_start)
-            import main_task
-            asyncio.create_task(main_task.main(self))
-            
-            Window.bind(on_keyboard=uix.screenmgr.hook_keyboard)
-            
+        #state.user_data_dir = self.user_data_dir
+        #for filename in glob('forms_*.json') + ['regions.json', 'mo_78.json']:
+            #path = join(self.user_data_dir, filename)
+            #if not exists(path):
+                #logger.debug('copying %s to %s' % (filename, self.user_data_dir))
+                #copyfile(filename, path)
+
+        ####state._nursery.start_soon(on_start)
+
+
+    def build(self):
+        logger.info('Build started')
+        try:
+            self._build()
+
             from paradox.uix.main_widget import MainWidget
             return MainWidget()
-        
-            #from label import Label
-            ##from kivy.uix.label import Label
-            #from button import Button
-
-            ###if platform in ['linux', 'windows']:
-                ###Window.size = (420, 800)
-
-            #self.label = Label()
-            ##self.label.text_size = Window.width - 20, None
-            ##self.label.halign = 'center'
-            #self.label.text = 'lolol'
-            #self.label.color = (55,0,50,0)
-            #self.label.size = (100,100)
-            #self.label.background_color = (255,255,0)
-            ##raise Exception('00')
-            #return Button(text='lol')
-            #return self.label
-
         except Exception as e:
             try:
                 paradox.exception_handler.send_debug_message(repr(e))
@@ -186,14 +200,15 @@ class ParadoxApp(App):
                 pass
 
             logger.error(repr(e))
-            from kivy.uix.label import Label
 
             self.label = Label()
             self.label.text_size = Window.width - 20, None
             self.label.halign = 'center'
+            # self.label.valign = 'center'
             self.label.color = (155,55,55,1)
             self.label.text = u'Произошла ошибка. Разработчики были уведомлены об этом.'
             return self.label
+
 
     def on_pause(self):
         print('PAUSE')
