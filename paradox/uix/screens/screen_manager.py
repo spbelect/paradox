@@ -96,7 +96,7 @@ class ScreenManager(kivy.uix.screenmanager.ScreenManager):
     def push_screen(self, name):
         if self.current == 'error':
             return
-        logger.debug(f'push scrren "{name}". Screen_history: {self.screen_history}')
+        logger.info(f'push screen "{name}". {self.screen_history=} {self.current=}')
         #import ipdb; ipdb.sset_trace()
         self.transition.direction = 'left'
         #if self.current == 'userprofile' and name != 'userprofile':
@@ -110,11 +110,15 @@ class ScreenManager(kivy.uix.screenmanager.ScreenManager):
         if name == 'home':
             self.current = 'home'
         elif self.current != name:
-            self.screen_history.append(name)
+            if self.current == 'home':
+                self.screen_history = [name]
+            else:
+                self.screen_history.append(name)
             self.current = name
 
     def pop_screen(self):
         self.transition.direction = 'right'
+        logger.info(f'pop screen. Screen_history: {self.screen_history}')
         if len(self.screen_history) > 1:
             self.screen_history.pop()
             self.current = self.screen_history[-1]
@@ -162,7 +166,7 @@ class ScreenManager(kivy.uix.screenmanager.ScreenManager):
         self.current = 'error'
 
     def show_quiztopic(self, topic):
-        name = f'topic_{topic.id}'
+        name = f'topic_{topic["id"]}'
         if not self.has_screen(name):
             self.add_widget(QuizTopicScreen(topic, name=name))
 
