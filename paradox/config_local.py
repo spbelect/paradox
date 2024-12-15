@@ -21,4 +21,4 @@ DEBUG = True
 
 from loguru import logger
 #logger.disable("paradox.client")
-logger.disable("paradox.uix.quiz_widgets.base")
+# logger.disable("paradox.uix.quiz_widgets.base")

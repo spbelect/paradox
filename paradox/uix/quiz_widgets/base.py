@@ -159,8 +159,9 @@ class QuizWidget(Widget):
         
         self.revise_complaint_visibility()
             
-        logger.debug(f"Update dependants of {self.question.label}.")
+        logger.info(f"Update dependants of {self.question.label} {self.question.id} {self.question.dependants}.")
         for id in self.question.get('dependants', []):
+            logger.info(f"Updating dependant {id} of {self.question.label}.")
             QuizWidget.instances.filter(question__id=id).check_visibility()
         
         
@@ -183,7 +184,7 @@ class QuizWidget(Widget):
         if not conditions:
             return True
         
-        logger.debug(f'checking {self.question.label} {conditions}')
+        logger.debug(f'checking visibility {self.question.label} {conditions}')
         if conditions.get('all'):
             if all(self.check_condition(**x) for x in conditions.all):
                 return True
@@ -225,6 +226,8 @@ class QuizWidget(Widget):
     @on('state.elect_flags')
     def check_visibility(self, *a):
         self.visible = bool(self.check_election_flags() and self.check_limiting_questions())
+        if not self.visible:
+            logger.info(f'{self.question.label} will be hidden')
             
             
     def check_election_flags(self):
