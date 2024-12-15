@@ -87,6 +87,7 @@ async def get_campaigns():
                     'munokrug': election.get('munokrug'), 
                     #'fromtime': dtparse(camp['fromtime']),
                     #'totime': dtparse(camp['totime']),
+                    # TODO: fromisoformat, remove dateutil dep
                     'vote_date': dtparse(election['date']),
                     'coordinator_id': coordinator['org_id'],
                     'elect_flags': ','.join(election['flags']),
