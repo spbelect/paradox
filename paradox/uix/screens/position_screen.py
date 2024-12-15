@@ -79,13 +79,26 @@ Builder.load_string('''
 
             VBox:
                 spacing: 0
-                height: 2*height1
-                size_hint_y: None
+                # height: 2*height1
+                height: height1
+                # height: dp(800)
+                # width: dp(800)
+                # size_hint_y: None
+                # size_hint_y: dp(800)
 
                 Label:
                     text: 'Ваш статус:'
                     halign: 'left'
                     text_size: self.width, None
+                    # text_size: self.width, dp(200)
+                    # width: self.texture_size[0]
+
+                    # size_hint_y: dp(800)
+                    # height: dp(800)
+                    # height: height1*2
+                    height: height1
+                    # background_color:
+                    # background_color: lightgray
                     padding: 0, 0
 
                 ChoicePicker:
@@ -132,7 +145,7 @@ Builder.load_string('''
                         text: 'Мимо проходил (это не ваш участок для голосования)'
                         short_text: 'Мимо проходил'
                         value: 'other'
-                        
+
                     Choice:
                         text: 'Видео-наблюдатель'
                         value: 'videonabl'
@@ -215,7 +228,7 @@ class PositionScreen(Screen):
         if not state.uik or not state.region:
             return None
         for munokrug in state.region.get('munokruga', []):
-            for first, last in munokrug.uik_ranges:
+            for first, last in munokrug['uik_ranges']:
                 if first <= int(state.uik) <= last:
                     return munokrug
         return None
@@ -225,7 +238,7 @@ class PositionScreen(Screen):
             return None
         for tik in state.region.get('tiks', []):
             #if isinstance()
-            for first, last in tik.uik_ranges:
+            for first, last in tik['uik_ranges']:
                 if first <= int(state.uik) <= last:
                     return tik
         return None
