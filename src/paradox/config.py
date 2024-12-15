@@ -11,6 +11,10 @@ DEBUG = False
 
 SENTRY = True
 
+
+from pathlib import Path
+SRCDIR = Path(__file__).parent
+
 version = '2.2'
 
 try:

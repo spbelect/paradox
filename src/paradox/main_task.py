@@ -120,7 +120,19 @@ mock_quiz_topics = [{
   },
 ]
       
-      
+import gc
+from kivy.core.window import Window
+async def thr():
+    while True:
+        # print(gc.get_threshold())
+        # gc.collect()
+        if hasattr(Window, 'loader'):
+            Window.remove_widget(Window.loader)
+            # Window._loader_anim.start(Window.loader.ids.dot)
+            del Window.loader
+        await sleep(0.01)
+
+
 @uix.homescreen.show_loader
 async def init(app: kivy.app.App) -> None:
     """

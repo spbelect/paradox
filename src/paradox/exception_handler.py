@@ -32,17 +32,20 @@ def send_debug_message(data: Union[Exception, str]):
     
     
 
-def sys_excepthook(err, traceback=None):
+def sys_excepthook(err, type=None, traceback=None):
     """
     Send traceback to server, show error screen.
     """
     if str(err) == 'Event loop stopped before Future completed.':
         return
 
+    if config.DEBUG:
+        logger.opt(exception=(type, err, traceback)).exception('a')
+        raise err
     traceback = u''.join(format_tb(traceback or err.__traceback__))
     message = f"{traceback}\n{err!r}\n{err}"
-    send_debug_message(message)
     logger.exception(err)
+    send_debug_message(message)
 
     # https://github.com/kivy/kivy/issues/2458
     #
@@ -78,7 +81,7 @@ def sys_excepthook(err, traceback=None):
     
     
 # Handle errors before kivy event loop is started.
-sys.excepthook = lambda type, err, traceback: sys_excepthook(err, traceback)
+sys.excepthook = lambda type, err, traceback: sys_excepthook(err, type=type, traceback=traceback)
 
 
 def aioloop_exc_handler(loop, context: dict):

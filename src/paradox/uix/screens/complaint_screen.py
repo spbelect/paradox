@@ -42,6 +42,7 @@ from paradox.uix.imagepicker import ImagePicker
 Builder.load_string('''
 #:include constants.kv
 #:import uix paradox.uix
+#:import SRCDIR paradox.config.SRCDIR
 
 #:set compaint_spacing dp(50)
 
@@ -89,14 +90,14 @@ Builder.load_string('''
             BlueButton:
                 id: handbook_why_complaint
                 text: 'зачем писать жалобу'
-                content: open('paradox/zachem_pisat_jalobu.txt').read()
+                content: open(SRCDIR / 'zachem_pisat_jalobu.txt').read()
                 on_release: uix.screenmgr.show_handbook('ЗАЧЕМ НУЖНО ОБЖАЛОВАНИЕ', self.content)
             
             ComplaintSpacerSmall:
             
             BlueButton:
                 text: 'правила обжалования'
-                content: open('paradox/complaint_rules.txt').read()
+                content: open(SRCDIR / 'complaint_rules.txt').read()
                 on_release: uix.screenmgr.show_handbook('ПРАВИЛА ОБЖАЛОВАНИЯ', self.content)
 
             ComplaintSpacerSmall:

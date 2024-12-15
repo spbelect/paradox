@@ -24,7 +24,7 @@ from asyncio import sleep
 from datetime import datetime
 from glob import glob
 from hashlib import md5
-from os.path import join, exists, dirname, expanduser
+from os.path import join, exists, dirname, expanduser, abspath
 from random import randint
 from shutil import copyfile
 
@@ -37,7 +37,6 @@ from kivy.clock import Clock
 from kivy.core.window import Window
 from kivy.lang import Builder
 from kivy.properties import ListProperty
-from kivy.resources import resource_add_path
 from kivy.utils import platform
 from lockorator.asyncio import lock_or_exit
 from loguru import logger
@@ -45,6 +44,7 @@ from loguru import logger
 state._appstate_autocreate = True
 
 import kivy
+import kivy.resources
 #from typing import Dict, List
 #from pydantic import BaseModel, ValidationError
 
@@ -108,18 +108,16 @@ if platform == 'linux':
 if getattr(sys, 'frozen', False):
     # we are running in a PyInstaller windows bundle
     bundle_dir = sys._MEIPASS
-    logging.info(bundle_dir)
 else:
     # we are running in a normal Python environment
-    bundle_dir = os.path.dirname(os.path.abspath(__file__))
+    bundle_dir = dirname(abspath(__file__))
 
-resource_add_path(join(bundle_dir, 'paradox/uix/'))
+logging.info(f'Adding kivy resources dir {bundle_dir}')
+kivy.resources.resource_add_path(join(bundle_dir, 'uix/'))
 
 Builder.load_file('base.kv')
 
 state._config = config
-
-
 
 
 
@@ -170,7 +168,7 @@ class ParadoxApp(App):
         Window.bind(on_keyboard=uix.screenmgr.hook_keyboard)
 
         import main_task
-        asyncio.create_task(main_task.main(self))
+        asyncio.create_task(main_task.init(self))
 
         #if platform == 'android':
             #from jnius import autoclass
@@ -193,13 +191,13 @@ class ParadoxApp(App):
 
             from paradox.uix.main_widget import MainWidget
             return MainWidget()
-        except Exception as e:
+        except Exception as err:
             try:
-                paradox.exception_handler.send_debug_message(repr(e))
+                paradox.exception_handler.send_debug_message(repr(err))
             except:
                 pass
 
-            logger.error(repr(e))
+            logger.exception(repr(err))
 
             self.label = Label()
             self.label.text_size = Window.width - 20, None
@@ -254,8 +252,7 @@ class ParadoxApp(App):
 
 
     def open_settings(self, *largs):
-        # Don't open default settings provided by kivy app
-        pass
+        pass  # Don't open default settings provided by kivy app
 
     
 if __name__ == '__main__':
