@@ -11,12 +11,13 @@ import sys
 import time
 import traceback
 
+import logging_setup
+
 from kivy.config import Config
 Config.set('graphics', 'multisamples', '0')
 #Config.set('kivy', 'log_level', 'debug')
 
 os.environ['KIVY_EVENTLOOP'] = 'asyncio'
-os.environ['LOGURU_AUTOINIT'] = '0'
 #os.environ['KIVY_PROFILE_LANG'] = '1'
 
 from asyncio import sleep
@@ -26,6 +27,7 @@ from hashlib import md5
 from os.path import join, exists, dirname, expanduser
 from random import randint
 from shutil import copyfile
+
 
 import django
 from app_state import state, on
@@ -40,7 +42,6 @@ from kivy.utils import platform
 from lockorator.asyncio import lock_or_exit
 from loguru import logger
 
-logger.add(sys.stderr, colorize=True)
 state._appstate_autocreate = True
 
 import kivy
