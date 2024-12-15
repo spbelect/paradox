@@ -1,6 +1,6 @@
 from asyncio import create_task, sleep
 from loguru import logger
-from app_state import state
+from app_state import state, on
 
 from os.path import join
 from random import randint
@@ -8,9 +8,12 @@ import asyncio
 import django
 from django import conf
 from django.core import management
+import kivy.app
 
+import paradox
 from paradox import uix
 from paradox import client
+from label import Label
 
 
 mock_regions = {
@@ -119,7 +122,26 @@ mock_quiz_topics = [{
       
       
 @uix.homescreen.show_loader
-async def main(app):
+async def init(app: kivy.app.App) -> None:
+    """
+    Initialize paradox app:
+
+    * Migrate database
+    * Load state from db.shelve file
+    * Fetch new questions from server
+    * Build questions inter-dependencies
+    * Create homescreen with quiz topics list
+    * Fetch regions and organizations from server
+    * Restore visible ui state of previosly answered questions
+    * Launch asyncio tasks with infinite loops sending new answers and photos
+
+    This task is created in main:ParadoxApp._build()
+    """
+
+    # gc.set_threshold(1, 1, 1)
+    # asyncio.create_task(thr())
+
+    # Migrate database
     logger.info(f"Using db {django.conf.settings.DATABASES['default']}")
     
     await sleep(0.2)
@@ -128,30 +150,17 @@ async def main(app):
     logger.info('Finished migration.')
     await sleep(0.1)
     
-    
-    # Initialize application state
-    state._server_ping_success = asyncio.Event()
-    state._server_ping_success.set()  # Assume success on app start.
-    
+
+    logger.disable("app_state")
+
     statefile = join(app.user_data_dir, 'state.db.shelve')
     logger.info(f'Reading state from {statefile}')
     state.autopersist(statefile)
-    if 'country' not in state:
-        logger.info('Creating default state.')
-    
-    state.setdefault('app_id', randint(10 ** 19, 10 ** 20 - 1))
-    state.setdefault('profile', {})    
-    state.setdefault('country', 'ru')
-    state.setdefault('superior_ik', 'TIK')
-    state.setdefault('tik', None)
-    state.setdefault('regions', {})
-    
-    # Dict of questions by id { question.id: {"label": "", "type": "", ...}, ... }
-    state.setdefault('questions', {})
-    
-    # Dict of lists of quiz_topics by country. Topics list for each country is ordered.
-    state.setdefault('quiz_topics', {'ru': [], 'ua': [], 'kz': [], 'by': []})
-    
+
+    logger.enable("app_state")
+
+    # import ipdb; ipdb.sset_trace()
+    # Determine current server
     logger.info(f'Server: {state.server}')
     if not state.server:
         await client.rotate_server()
@@ -198,7 +207,10 @@ async def main(app):
         rules = dependant_question.get('visible_if', {}).get('limiting_questions', {})
         for rule in (rules.get('any') or rules.get('all') or []):
             # Parent (limiting_question).
-            parent = state.questions.get(rule.question_id, {})
+            # try:
+            parent = state.questions.get(rule['question_id'], {})
+            # except:
+                # import ipdb; ipdb.sset_trace()
             # Add this dependant_question to the `dependants` list of its parent.
             parent.setdefault('dependants', []).append(dependant_question['id'])
         
@@ -211,10 +223,11 @@ async def main(app):
     regions = (await client.recv_loop(f'{state.country}/regions/')).json()
     ###regions = {f'ru_{x["id"]}': dict(x, id=f'ru_{x["id"]}') for x in json.load(open('regions.json'))}
         
-    #logger.debug(regions)
     state.regions.update(regions)
     logger.info('Regions updated.')
-    if state.region.id:
+    logger.debug(f'{state.regions=}')
+
+    if state.region.get('id'):
         if not state.region == state.regions.get(state.region.id):
             logger.debug(f'Setting region to {state.region.id}')
             state.region = state.regions.get(state.region.id)
