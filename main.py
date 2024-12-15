@@ -121,10 +121,10 @@ state._config = config
 
 
 
-from paradox import uix
 
 
 class ParadoxApp(App):
+    use_kivy_settings = False
     #errors = ListProperty([])
     app_has_started = False
 
@@ -237,6 +237,10 @@ class ParadoxApp(App):
         # Asyncio SSL keep-alive connections raise errors after loop close.
         asyncio.get_running_loop().stop()
 
+
+    def open_settings(self, *largs):
+        # Don't open default settings provided by kivy app
+        pass
 
     
 if __name__ == '__main__':
