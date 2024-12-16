@@ -21,7 +21,7 @@ from loguru import logger
 from plyer import filechooser
 
 import paradox
-from button import Button
+from paradox.button import Button
 from paradox import utils
 from paradox import gallery
 from paradox import camera

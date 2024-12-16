@@ -12,7 +12,7 @@ from kivy.uix.screenmanager import Screen
 
 from ...utils import strptime
 from ..vbox import VBox
-from button import Button
+from paradox.button import Button
 from paradox.models import Answer
 
 

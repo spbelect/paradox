@@ -28,8 +28,8 @@ from kivy.uix.vkeyboard import VKeyboard
 from kivy.utils import platform
 from loguru import logger
 
-from label import Label
-from button import Button
+from paradox.label import Label
+from paradox.button import Button
 from paradox import uix
 from paradox import utils
 from paradox.models import AnswerImage, Answer, Campaign

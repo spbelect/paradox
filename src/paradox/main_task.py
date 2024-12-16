@@ -13,7 +13,7 @@ import kivy.app
 import paradox
 from paradox import uix
 from paradox import client
-from label import Label
+from paradox.label import Label
 
 
 mock_regions = {

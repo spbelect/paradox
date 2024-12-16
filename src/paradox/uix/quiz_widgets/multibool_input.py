@@ -14,7 +14,7 @@ from paradox import utils
 from ..vbox import VBox
 from . import base
 
-from button import Button
+from paradox.button import Button
 
 Builder.load_string('''
 #:include constants.kv

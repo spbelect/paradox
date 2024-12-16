@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-
 import asyncio
 import logging
 import json
@@ -11,7 +10,7 @@ import sys
 import time
 import traceback
 
-import logging_setup
+from paradox import logging_setup
 
 from kivy.config import Config
 Config.set('graphics', 'multisamples', '0')
@@ -52,9 +51,9 @@ import paradox
 from paradox import config
 from paradox import exception_handler
 #from util import delay
-from label import Label
-import button
-import textinput
+from paradox.label import Label
+from paradox import button
+from paradox import textinput
 
 #import trio
 #import asks
@@ -93,7 +92,7 @@ else:
     os.environ.setdefault('DBDIR', expanduser(join(data_dir, 'paradox')))
     
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "django_settings")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "paradox.django_settings")
 django.setup()
 
 from django import conf
@@ -113,7 +112,7 @@ else:
     bundle_dir = dirname(abspath(__file__))
 
 logging.info(f'Adding kivy resources dir {bundle_dir}')
-kivy.resources.resource_add_path(join(bundle_dir, 'uix/'))
+kivy.resources.resource_add_path(join(bundle_dir, 'paradox/uix/'))
 
 Builder.load_file('base.kv')
 
@@ -167,7 +166,7 @@ class ParadoxApp(App):
         from paradox import uix
         Window.bind(on_keyboard=uix.screenmgr.hook_keyboard)
 
-        import main_task
+        from paradox import main_task
         asyncio.create_task(main_task.init(self))
 
         #if platform == 'android':

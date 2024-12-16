@@ -14,7 +14,7 @@ from kivy.uix.screenmanager import Screen
 from kivy.uix.behaviors.button import ButtonBehavior
 from loguru import logger
 
-from label import Label
+from paradox.label import Label
 from ..vbox import VBox
 
 

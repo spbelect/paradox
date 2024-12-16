@@ -22,7 +22,7 @@ from loguru import logger
 import plyer
 #import plyer.call
 
-from label import Label
+from paradox.label import Label
 from ..click_label import ClickLabel
 from ..vbox import VBox
 from paradox import utils

@@ -7,7 +7,7 @@ from kivy.properties import StringProperty
 from kivy.properties import ObjectProperty
 from kivy.uix.widget import Widget
 
-from button import Button
+from paradox.button import Button
 from paradox.uix.vbox import VBox
 
 Builder.load_string('''
