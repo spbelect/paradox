@@ -3,15 +3,19 @@
 
 # pip install https://github.com/kivy/kivy/archive/master.zip
 import os
-from os.path import dirname, join
-from subprocess import Popen, call
-from paradox.config import version
+import re
+from os.path import dirname, join, expanduser
+from subprocess import Popen, call, check_output
+from pathlib import Path
+from textwrap import dedent
 
+import paradox.config
 import environ
 import click
+
 from app_state import state
 from loguru import logger
-from click import Context, confirm, command, option, group, argument
+from click import Context, confirm, command, option, group, argument, ClickException
 #from psutil import Process
 
 Context.get_usage = Context.get_help  # show full help on error
@@ -25,7 +29,7 @@ def sh(cmd):
     return Popen(cmd, shell=True).wait()
 
 #version = open(join(dirname(__file__), 'version.txt')).read().strip()
-print(version)
+
 
 
 ####raw_input('hit enter')
@@ -34,71 +38,137 @@ print(version)
 #sh(f'/home/u1/Android/Sdk/build-tools/23.0.3/zipalign -v 4 {dist}/bin/{name}-{version}-release-unsigned.apk {dist}/bin/{name}-{version}-release-signed.apk')
 #sh(f'cp {dist}/bin/{name}-{version}-release-signed.apk /home/u1/')
 
+name = 'paradox'
+#name = 'tst'
+
+def init_state(arch):
+    if state.debug:
+        state.apk = f'{name}-{arch}-debug-{paradox.config.version}.apk'
+    else:
+        state.apk = f'{name}-{arch}-{paradox.config.version}-release-unsigned.apk'
+
 
 @group('builder', chain=True)
 #@option('--loglevel', '-l', default='INFO',
         #type=click.Choice(list(logging._nameToLevel), case_sensitive=False))
 @option('--arch', default='armeabi-v7a', envvar='ANDROID_ARCH',
-        type=click.Choice(['armeabi-v7a', 'arm64-v8a', 'x86']))
-@option('--java_home', envvar='JAVA_HOME')
+        type=click.Choice(['armeabi-v7a', 'arm64-v8a', 'x86_64']))
+@option('--java_home', envvar='JAVA_HOME', default='/usr/lib64/jvm/java-17-openjdk-17/')
 @option('--keypassword', envvar='KEYSTORE_PASSWORD')
-@option('--sdk_dir', envvar='ANDROIDSDK')
+@option('--sdk_dir', envvar='ANDROIDSDK', type=click.Path(
+    file_okay=False, dir_okay=True, exists=True, resolve_path=True, path_type=Path),
+    default=Path.home() / 'Android/Sdk/')
+@option('--ndk_dir', envvar='ANDROIDNDK', type=click.Path(
+    file_okay=False, dir_okay=True, exists=True, resolve_path=True, path_type=Path))
 @option('--debug', is_flag=True, default=False, envvar='DEBUG')
 def cli(**kwargs):
     """ Builder. """
     state.update(kwargs)
     #file = f'{dist}/bin/{name}-{version}-release-unsigned.apk'
 
+    if not state.ndk_dir:
+        ndkdir = state.sdk_dir / 'ndk'
+        if not ndkdir.exists():
+            raise ClickException('no ndk dir specified')
+        for dir in ndkdir.iterdir():
+            state.ndk_dir = dir
+            break
+        else:
+            raise ClickException('no ndk dir specified')
+        # return
     state.adb = f'{state.sdk_dir}/platform-tools/adb'
     state.adb = 'adb'
     
     #state.arch = 'armeabi-v7a'
     #state.arch = 'x86'
-    
-    name = 'paradox'
-    #name = 'tst'
-    state.dist = f'{name}-{state.arch}'
-    #state.package = f'paradox-{state.arch}'
-    state.package = f'{name}dbg' if state.debug else f'{name}'
-    if state.debug:
-        state.apk = f'{name}-{version}-{state.arch}-debug.apk'
-    else:
-        state.apk = f'{name}-{version}-{state.arch}-release-unsigned.apk'
-    
+    init_state(state.arch)
+
+
+@cli.command(context_settings={'auto_envvar_prefix': 'PARADOX'})
+@click.pass_context
+def find(ctx):
+    for root, dirs, files in Path.home().walk():
+        if root.name.startswith('android-sdk-'):
+            print(root)
+        elif root.name.startswith('android-ndk-'):
+            print(root)
+
 
 def getrequirements():
-    for x in open('requirements.txt'):
-        if x.startswith('Kivy') or x.startswith('pytz'):
+    # import tomllib
+    # toml = tomllib.load(open('pyproject.toml', 'rb'))
+
+    # sh('pdm lock --lockfile android.lock --prod --platform linux')
+    deps = check_output(
+        'pdm export --no-hashes --prod --lockfile android.lock',
+        shell=True, text=True
+    ).lower()
+
+    for dep in deps.split('\n'):
+        if dep.startswith('#') or not dep:
             continue
-        yield x.strip()
+        if re.match('^kivy|pytz|pillow', dep):
+            continue
+        yield dep.split(';')[0].strip()
         
+
+
 @cli.command(context_settings={'auto_envvar_prefix': 'PARADOX'})
 @click.pass_context
 def build(ctx):
     
     #os.environ['JAVA_OPTS'] = '-XX:+IgnoreUnrecognizedVMOptions '#'--add-modules java.se.ee'
 
-    # DEPRECATED
-    #os.environ['ANDROIDNDKVER'] = 'r9c'
-    #os.environ['ANDROIDNDKVER'] = 'r18b'
-
-    requirements = ','.join(getrequirements())
-        
-    #name = 'paradox2dbg' if state.debug else 'paradox2'
-
     #distdir = '/home/u1/.local/share/python-for-android/dists/%s' % dist
 
     #args = f'--private /home/z/pproj/kvbugtest --version={version} --bootstrap=sdl2 --window --whitelist=./whitelist.txt --local-recipes="./recipes" --requirements=python3,kivy_myasync,openssl,sqlite3,pillow,pytz,sdl2 --orientation=portrait --dist-name {state.dist} --permission=WRITE_EXTERNAL_STORAGE --permission=READ_EXTERNAL_STORAGE --fileprovider-paths=./fileprovider_paths.xml'
+
+    deps = ','.join(getrequirements())
+    #state.package = f'paradox-{state.arch}'
+    package = f'{name}dbg' if state.debug else f'{name}'
     
-    
-    args = f'--private {dirname(__file__)} --version={version} --bootstrap=sdl2 --window --local-recipes="./recipes" --requirements=python3,kivy_myasync,openssl,sqlite3,pillow,pytz,sdl2,{requirements} --whitelist=./whitelist.txt --permission=CALL_PHONE --permission=INTERNET --permission=WRITE_EXTERNAL_STORAGE --permission=READ_EXTERNAL_STORAGE --orientation=portrait --dist-name {state.dist} --fileprovider-paths=./fileprovider_paths.xml --arch={state.arch}'
+    args = dedent(f'''
+        --version={paradox.config.version}
+        --dist-name paradox-{state.arch}
+        --arch={state.arch}
+        --sdk-dir={state.sdk_dir}
+        --ndk-dir={state.ndk_dir}
+
+        --package=org.spbelect.{package}
+        --name="{package}"
+
+        --private "./src/"
+        --bootstrap=sdl2
+        --window
+        --local-recipes="./recipes"
+
+        --requirements="python3,kivy_2.3.1,openssl,sqlite3,pillow,pytz,sdl2,{deps}"
+
+        --whitelist=./whitelist.txt
+        --orientation=portrait
+        --android-api=34
+        --ndk-api=25
+        --enable-androidx
+
+        --permission=CALL_PHONE
+        --permission=INTERNET
+        --permission=WRITE_EXTERNAL_STORAGE
+        --permission=READ_EXTERNAL_STORAGE
+    ''')
+
+    if not state.debug:
+        args += " --release"
 
     print(args)
     input('hit enter')
 
-    debug = '--debug' if state.debug else '--release'
-    sh(f'p4a apk {args} --package=org.spbelect.{state.package} --name="{state.package}" {debug}')
-    
+    # debug = '--debug' if state.debug else '--release'
+    result = sh(f'p4a apk {args.replace("\n", " ")}')
+
+    if not result == 0:
+        print('Build failed')
+        return  # Error
+
     # debug build is already signed by p4a
     if not state.debug:
         ctx.invoke(sign)
@@ -130,8 +200,33 @@ def zipalign():
 @cli.command()
 @click.pass_context
 def install(ctx):
-    sh(f'{state.adb} install -r {state.apk}')
-    
+    res = check_output(f'{state.adb} devices -l', shell=True, text=True)
+    devices = [x.split(maxsplit=1) for x in res.split('\n')[1:] if x]
+
+    if not devices:
+        print("No devices found")
+        return
+
+    for n, (id, flags) in enumerate(devices):
+        print(f"{n}: {id} [{flags}]")
+
+    # id = input(f'Please select device [1-{len(devices)}]:')
+
+    from rich.prompt import Prompt, IntPrompt
+
+    # device = Prompt.ask("Please select device", choices=[x[1] for x in devices])
+    device = IntPrompt.ask(
+        "Please select device",
+        choices=[str(x) for x in range(len(devices))],
+        default=0
+    )
+    id, flags = devices[device]
+    if 'x86' in flags:
+        state.arch = 'x86_64'
+        init_state(state.arch)
+
+    sh(f'{state.adb} install -r -d {state.apk}')
+
     input('hit enter')
     ctx.invoke(logcat)
 
