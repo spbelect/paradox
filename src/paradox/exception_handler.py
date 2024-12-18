@@ -47,32 +47,7 @@ def sys_excepthook(err, type=None, traceback=None):
     logger.exception(err)
     send_debug_message(message)
 
-    # https://github.com/kivy/kivy/issues/2458
-    #
-    # 2024-12-07 14:45:23.425 | ERROR    | paradox.exception_handler:sys_excepthook:44 -   File "kivy/_clock.pyx", line 649, in kivy._clock.CyClockBase._process_events
-    #   File "kivy/_clock.pyx", line 218, in kivy._clock.ClockEvent.tick
-    #   File "/home/z/pproj/paradox_dev/.venv/lib64/python3.12/site-packages/kivy/animation.py", line 364, in _update
-    #     setattr(widget, key, value)
-    #   File "kivy/weakproxy.pyx", line 35, in kivy.weakproxy.WeakProxy.__setattr__
-    #   File "kivy/weakproxy.pyx", line 28, in kivy.weakproxy.WeakProxy.__ref__
-    #
-    # ReferenceError('weakly-referenced object no longer exists')
-    # weakly-referenced object no longer exists
-    #
-    # ipdb> widget
-    # <WeakProxy to None>
-    # ipdb> self
-    # <kivy.animation.Animation object at 0x7f08f88f8d70>
-    # ipdb> key
-    # 'x'
-    # ipdb> isinstance(widget, WeakProxy)
-    # True
-    # ipdb> len(dir(widget))
-    # 0
-    # ipdb> isinstance(widget, WeakProxy) and not len(dir(widget))
-    # True
-
-    # TODO: Seems to be non-disruptive
+    # https://github.com/kivy/kivy/issues/8954
     if isinstance(err, ReferenceError):
         return
 
