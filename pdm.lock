@@ -5,7 +5,7 @@
 groups = ["default", "build", "debug", "dev", "test"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:32e3e5016f4d985a01c6761476afef6cb3f294a0604bfabc184c619f5040be03"
+content_hash = "sha256:c558027c6136e1fdc83f32a94ee9575e015dcd9963103ebad4f0e1312235887b"
 
 [[metadata.targets]]
 requires_python = ">=3.11"
@@ -916,13 +916,13 @@ files = [
 
 [[package]]
 name = "sqlparse"
-version = "0.3.0"
-requires_python = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
-summary = "Non-validating SQL parser"
+version = "0.5.3"
+requires_python = ">=3.8"
+summary = "A non-validating SQL parser."
 groups = ["default"]
 files = [
-    {file = "sqlparse-0.3.0-py2.py3-none-any.whl", hash = "sha256:40afe6b8d4b1117e7dff5504d7a8ce07d9a1b15aeeade8a2d10f130a834f8177"},
-    {file = "sqlparse-0.3.0.tar.gz", hash = "sha256:7c3dca29c022744e95b547e867cee89f4fce4373f3549ccd8797d8eb52cdb873"},
+    {file = "sqlparse-0.5.3-py3-none-any.whl", hash = "sha256:cf2196ed3418f3ba5de6af7e82c694a9fbdbfecccdfc72e281548517081f16ca"},
+    {file = "sqlparse-0.5.3.tar.gz", hash = "sha256:09f67787f56a0b16ecdbde1bfc7f5d9c3371ca683cfeaa8e6ff60b4807ec9272"},
 ]
 
 [[package]]

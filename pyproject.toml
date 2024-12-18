@@ -17,7 +17,6 @@ dependencies = [
     "plyer==1.4.0",
     "python-dateutil",
     "sniffio==1.1.0",
-    "sqlparse==0.3.0",
     "getinstance>=0.7"
 ]
 requires-python = ">=3.11"
