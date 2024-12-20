@@ -1,4 +1,4 @@
-from django_settings import *
+from paradox.django_settings import *
 
 
 DATABASES = {
