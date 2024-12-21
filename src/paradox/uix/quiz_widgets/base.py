@@ -17,8 +17,8 @@ from paradox import uix
 from paradox import utils
 from paradox.uix import float_message
 from paradox.uix import confirm
-from paradox.uix.screens.quiztopic_screen import QuizTopicScreen
-#from paradox.uix.complaint import Complaint
+from paradox.uix.screens.quiztopic import QuizTopicScreen
+#from paradox.uix.screens.complaint.complaint import Complaint
 
 
 class QuizWidget(Widget):
@@ -64,11 +64,11 @@ class QuizWidget(Widget):
             #uix.float_message.show('Предыдущий ответ еще не сохранен!')
             #return False
         
-        if uix.position.show_errors():
+        if uix.screens.position.position.show_errors():
             uix.screenmgr.push_screen('position')
             return False
         
-        if uix.userprofile.userprofile_errors():
+        if uix.screens.userprofile.userprofile.userprofile_errors():
             uix.screenmgr.push_screen('userprofile')
             return False
 
@@ -97,7 +97,7 @@ class QuizWidget(Widget):
                 
                 answer = Answer.objects.get(id=self.answer.id)
                 answer.update(revoked=True, time_updated=now())
-                uix.events_screen.add_event(answer)
+                uix.screens.events.events.add_event(answer)
                 logger.info(f'Revoke answer input: {self.question.id}. New value: {value}')
                 
             if self.question.type == 'YESNO' and value is None:
@@ -131,7 +131,7 @@ class QuizWidget(Widget):
                 time_updated=now()
             )
             
-            uix.events_screen.add_event(answer)
+            uix.screens.events.events.add_event(answer)
             
             #campaigns = Campaign.objects.positional().filter(active=True, subscription='yes')
             #answer.organizations = [x.organization.id for x in campaigns]

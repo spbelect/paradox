@@ -12,7 +12,7 @@ from kivy.uix.screenmanager import Screen
 
 from ...utils import strptime
 from ..vbox import VBox
-from paradox.button import Button
+from paradox.uix.button import Button
 from paradox.models import Answer
 
 
@@ -124,3 +124,6 @@ class EventsScreen(Screen):
 
     def on_event_press(self, item):
         self.manager.show_handbook(item.question.label, item.question.fz67_text)
+
+
+events = EventsScreen(name='events')

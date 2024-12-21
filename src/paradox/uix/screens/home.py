@@ -14,7 +14,7 @@ from kivy.uix.screenmanager import Screen
 from kivy.uix.behaviors.button import ButtonBehavior
 from loguru import logger
 
-from paradox.label import Label
+from paradox.uix.label import Label
 from ..vbox import VBox
 
 
@@ -143,3 +143,7 @@ class HomeScreen(Screen):
 
     #def show_campaign_forms(self):
         #pass
+
+
+
+home = HomeScreen(name='home')

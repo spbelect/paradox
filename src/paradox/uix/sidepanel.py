@@ -11,7 +11,7 @@ from kivy.uix.boxlayout import BoxLayout
 #from .navigationdrawer.navigationdrawer import NavigationDrawer
 from paradox.uix import screenmgr
 
-from paradox.button import Button
+from paradox.uix.button import Button
 
 Builder.load_string('''
 #:include constants.kv

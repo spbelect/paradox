@@ -22,7 +22,7 @@ from loguru import logger
 import plyer
 #import plyer.call
 
-from paradox.label import Label
+from paradox.uix.label import Label
 from ..click_label import ClickLabel
 from ..vbox import VBox
 from paradox import utils
@@ -201,3 +201,6 @@ class OrganizationsScreen(Screen):
                 self.ids.loader.opacity = 0
         return wrapped
 
+
+
+organizations = OrganizationsScreen(name='organizations')

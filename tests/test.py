@@ -8,7 +8,7 @@ import pytest
 import pytest_asyncio
 import asyncio
 
-from fixtures import app, mocked_api
+from .fixtures import app, mocked_api
 
 
 async def retry(fn, *args, **kw):
@@ -44,7 +44,7 @@ async def wait_instance(widget, **kwargs):
     #return 
                      
                      
-async def wait_listitem[T](iterable: Iterable[T], **kwargs) -> T:
+async def wait_listitem(iterable: Iterable, **kwargs):
     """
     Wait for any item in the given iterable to have matching attributes provided
     in kwargs. Return first matching item or raise Exception on timeout.
@@ -102,47 +102,47 @@ async def test_render(mocked_api, app):
 
     await sleep(0.1)
 
-    #await app.click(uix.homescreen.ids.menu_button)
+    #await app.click(uix.screens.home.home.ids.menu_button)
 
 
     #await app.click(uix.sidepanel.ids.region)
-    ##print(uix.position.ids.region_choices)
+    ##print(uix.screens.position.position.ids.region_choices)
 
 
     ## Экран позиции.
     ## Кликнуть на список регионов.
-    #await app.click(uix.position.ids.regions)
+    #await app.click(uix.screens.position.position.ids.regions)
 
     ## Кликнуть на "Лен область"
-    #await app.click(await retry(uix.position.ids.regions.getchoice, 'ru_47'))
+    #await app.click(await retry(uix.screens.position.position.ids.regions.getchoice, 'ru_47'))
 
     ## Кликнуть "выбрать статус"
-    #await app.click(uix.position.ids.roles)
+    #await app.click(uix.screens.position.position.ids.roles)
 
     ## Кликнуть на "ПРГ"
-    #await app.click(await retry(uix.position.ids.roles.getchoice, 'prg'))
+    #await app.click(await retry(uix.screens.position.position.ids.roles.getchoice, 'prg'))
 
     ## Кликнуть на "Номер УИК"
-    #await app.click(uix.position.ids.uik)
+    #await app.click(uix.screens.position.position.ids.uik)
     ## Ввести 1803
     #await app.text_input('1803')
 
     ## Кликнуть "Продолжить"
-    #await app.click(uix.position.ids.next)
+    #await app.click(uix.screens.position.position.ids.next)
 
 
     ## Экран профиля.
-    #await app.click(uix.userprofile.ids.first_name)
+    #await app.click(uix.screens.userprofile.userprofile.ids.first_name)
     #await app.text_input('name')
-    #await app.click(uix.userprofile.ids.last_name)
+    #await app.click(uix.screens.userprofile.userprofile.ids.last_name)
     #await app.text_input('famil')
-    #await app.click(uix.userprofile.ids.email)
+    #await app.click(uix.screens.userprofile.userprofile.ids.email)
     #await app.text_input('email@ya.ru')
     ##await app.text_input('emailya.ru')  # Невалидный email
-    #await app.click(uix.userprofile.ids.phone)
+    #await app.click(uix.screens.userprofile.userprofile.ids.phone)
     #await app.text_input('9061234567')
     ## Кликнуть "Продолжить"
-    #await app.click(uix.userprofile.ids.next)
+    #await app.click(uix.screens.userprofile.userprofile.ids.next)
 
     state.update(
         profile=dict(email='a@ya.ru', first_name='2', last_name='3', phone='4', middle_name='5', telegram=''),
@@ -157,7 +157,7 @@ async def test_render(mocked_api, app):
     # await sleep(2000)
     ### Главный экран.
     # Кликнуть на тематический раздел анкеты.
-    await app.click(await wait_listitem(uix.homescreen.ids.topics.children, id='1'))
+    await app.click(await wait_listitem(uix.screens.home.home.ids.topics.children, id='1'))
 
 
 
@@ -175,46 +175,46 @@ async def test_render(mocked_api, app):
 
     ### Экран обжалования.
     # Кликнуть на "Статус жалобы".
-    await app.click(uix.complaint.ids.uik_complaint_status)
+    await app.click(uix.screens.complaint.complaint.ids.uik_complaint_status)
 
     await sleep(0.2)
     # Кликнуть на "Отказ принять".
-    await app.click(uix.complaint.ids.uik_complaint_status.getchoice('refuse_to_accept'))
+    await app.click(uix.screens.complaint.complaint.ids.uik_complaint_status.getchoice('refuse_to_accept'))
     #await app.click(await wait_instance(ComplaintStatusChoice, value='refuse_to_accept'))
 
     #fromscreen = uix.screenmgr.get_screen('form_1')
-    #uix.complaint.ids.scrollview.scroll_to(uix.complaint.ids.tik_text_editor)
+    #uix.screens.complaint.complaint.ids.scrollview.scroll_to(uix.screens.complaint.complaint.ids.tik_text_editor)
 
     # await sleep(0.1)
     # Click "Why complaint is needed"
-    # await app.click(uix.complaint.ids.handbook_why_complaint)
+    # await app.click(uix.screens.complaint.complaint.ids.handbook_why_complaint)
 
     #await app.click(quizwidget.complaint.ids.preview_tik_complaint)
     # import ipdb; ipdb.sset_trace()
     await sleep(0.2)
-    uix.complaint.ids.scrollview.scroll_to(uix.complaint.ids.tik_text_editor.ids.edit_button)
+    uix.screens.complaint.complaint.ids.scrollview.scroll_to(uix.screens.complaint.complaint.ids.tik_text_editor.ids.edit_button)
     await sleep(2)  # scroll animation
 
     # Click "Edit complaint text"
-    await app.click(uix.complaint.ids.tik_text_editor.ids.edit_button)
+    await app.click(uix.screens.complaint.complaint.ids.tik_text_editor.ids.edit_button)
 
-    uix.complaint.ids.scrollview.scroll_to(uix.complaint.ids.tik_text_editor.ids.textinput)
+    uix.screens.complaint.complaint.ids.scrollview.scroll_to(uix.screens.complaint.complaint.ids.tik_text_editor.ids.textinput)
     await sleep(2)  # scroll animation
     
-    await app.click(uix.complaint.ids.tik_text_editor.ids.textinput)
+    await app.click(uix.screens.complaint.complaint.ids.tik_text_editor.ids.textinput)
     
     await app.text_input('lol')
     
-    uix.complaint.ids.scrollview.scroll_to(uix.complaint.ids.tik_text_editor.ids.save)
+    uix.screens.complaint.complaint.ids.scrollview.scroll_to(uix.screens.complaint.complaint.ids.tik_text_editor.ids.save)
     await sleep(1)  # scroll animation
     
-    await app.click(uix.complaint.ids.tik_text_editor.ids.save)
+    await app.click(uix.screens.complaint.complaint.ids.tik_text_editor.ids.save)
     await sleep(2)  # scroll animation
     
-    uix.complaint.ids.scrollview.scroll_to(uix.complaint.ids.send_tik_complaint)
+    uix.screens.complaint.complaint.ids.scrollview.scroll_to(uix.screens.complaint.complaint.ids.send_tik_complaint)
     await sleep(2)  # scroll animation
     
-    await app.click(uix.complaint.ids.send_tik_complaint)
+    await app.click(uix.screens.complaint.complaint.ids.send_tik_complaint)
     await sleep(2)  # scroll animation
     
     confirm = await wait_instance(ConfirmModal)
@@ -226,7 +226,7 @@ async def test_render(mocked_api, app):
     await app.click(confirm.ids.yes)
     
     
-    await app.click(uix.complaint.ids.back)
+    await app.click(uix.screens.complaint.complaint.ids.back)
     
     await sleep(3)  # next question
     

@@ -15,8 +15,8 @@ from kivy.uix.button import Button
 from kivy.properties import StringProperty, BooleanProperty, ObjectProperty, Property
 
 from ..vbox import VBox
-from paradox.label import Label
-from paradox.textinput import TextInput
+from paradox.uix.label import Label
+from paradox.uix.textinput import TextInput
 from . import base
 from paradox import utils
 

@@ -8,7 +8,7 @@ from kivy.properties import StringProperty
 from kivy.uix.screenmanager import Screen
 from kivy.uix.widget import Widget
 
-from paradox.label import Label
+from paradox.uix.label import Label
 
 
 Builder.load_string('''

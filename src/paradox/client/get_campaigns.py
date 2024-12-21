@@ -56,8 +56,8 @@ mock_elections = [
         
 @on('state.region')
 @lock_or_exit()
-@uix.homescreen.show_loader
-@uix.organizations.show_loader
+@uix.screens.home.home.show_loader
+@uix.screens.organizations.organizations.show_loader
 async def get_campaigns():
     await sleep(2)
     while True:
@@ -115,7 +115,9 @@ async def get_campaigns():
     #if campaigns.count() == 0:
         #uix.formlist.show_no_campaign_notice()
         
-    uix.organizations.show(Organization.objects.filter(campaigns__in=campaigns))
+    uix.screens.organizations.organizations.show(
+        Organization.objects.filter(campaigns__in=campaigns)
+    )
     #uix.coordinators.show(Organization.objects.all())
     logger.debug('Update campaigns finished')
     

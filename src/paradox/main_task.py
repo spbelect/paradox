@@ -13,7 +13,7 @@ import kivy.app
 import paradox
 from paradox import uix
 from paradox import client
-from paradox.label import Label
+from paradox.uix.label import Label
 
 
 mock_regions = {
@@ -133,7 +133,7 @@ async def thr():
         await sleep(0.01)
 
 
-@uix.homescreen.show_loader
+@uix.screens.home.home.show_loader
 async def init(app: kivy.app.App) -> None:
     """
     Initialize paradox app:
@@ -182,8 +182,8 @@ async def init(app: kivy.app.App) -> None:
     
     asyncio.create_task(client.check_new_version_loop())
     
-    uix.homescreen.build_topics()
-    uix.events_screen.restore_past_events()
+    uix.screens.home.home.build_topics()
+    uix.screens.events.events.restore_past_events()
     logger.info('Restored past events.')
     
     
@@ -206,7 +206,7 @@ async def init(app: kivy.app.App) -> None:
         except Exception as e:
             logger.error(repr(e))
             uix.float_message.show('Ошибка при обновлении анкет')
-            uix.homescreen.ids.messages.add_widget(Label(
+            uix.screens.home.home.ids.messages.add_widget(Label(
                 text='Ошибка при обновлении анкет. Возможно вы используете старую версию программы.'    
             ))
             paradox.exception_handler.send_debug_message(e)
@@ -229,7 +229,7 @@ async def init(app: kivy.app.App) -> None:
     # Update topics for current country.
     if not state.quiz_topics.get(state.country) == quiz_topics:
         state.quiz_topics[state.country] = quiz_topics
-        uix.homescreen.build_topics()
+        uix.screens.home.home.build_topics()
     
     #regions = mock_regions
     regions = (await client.recv_loop(f'{state.country}/regions/')).json()
@@ -244,7 +244,7 @@ async def init(app: kivy.app.App) -> None:
             logger.debug(f'Setting region to {state.region.id}')
             state.region = state.regions.get(state.region.id)
     
-    uix.events_screen.restore_past_events()
+    uix.screens.events.events.restore_past_events()
     logger.info('Restored past events (fin).')
     
     asyncio.create_task(client.answer_send_loop())

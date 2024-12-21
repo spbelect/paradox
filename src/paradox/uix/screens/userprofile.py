@@ -158,3 +158,6 @@ class UserProfileScreen(Screen):
     #def on_continue(self):
         #data = {x: self.ids[x].text for x in self.inputs}
         #schedule('core.userprofile_next', data)
+
+
+userprofile = UserProfileScreen(name='userprofile')

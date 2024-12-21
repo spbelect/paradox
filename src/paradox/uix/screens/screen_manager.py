@@ -42,14 +42,19 @@ from paradox import uix
 from paradox.uix import float_message
 from ..vbox import VBox
 
-from .handbook_screen import HandBookScreen
-from .communication_screen import CommunicationScreen
-from .error_screen import ErrorScreen
-from .userprofile_screen import UserProfileScreen
-from .position_screen import PositionScreen
-from .events_screen import EventsScreen
-from .quiztopic_screen import QuizTopicScreen
-from .about_screen import AboutScreen
+import paradox.uix.screens
+
+from . import (
+    home, communication, position, quiztopic, userprofile,
+    handbook, organizations, events, complaint, about, error
+)
+# from .communication import CommunicationScreen
+# from .error import ErrorScreen
+# from .userprofile import UserProfileScreen
+# from .position import PositionScreen
+# from .events import EventsScreen
+# from .quiztopic import QuizTopicScreen
+# from .about import AboutScreen
 
 
 
@@ -72,22 +77,24 @@ class ScreenManager(kivy.uix.screenmanager.ScreenManager):
     about_to_exit = BooleanProperty(False)
 
     def __init__(self, *args, **kwargs):
+
+        # import ipdb; ipdb.sset_trace()
         super().__init__(*args, **kwargs)
         #Clock.schedule_once(self.build_screens)
         #Window.bind(on_keyboard=self.hook_keyboard2)
             #self.init()
             
         #def init(self):
-        self.add_widget(uix.homescreen)
-        self.add_widget(HandBookScreen(name='handbook'))
-        #uix.position = PositionScreen(name='position')
-        self.add_widget(uix.position)
-        self.add_widget(uix.organizations)
-        self.add_widget(uix.events_screen)
-        self.add_widget(uix.complaint)
-        self.add_widget(AboutScreen(name='about'))
-        self.add_widget(CommunicationScreen(name='communication'))
-        self.add_widget(uix.userprofile)
+        self.add_widget(uix.screens.home.home)
+        self.add_widget(uix.screens.handbook.HandBookScreen(name='handbook'))
+        #uix.screens.position.position = PositionScreen(name='position')
+        self.add_widget(uix.screens.position.position)
+        self.add_widget(uix.screens.organizations.organizations)
+        self.add_widget(uix.screens.events.events)
+        self.add_widget(uix.screens.complaint.complaint)
+        self.add_widget(uix.screens.about.AboutScreen(name='about'))
+        self.add_widget(uix.screens.communication.CommunicationScreen(name='communication'))
+        self.add_widget(uix.screens.userprofile.userprofile)
         self.push_screen('home')
         #self.push_screen('position')
         #schedule('core.screens_initialized')
@@ -161,14 +168,14 @@ class ScreenManager(kivy.uix.screenmanager.ScreenManager):
             screen = self.get_screen('error')
             screen.message = message
         else:
-            screen = ErrorScreen(message=message, name='error')
+            screen = uix.screens.error.ErrorScreen(message=message, name='error')
             self.add_widget(screen)
         self.current = 'error'
 
     def show_quiztopic(self, topic):
         name = f'topic_{topic["id"]}'
         if not self.has_screen(name):
-            self.add_widget(QuizTopicScreen(topic, name=name))
+            self.add_widget(uix.screens.quiztopic.QuizTopicScreen(topic, name=name))
 
         self.push_screen(name)
 

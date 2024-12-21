@@ -19,8 +19,8 @@ from kivy.properties import StringProperty, BooleanProperty, ObjectProperty, Pro
 from loguru import logger
 from ..vbox import VBox
 from . import base
-from paradox.label import Label
-from paradox.button import Button
+from paradox.uix.label import Label
+from paradox.uix.button import Button
 from paradox import utils
 
 Builder.load_string('''

@@ -51,9 +51,6 @@ import paradox
 from paradox import config
 from paradox import exception_handler
 #from util import delay
-from paradox.label import Label
-from paradox import button
-from paradox import textinput
 
 #import trio
 #import asks
@@ -198,6 +195,7 @@ class ParadoxApp(App):
 
             logger.exception(repr(err))
 
+            from kivy.uix.label import Label
             self.label = Label()
             self.label.text_size = Window.width - 20, None
             self.label.halign = 'center'

@@ -28,8 +28,8 @@ from kivy.uix.vkeyboard import VKeyboard
 from kivy.utils import platform
 from loguru import logger
 
-from paradox.label import Label
-from paradox.button import Button
+from paradox.uix.label import Label
+from paradox.uix.button import Button
 from paradox import uix
 from paradox import utils
 from paradox.models import AnswerImage, Answer, Campaign
@@ -655,3 +655,5 @@ class ComplaintScreen(Screen):
         self.ids.tik_send_status.text = 'ЗАПРОС ОТПРАВЛЯЕТСЯ'
         self.ids.tik_text_editor.disabled = True
         
+
+complaint = ComplaintScreen(name='complaint')

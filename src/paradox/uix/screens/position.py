@@ -283,3 +283,6 @@ class PositionScreen(Screen):
         #if not self.prev_regionid == state.get('region', {}).get('id'):
             #state._nursery.start_soon(client.update_campaigns)
         
+
+
+position = PositionScreen(name='position')

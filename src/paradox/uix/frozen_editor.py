@@ -8,7 +8,7 @@ from kivy.uix.popup import Popup
 from loguru import logger
 
 from paradox.uix.vbox import VBox
-from paradox.button import Button
+from paradox.uix.button import Button
 
 Builder.load_string('''
 #:include constants.kv
