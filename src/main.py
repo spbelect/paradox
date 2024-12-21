@@ -186,6 +186,7 @@ class ParadoxApp(App):
             self._build()
 
             from paradox.uix.main_widget import MainWidget
+
             return MainWidget()
         except Exception as err:
             try:
@@ -196,6 +197,7 @@ class ParadoxApp(App):
             logger.exception(repr(err))
 
             from kivy.uix.label import Label
+
             self.label = Label()
             self.label.text_size = Window.width - 20, None
             self.label.halign = 'center'

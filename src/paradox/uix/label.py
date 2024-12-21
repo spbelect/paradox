@@ -25,7 +25,7 @@ Builder.load_string("""
 <Label>:
     canvas.before:
         Color:
-            rgba: self.background_color
+            rgba: self.background_color if hasattr(self, "background_color") else (1,1,1,1)
         Rectangle:
             pos: self.pos
             size: self.size
