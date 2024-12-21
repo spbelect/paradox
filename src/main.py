@@ -37,6 +37,7 @@ from kivy.core.window import Window
 from kivy.lang import Builder
 from kivy.properties import ListProperty
 from kivy.utils import platform
+from kivy.uix.widget import Widget
 from lockorator.asyncio import lock_or_exit
 from loguru import logger
 
@@ -130,7 +131,7 @@ class ParadoxApp(App):
         logger.debug(f'ParadoxApp created: {self}')
 
 
-    def _build(self):
+    def _build(self) -> Widget:
         Clock.max_iteration = 1000
 
         # Initialize application state
@@ -160,12 +161,14 @@ class ParadoxApp(App):
         # Dict of lists of quiz_topics by country. Topics list for each country is ordered.
         state.setdefault('quiz_topics', {'ru': [], 'ua': [], 'kz': [], 'by': []})
 
-        from paradox import uix
-        Window.bind(on_keyboard=uix.screenmgr.hook_keyboard)
+        import paradox.main_task
+        import paradox.uix.main_widget
 
-        from paradox import main_task
-        asyncio.create_task(main_task.init(self))
+        asyncio.create_task(paradox.main_task.init(app=self))
 
+        Window.bind(on_keyboard=paradox.uix.screenmgr.hook_keyboard)
+
+        return paradox.uix.main_widget.MainWidget()
         #if platform == 'android':
             #from jnius import autoclass
             #autoclass('org.kivy.android.PythonActivity').mActivity.removeLoadingScreen()
@@ -180,31 +183,24 @@ class ParadoxApp(App):
         ####state._nursery.start_soon(on_start)
 
 
-    def build(self):
+    def build(self) -> Widget:
         logger.info('Build started')
+
         try:
-            self._build()
-
-            from paradox.uix.main_widget import MainWidget
-
-            return MainWidget()
+            return self._build()
         except Exception as err:
-            try:
-                paradox.exception_handler.send_debug_message(repr(err))
-            except:
-                pass
-
             logger.exception(repr(err))
+            paradox.exception_handler.send_debug_message(err)
 
-            from kivy.uix.label import Label
+        from kivy.uix.label import Label
 
-            self.label = Label()
-            self.label.text_size = Window.width - 20, None
-            self.label.halign = 'center'
-            # self.label.valign = 'center'
-            self.label.color = (155,55,55,1)
-            self.label.text = u'Произошла ошибка. Разработчики были уведомлены об этом.'
-            return self.label
+        self.label = Label()
+        self.label.text_size = Window.width - 20, None
+        self.label.halign = 'center'
+        # self.label.valign = 'center'
+        self.label.color = (155,55,55,1)
+        self.label.text = u'Произошла ошибка. Разработчики были уведомлены об этом.'
+        return self.label
 
 
     def on_pause(self):
