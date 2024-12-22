@@ -163,7 +163,7 @@ def build(ctx):
     input('hit enter')
 
     # debug = '--debug' if state.debug else '--release'
-    result = sh(f'p4a apk {args.replace("\n", " ")}')
+    result = sh('p4a apk {args}'.format(args=args.replace("\n", " ")))
 
     if not result == 0:
         print('Build failed')
