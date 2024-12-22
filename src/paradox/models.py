@@ -20,13 +20,13 @@ class Model(db.models.Model):
         """
         Use this method to update and save model instance in single call:
 
-        >>> user.update(email='user@example.com', last_name='Bob')
+        >> user.update(email='user@example.com', last_name='Bob')
 
         is a shortcut for
 
-        >>> user.email = 'user@example.com'
-        >>> user.last_name = 'Bob'
-        >>> user.save(update_fields=['email', 'last_name'])
+        >> user.email = 'user@example.com'
+        >> user.last_name = 'Bob'
+        >> user.save(update_fields=['email', 'last_name'])
 
         """
         #self2 = self.__class__.objects.get(pk=self.pk)

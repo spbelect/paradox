@@ -7,7 +7,6 @@ from kivy.properties import StringProperty
 from kivy.uix.modalview import ModalView
 from kivy.lang import Builder
 
-from ..scheduler import schedule
 
 Builder.load_string('''
 
