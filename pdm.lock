@@ -5,7 +5,7 @@
 groups = ["default", "build", "debug", "dev", "test"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:f053635222d7c25dbc489e38e608fcf7dcffd5f9619a4827f2bf7c27afd9e3ea"
+content_hash = "sha256:c082d240b19dc8059d23f675932e4acf5a5809fa8c6da753d9a6bd377bcccaa2"
 
 [[metadata.targets]]
 requires_python = ">=3.11"
@@ -943,6 +943,16 @@ groups = ["default"]
 files = [
     {file = "pytz-2024.2-py2.py3-none-any.whl", hash = "sha256:31c7c1817eb7fae7ca4b8c7ee50c72f93aa2dd863de768e1ef4245d426aa0725"},
     {file = "pytz-2024.2.tar.gz", hash = "sha256:2aa355083c50a0f93fa581709deac0c9ad65cca8a9e9beac660adcbd493c798a"},
+]
+
+[[package]]
+name = "pyvirtualdisplay"
+version = "3.0"
+summary = "python wrapper for Xvfb, Xephyr and Xvnc"
+groups = ["test"]
+files = [
+    {file = "PyVirtualDisplay-3.0-py3-none-any.whl", hash = "sha256:40d4b8dfe4b8de8552e28eb367647f311f88a130bf837fe910e7f180d5477f0e"},
+    {file = "PyVirtualDisplay-3.0.tar.gz", hash = "sha256:09755bc3ceb6eb725fb07eca5425f43f2358d3bf08e00d2a9b792a1aedd16159"},
 ]
 
 [[package]]

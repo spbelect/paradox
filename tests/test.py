@@ -1,3 +1,4 @@
+import os
 from app_state import state
 from asyncio import sleep
 from collections.abc import Iterable
@@ -10,6 +11,10 @@ import asyncio
 
 from .fixtures import app, mocked_api
 
+if os.environ.get('PYVIRTUALDISPLAY', 0) == '1':
+    from pyvirtualdisplay import Display
+    disp = Display()
+    disp.start()
 
 async def retry(fn, *args, **kw):
     for x in range(30):
