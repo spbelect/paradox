@@ -56,7 +56,7 @@ jobs:
 
       - name: Install Dev Dependencies
         run: |
-          pdm install -v --dev -G test
+          pdm install -v -G test
           pdm run pip install -U setuptools
           pdm info
       - name: Run Tests
