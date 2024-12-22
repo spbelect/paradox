@@ -35,7 +35,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: install dependencies
         run: |
-            sudo apt-get -y install libmtdev1t64 libsdl2-2.0-0 xvfb-run
+            sudo apt-get -y install libmtdev1t64 libsdl2-2.0-0 xvfb
       - name: Setup Python Versions
         uses: actions/setup-python@v5
         with:
