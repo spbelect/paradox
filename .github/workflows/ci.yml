@@ -56,7 +56,7 @@ jobs:
 
       - name: Install Dev Dependencies
         run: |
-          pdm install -v -G test
+          pdm install -v --group test --lockfile ci.lock
           pdm run pip install -U setuptools
           pdm info
       - name: Run Tests
