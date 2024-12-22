@@ -43,7 +43,7 @@ logger.configure(handlers=[
         filter = {
             "": os.environ.get("LOGLEVEL", "INFO"),  # Default.
             "kivy.lang.parser": "ERROR",
-            "kivy": "WARNING",
+            "kivy": os.environ.get("LOGLEVEL", "WARNING"),
             # "paradox.client": "DEBUG",
         }
     ),
