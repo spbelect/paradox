@@ -17,7 +17,8 @@ dependencies = [
     "plyer==1.4.0",
     "python-dateutil",
     "sniffio==1.1.0",
-    "getinstance>=0.7"
+    "getinstance>=0.7",
+    "setuptools>=75.6.0"  # minidjango still needs distutils, which is removed in python 3.12
 ]
 requires-python = ">=3.11"
 readme = "README.md"
