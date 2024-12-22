@@ -60,7 +60,7 @@ jobs:
           pdm run pip install -U setuptools
           pdm info
       - name: Run Tests
-        run: pdm run pytest --doctest-modules -n auto --cov --cov-config=pyproject.toml --cov-report=xml
+        run: pdm run pytest --doctest-modules -n auto --cov --cov-config=.coveragerc --cov-report=xml
 
       # - name: Upload results to Codecov
       #   uses: codecov/codecov-action@v4
