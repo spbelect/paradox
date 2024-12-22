@@ -1,7 +1,6 @@
 import sys
 from urllib.parse import urljoin
 from datetime import datetime
-from typing import Union
 from traceback import format_tb
 
 
@@ -15,7 +14,7 @@ import kivy
 from paradox import config
 
 
-def send_debug_message(data: Union[Exception, str]):
+def send_debug_message(data: Exception | str):
     if isinstance(data, Exception):
         _traceback = format_tb(data.__traceback__)
         data = ''.join(_traceback) + f'\n {data!r} \n {data!s}'

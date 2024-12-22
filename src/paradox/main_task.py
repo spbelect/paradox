@@ -150,17 +150,14 @@ async def init(app: kivy.app.App) -> None:
     This task is created in main:ParadoxApp._build()
     """
 
-    # gc.set_threshold(1, 1, 1)
-    # asyncio.create_task(thr())
-
     # Migrate database
     logger.info(f"Using db {django.conf.settings.DATABASES['default']}")
     
-    await sleep(0.2)
+    await sleep(0.1)
     logger.info('Start migration.')
     django.core.management.call_command('migrate')
     logger.info('Finished migration.')
-    await sleep(0.1)
+    await sleep(0.01)
     
 
     logger.disable("app_state")
@@ -171,13 +168,12 @@ async def init(app: kivy.app.App) -> None:
 
     logger.enable("app_state")
 
-    # import ipdb; ipdb.sset_trace()
     # Determine current server
     logger.info(f'Server: {state.server}')
     if not state.server:
         await client.rotate_server()
     
-    await sleep(0.2)
+    await sleep(0.1)
     
     
     asyncio.create_task(client.check_new_version_loop())
@@ -197,7 +193,7 @@ async def init(app: kivy.app.App) -> None:
     if quiz_topics:
         logger.info(f'Got {len(quiz_topics)} quiz topics for country "{state.country}"')
     else:
-        logger.error('Received empty quiz topics for country "{state.country}"')
+        logger.error(f'Received empty quiz topics for country "{state.country}"')
         
     # Update state.questions - build dict by id for all questions of all received quiz_topics.
     for topic in quiz_topics:
