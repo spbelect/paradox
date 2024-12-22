@@ -22,7 +22,7 @@ jobs:
   Testing:
     env:
       PYTHONDEVMODE: 1
-      PYTHONWARNINGS: "ignore"
+      PYTHONWARNINGS: "ignore"  # https://github.com/pypa/pip/issues/11684
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
