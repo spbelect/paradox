@@ -138,28 +138,30 @@ class ParadoxApp(App):
         state._server_ping_success = asyncio.Event()
         state._server_ping_success.set()  # Assume success on app start.
 
-        # import ipdb; ipdb.sset_trace()
-        if 'country' not in state:
-            logger.info('Creating default state.')
+        logger.info('Creating default state.')
 
-        state.setdefault('server', None)
-        state.setdefault('app_id', randint(10 ** 19, 10 ** 20 - 1))
-        state.setdefault('profile', {})
-        state.setdefault('country', 'ru')
-        state.setdefault('superior_ik', 'TIK')
-        state.setdefault('tik', None)
-        state.setdefault('uik', None)
-        # state.setdefault('role', None)
-        state.setdefault('role', 'prg')
-        state.setdefault('munokrug', {})
-        state.setdefault('region', {})
-        state.setdefault('regions', {})
-
-        # Dict of questions by id { question.id: {"label": "", "type": "", ...}, ... }
-        state.setdefault('questions', {})
-
-        # Dict of lists of quiz_topics by country. Topics list for each country is ordered.
-        state.setdefault('quiz_topics', {'ru': [], 'ua': [], 'kz': [], 'by': []})
+        state.update(dict(
+            server = None,
+            app_id = randint(10 ** 19, 10 ** 20 - 1),
+            profile = {},
+            country = 'ru',
+            superior_ik = 'TIK',
+            tik = None,
+            uik = None,
+            role = 'prg',
+            munokrug = {},
+            region = {},
+            regions = {},
+            # Dict of questions by id { question.id: {"label": "", "type": "", ...}, ... }
+            questions = {},
+            # Dict of lists of quiz_topics by country. Topics list for each country is ordered.
+            quiz_topics = {
+                'ru': json.load(open(config.SRCDIR / 'quiz_topics_ru.json')),
+                'ua': [],
+                'kz': [],
+                'by': []
+            }
+        ))
 
         import paradox.main_task
         import paradox.uix.main_widget
@@ -169,18 +171,10 @@ class ParadoxApp(App):
         Window.bind(on_keyboard=paradox.uix.screenmgr.hook_keyboard)
 
         return paradox.uix.main_widget.MainWidget()
+
         #if platform == 'android':
             #from jnius import autoclass
             #autoclass('org.kivy.android.PythonActivity').mActivity.removeLoadingScreen()
-
-        #state.user_data_dir = self.user_data_dir
-        #for filename in glob('forms_*.json') + ['regions.json', 'mo_78.json']:
-            #path = join(self.user_data_dir, filename)
-            #if not exists(path):
-                #logger.debug('copying %s to %s' % (filename, self.user_data_dir))
-                #copyfile(filename, path)
-
-        ####state._nursery.start_soon(on_start)
 
 
     def build(self) -> Widget:

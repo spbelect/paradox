@@ -9,3 +9,4 @@ build/
 *.orig
 *.kate-swp
 *.sqlite
+config_local.py
