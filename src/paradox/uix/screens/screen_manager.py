@@ -141,8 +141,8 @@ class ScreenManager(kivy.uix.screenmanager.ScreenManager):
         #print args
         #return True
 
-    def hook_keyboard(self, window, key, *args):
-        #logging.info( "XXXXXXXXXXXXXXXXX key %d pressed" % key)
+    def hook_keyboard(self, window, key, scancode, codepoint, modifier):
+        #logging.info( "XXXXXXXXXXXXXXXXX scancode %d pressed" % scancode)
         #if platform != 'android':
             #if key == ord('p'):
                 #self.profile = cProfile.Profile()
@@ -150,8 +150,14 @@ class ScreenManager(kivy.uix.screenmanager.ScreenManager):
             #elif key == ord('o'):
                 #self.profile.disable()
                 #self.profile.dump_stats('myapp.profile')
-        
+        # if codepoint is None:
+        # logger.info(f'{key=}, {scancode=}, {codepoint=}')
+
         if key in (1000, 27, 1073742095, 4):
+            # TODO: on android 15 emulator back button does not work, but adb
+            # command does:
+            # adb shell input keyevent KEYCODE_BACK
+
             #if App.root.state == 'open':
                 #App.root.toggle_state()
             if len(self.screen_history) >= 1:
