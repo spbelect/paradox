@@ -11,8 +11,9 @@ from django.core import management
 import kivy.app
 
 import paradox
-from paradox import uix
 from paradox import client
+from paradox import config
+from paradox import uix
 from paradox.uix.label import Label
 
 
@@ -153,28 +154,26 @@ async def init(app: kivy.app.App) -> None:
     # Migrate database
     logger.info(f"Using db {django.conf.settings.DATABASES['default']}")
     
-    await sleep(0.1)
+    await sleep(0.01)
     logger.info('Start migration.')
     django.core.management.call_command('migrate')
     logger.info('Finished migration.')
     await sleep(0.01)
     
 
-    logger.disable("app_state")
-
     statefile = join(app.user_data_dir, 'state.db.shelve')
     logger.info(f'Reading state from {statefile}')
     state.autopersist(statefile)
 
-    logger.enable("app_state")
 
     # Determine current server
-    logger.info(f'Server: {state.server}')
-    if not state.server:
+    if config.FORGET_STORED_STATE_SERVER:
+        state.server = config.SERVER_ADDRESS
+    elif not state.server:
         await client.rotate_server()
+    logger.info(f'Server: {state.server}')
     
-    await sleep(0.1)
-    
+    await sleep(0.01)
     
     asyncio.create_task(client.check_new_version_loop())
     
