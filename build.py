@@ -9,7 +9,11 @@ from subprocess import Popen, call, check_output
 from pathlib import Path
 from textwrap import dedent
 
+os.environ.setdefault('KIVY_NO_CONFIG', '1')
+os.environ.setdefault('KIVY_LOG_MODE', 'PYTHON')
+
 import paradox.config
+
 import environ
 import click
 
@@ -65,6 +69,15 @@ def cli(**kwargs):
     """ Builder. """
     state.update(kwargs)
     #file = f'{dist}/bin/{name}-{version}-release-unsigned.apk'
+
+
+    try:
+        import paradox.config_android
+    except ImportError as err:
+        raise ClickException('Please copy src/paradox/config_local.example.py to src/paradox/config_android.py, and set SERVER_ADDRESS variable.') from err
+
+    if not paradox.config_android.SERVER_ADDRESS:
+        raise ClickException('Please set SERVER_ADDRESS in src/paradox/config_android.py')
 
     if not state.ndk_dir:
         ndkdir = state.sdk_dir / 'ndk'

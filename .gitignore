@@ -10,3 +10,4 @@ build/
 *.kate-swp
 *.sqlite
 config_local.py
+config_android.py
