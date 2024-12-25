@@ -63,7 +63,6 @@ Builder.load_string('''
 
 <Choice>:
     color: black
-    background_color: white
     #width: self.parent.width if self.parent else '300dp'
     width: 0.9 * (self.parent.width if self.parent else 29)
     #width: 40
@@ -95,6 +94,9 @@ class Choice(Button):
         #if not self.short_text:
             #self.short_text = self.text
             
+    # def on_color(self, *a):
+    #     print(f"{self} {id(self)} oncolor {a}, {self.color=}")
+
     def on_parent(self, selff, parent):
         if parent is None and hasattr(self, 'instances'):
             #logger.debug(f'Widget parnet is None, remove {self}.')
@@ -138,7 +140,7 @@ class ChoicePicker(Button):
 
     def add_widget(self, child):
         self.modal.ids.list.add_widget(child)
-        # logger.debug(f'{self.text=} {child=}')
+        # logger.error(f'{self.text=} {child=} {child.color=}')
 
     def remove_choice(self, value):
         for child in self.modal.ids.list.children[:]:

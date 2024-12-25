@@ -9,16 +9,16 @@ from kivy.lang import Builder
 from kivy.properties import BooleanProperty, ListProperty
 
 
-#Builder.load_string("""
-#<Button>:
-    #canvas.before:
-        #Color:
-            #rgba: getattr(self, 'long_touch_color') if getattr(self, 'long_touch', False) else self.background_color
-            ##rgba: (9,0,0, 1)
-        #Rectangle:
-            #pos: self.pos
-            #size: self.size
-#""")
+# Builder.load_string("""
+# <Button>:
+#     canvas.before:
+#         Color:
+#             rgba: getattr(self, 'long_touch_color') if getattr(self, 'long_touch', False) else self.background_color
+#             #rgba: (9,0,0, 1)
+#         Rectangle:
+#             pos: self.pos
+#             size: self.size
+# """)
 
 
 class Button(kivy.uix.button.Button):

@@ -43,15 +43,12 @@ Builder.load_string('''
             text: 'Выйти'
             on_press: app.stop()
             background_color: darkgray
+            color: white
+            height: dp(50)
+            halign: 'center'
+            size_hint: 1, None
+            background_normal: ''
 
-
-<Button>:
-    #color: 1,1,1,1
-    color: white
-    height: dp(50)
-    halign: 'center'
-    size_hint: 1, None
-    background_normal: ''
 
 ''')
 

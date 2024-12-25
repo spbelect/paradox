@@ -12,7 +12,6 @@ from kivy.properties import ObjectProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.gridlayout import GridLayout
-from kivy.uix.label import Label
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.uix.widget import Widget
@@ -181,7 +180,7 @@ class PositionScreen(Screen):
             return
         #import ipdb; ipdb.sset_trace()
         logger.debug('rebuilding region choices')
-        #regions = state.regions.values()
+        # regions = state.regions.values()
         self.ids.regions.clear()
 
         msk, spb, lo = 'ru_77', 'ru_78', 'ru_47'
@@ -191,7 +190,7 @@ class PositionScreen(Screen):
 
         #choice = Choice(text='Москва', value=)
         #self.ids.regions.add_widget(choice)
-        
+
         choice = Choice(text='Санкт-Петербург', value='ru_78')
         self.ids.regions.add_widget(choice)
 
@@ -202,7 +201,7 @@ class PositionScreen(Screen):
             if region['id'] in (spb, lo) or not region['id'].startswith(state.country):
                 continue
             self.ids.regions.add_widget(Choice(text=region['name'], value=region['id']))
-            
+
         if state.get('region'):
             choice = self.ids.regions.getchoice(state.region.id)
             if choice:
