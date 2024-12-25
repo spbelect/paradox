@@ -5,6 +5,7 @@ import json
 import time
 import os.path
 import asyncio
+import logging
 from datetime import date
 from os.path import dirname
 #from kivy.tests import async_sleep
@@ -126,12 +127,13 @@ async def app():
 
     #from paradox import client
     #patch('paradox.client.client', Mock(request=AsyncMock(side_effect=request))).start()
-    def rotate_server():
+    def mock_rotate_server():
         from app_state import state
         state.server = 'http://127.0.0.1:8000/'
+        logging.info(f'Setting mock server address to {state.server}')
         state._server_ping_success.set()
         
-    patch('paradox.client.rotate_server', AsyncMock(side_effect=rotate_server)).start()
+    patch('paradox.client.rotate_server', AsyncMock(side_effect=mock_rotate_server)).start()
     patch('app_state.State.autopersist', Mock()).start()
     gc.collect()
     #if apps:

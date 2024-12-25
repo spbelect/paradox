@@ -21,4 +21,7 @@ from kivy.utils import platform
 if platform == 'android':
     from .config_android import *
 else:
-    from .config_local import *
+    try:
+        from .config_local import *
+    except ImportError:
+        pass
