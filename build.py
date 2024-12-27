@@ -10,6 +10,7 @@ from pathlib import Path
 from textwrap import dedent
 
 os.environ.setdefault('KIVY_NO_CONFIG', '1')
+os.environ.setdefault('KIVY_NO_ARGS', '1')
 os.environ.setdefault('KIVY_LOG_MODE', 'PYTHON')
 
 import paradox.config
@@ -32,11 +33,7 @@ def sh(cmd):
     print(cmd)
     return Popen(cmd, shell=True).wait()
 
-#version = open(join(dirname(__file__), 'version.txt')).read().strip()
 
-
-
-####raw_input('hit enter')
 
 #sh(f'rm {dist}/bin/{name}-{version}-release-signed.apk')
 #sh(f'/home/u1/Android/Sdk/build-tools/23.0.3/zipalign -v 4 {dist}/bin/{name}-{version}-release-unsigned.apk {dist}/bin/{name}-{version}-release-signed.apk')
@@ -68,13 +65,14 @@ def init_state(arch):
 def cli(**kwargs):
     """ Builder. """
     state.update(kwargs)
-    #file = f'{dist}/bin/{name}-{version}-release-unsigned.apk'
-
 
     try:
         import paradox.config_android
     except ImportError as err:
-        raise ClickException('Please copy src/paradox/config_local.example.py to src/paradox/config_android.py, and set SERVER_ADDRESS variable.') from err
+        raise ClickException(
+            'Please copy src/paradox/config_local.example.py to '
+            'src/paradox/config_android.py, and set SERVER_ADDRESS variable.'
+        ) from err
 
     if not paradox.config_android.SERVER_ADDRESS:
         raise ClickException('Please set SERVER_ADDRESS in src/paradox/config_android.py')
@@ -134,11 +132,7 @@ def build(ctx):
 
     #distdir = '/home/u1/.local/share/python-for-android/dists/%s' % dist
 
-    #args = f'--private /home/z/pproj/kvbugtest --version={version} --bootstrap=sdl2 --window --whitelist=./whitelist.txt --local-recipes="./recipes" --requirements=python3,kivy_myasync,openssl,sqlite3,pillow,pytz,sdl2 --orientation=portrait --dist-name {state.dist} --permission=WRITE_EXTERNAL_STORAGE --permission=READ_EXTERNAL_STORAGE --fileprovider-paths=./fileprovider_paths.xml'
-
     deps = ','.join(getrequirements())
-    #state.package = f'paradox-{state.arch}'
-    package = f'{name}dbg' if state.debug else f'{name}'
     
     args = dedent(f'''
         --version={paradox.config.version}
@@ -147,8 +141,8 @@ def build(ctx):
         --sdk-dir={state.sdk_dir}
         --ndk-dir={state.ndk_dir}
 
-        --package=org.spbelect.{package}
-        --name="{package}"
+        --package=org.spbelect.{'paradoxdbg' if state.debug else f'paradox'}
+        --name="{'paradoxdbg' if state.debug else f'paradox'}"
 
         --private "./src/"
         --bootstrap=sdl2
@@ -175,7 +169,6 @@ def build(ctx):
     print(args)
     input('hit enter')
 
-    # debug = '--debug' if state.debug else '--release'
     result = sh('p4a apk {args}'.format(args=args.replace("\n", " ")))
 
     if not result == 0:
