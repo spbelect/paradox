@@ -54,11 +54,11 @@ mock_elections = [
         }]
 }]
         
+# @uix.screens.home.show_loader
 @on('state.region')
 @lock_or_exit()
-@uix.screens.home.home.show_loader
-@uix.screens.organizations.organizations.show_loader
-async def get_campaigns():
+@uix.screens.organizations.show_loader
+async def get_regional_campaigns():
     await sleep(2)
     while True:
         region, country = state.get('region'), state.get('country')
@@ -115,7 +115,7 @@ async def get_campaigns():
     #if campaigns.count() == 0:
         #uix.formlist.show_no_campaign_notice()
         
-    uix.screens.organizations.organizations.show(
+    uix.screens.organizations.show(
         Organization.objects.filter(campaigns__in=campaigns)
     )
     #uix.coordinators.show(Organization.objects.all())

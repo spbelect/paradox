@@ -134,7 +134,7 @@ async def thr():
         await sleep(0.01)
 
 
-@uix.screens.home.home.show_loader
+@uix.screens.home.show_loader
 async def init(app: kivy.app.App) -> None:
     """
     Initialize paradox app:

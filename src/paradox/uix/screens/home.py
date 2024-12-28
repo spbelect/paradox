@@ -127,23 +127,24 @@ class HomeScreen(Screen):
             ))
             
 
-    def show_loader(self, f):
-        @wraps(f)
-        async def wrapped(*a, **kw):
-            self.ids.topics_loader.height = dp(20)
-            self.ids.topics_loader.opacity = 1
-            try:
-                return await f(*a, **kw)
-            finally:
-                #logger.debug('hide loader')
-                self.ids.topics_loader.height = 0
-                self.ids.topics_loader.opacity = 0
-        return wrapped
-
 
     #def show_campaign_forms(self):
         #pass
 
 
 
-home = HomeScreen(name='home')
+home = screen = HomeScreen(name='home')
+
+
+def show_loader(f):
+    @wraps(f)
+    async def wrapped(*a, **kw):
+        screen.ids.topics_loader.height = dp(20)
+        screen.ids.topics_loader.opacity = 1
+        try:
+            return await f(*a, **kw)
+        finally:
+            logger.info('hide loader')
+            screen.ids.topics_loader.height = 0
+            screen.ids.topics_loader.opacity = 0
+    return wrapped

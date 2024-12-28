@@ -163,16 +163,6 @@ class OrganizationsScreen(Screen):
     #def __init__(self, *a, **kw):
         #super().__init__(*a, **kw)
         
-    def show(self, organizations):
-        for item in self.ids.content.children[:]:
-            self.ids.content.remove_widget(item)
-            
-        for org in organizations:
-            if org.campaigns.positional().current().exists():
-                if config.SHOW_TEST_COORDINATORS is False and 'test' in org.name:
-                    continue
-                self.ids.content.add_widget(OrganizationItem(organization=org))
-            
     @on('state.region', 'state.uik')
     def show_current(self):
         if not state.get('region'):
@@ -185,22 +175,34 @@ class OrganizationsScreen(Screen):
         #from paradox.models import Campaign, Organization
         campaigns = Campaign.objects.positional().current()
         #logger.debug(f'Active campaigns: {campaigns.values()}')
-        self.show(Organization.objects.filter(campaigns__in=campaigns))
+        show(Organization.objects.filter(campaigns__in=campaigns))
     
-    def show_loader(self, f):
-        @wraps(f)
-        async def wrapped(*a, **kw):
-            self.ids.loader.height = dp(40)
-            self.ids.loader.opacity = 1
-            #logger.debug(f'show coord loader {f}')
-            try:
-                return await f(*a, **kw)
-            finally:
-                #logger.debug(f'hide coord loader {f}')
-                self.ids.loader.height = 0
-                self.ids.loader.opacity = 0
-        return wrapped
 
 
+screen = organizations = OrganizationsScreen(name='organizations')
 
-organizations = OrganizationsScreen(name='organizations')
+
+def show_loader(f):
+    @wraps(f)
+    async def wrapped(*a, **kw):
+        screen.ids.loader.height = dp(40)
+        screen.ids.loader.opacity = 1
+        #logger.debug(f'show coord loader {f}')
+        try:
+            return await f(*a, **kw)
+        finally:
+            #logger.debug(f'hide coord loader {f}')
+            screen.ids.loader.height = 0
+            screen.ids.loader.opacity = 0
+    return wrapped
+
+
+def show(orgs: list[Organization]):
+    for item in screen.ids.content.children[:]:
+        screen.ids.content.remove_widget(item)
+
+    for org in orgs:
+        if org.campaigns.positional().current().exists():
+            if config.SHOW_TEST_COORDINATORS is False and 'test' in org.name:
+                continue
+            screen.ids.content.add_widget(OrganizationItem(organization=org))
