@@ -656,4 +656,4 @@ class ComplaintScreen(Screen):
         self.ids.tik_text_editor.disabled = True
         
 
-complaint = ComplaintScreen(name='complaint')
+complaint = screen = ComplaintScreen(name='complaint')

@@ -26,6 +26,12 @@ from asyncio import sleep
 apps = []
 
 
+if os.environ.get('PYVIRTUALDISPLAY', 0) == '1':
+    from pyvirtualdisplay import Display
+    disp = Display()
+    disp.start()
+
+
 @pytest_asyncio.fixture
 async def mocked_api():
     #from paradox import config
