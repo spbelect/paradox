@@ -163,12 +163,9 @@ resource_add_path(os.path.dirname(__file__))
 Builder.load_string('''
 <NavigationDrawer>:
     size_hint: (1,1)
-    _side_boxlayout: sidepanel
-    _main_boxlayout: mainpanel
-    _join_image: joinimage
     side_panel_width: min(dp(250), 0.5*self.width)
     BoxLayout:
-        id: sidepanel
+        id: sidebox
         y: root.y
         x: root.x - \
            (1-root._anim_progress)* \
@@ -190,7 +187,7 @@ Builder.load_string('''
                 size: self.size
                 pos: self.pos
     BoxLayout:
-        id: mainpanel
+        id: mainbox
         x: root.x + \
            root._anim_progress * \
            root.side_panel_width * \
@@ -211,14 +208,14 @@ Builder.load_string('''
                 pos: self.pos
     Image:
         id: joinimage
-        opacity: min(sidepanel.opacity, 0 if root._anim_progress < 0.00001 \
+        opacity: min(sidebox.opacity, 0 if root._anim_progress < 0.00001 \
                  else min(root._anim_progress*40,1))
         source: root._choose_image(root._main_above, root.separator_image)
         mipmap: False
         width: root.separator_image_width
-        height: root._side_boxlayout.height
-        x: (mainpanel.x - self.width + 1) if root._main_above \
-           else (sidepanel.x + sidepanel.width - 1)
+        height: sidebox.height
+        x: (mainbox.x - self.width + 1) if root._main_above \
+           else (sidebox.x + sidebox.width - 1)
         y: root.y
         allow_stretch: True
         keep_ratio: False
@@ -241,11 +238,6 @@ class NavigationDrawer(StencilView):
     width = NumericProperty(100)
     height = NumericProperty(100)
     size = ReferenceListProperty(width, height)
-
-    # Internal references for side, main and image widgets
-    _side_boxlayout = ObjectProperty()
-    _main_boxlayout = ObjectProperty()
-    _join_image = ObjectProperty()
 
     side_panel = ObjectProperty(None, allownone=True)
     '''Automatically bound to whatever widget is added as the hidden panel.'''
@@ -389,17 +381,14 @@ class NavigationDrawer(StencilView):
             self._main_above = False
 
     def on__main_above(self, *args):
-        newval = self._main_above
-        main_panel = self._main_boxlayout
-        side_panel = self._side_boxlayout
-        self.canvas.remove(main_panel.canvas)
-        self.canvas.remove(side_panel.canvas)
-        if newval:
-            self.canvas.insert(0, main_panel.canvas)
-            self.canvas.insert(0, side_panel.canvas)
+        self.canvas.remove(self.ids.mainbox.canvas)
+        self.canvas.remove(self.ids.sidebox.canvas)
+        if self._main_above:
+            self.canvas.insert(0, self.ids.mainbox.canvas)
+            self.canvas.insert(0, self.ids.sidebox.canvas)
         else:
-            self.canvas.insert(0, side_panel.canvas)
-            self.canvas.insert(0, main_panel.canvas)
+            self.canvas.insert(0, self.ids.sidebox.canvas)
+            self.canvas.insert(0, self.ids.mainbox.canvas)
 
     def toggle_main_above(self, *args):
         if self._main_above:
@@ -407,48 +396,16 @@ class NavigationDrawer(StencilView):
         else:
             self._main_above = True
 
-    def add_widget(self, widget):
-        if len(self.children) == 0:
-            super(NavigationDrawer, self).add_widget(widget)
-            self._side_boxlayout = widget
-        elif len(self.children) == 1:
-            super(NavigationDrawer, self).add_widget(widget)
-            self._main_boxlayout = widget
-        elif len(self.children) == 2:
-            super(NavigationDrawer, self).add_widget(widget)
-            self._join_image = widget
-        elif self.side_panel is None:
-            self._side_boxlayout.add_widget(widget)
-            self.side_panel = widget
-        elif self.main_panel is None:
-            self._main_boxlayout.add_widget(widget)
-            self.main_panel = widget
-        else:
-            raise NavigationDrawerException(
-                'Can\'t add more than two widgets'
-                'directly to NavigationDrawer')
-
-    def remove_widget(self, widget):
-        if widget is self.side_panel:
-            self._side_boxlayout.remove_widget(widget)
-            self.side_panel = None
-        elif widget is self.main_panel:
-            self._main_boxlayout.remove_widget(widget)
-            self.main_panel = None
-        else:
-            raise NavigationDrawerException(
-                'Widget is neither the side or main panel, can\'t remove it.')
-
     def set_side_panel(self, widget):
         '''Removes any existing side panel widgets, and replaces them with the
         argument `widget`.
         '''
         # Clear existing side panel entries
-        if len(self._side_boxlayout.children) > 0:
-            for child in self._side_boxlayout.children:
-                self._side_boxlayout.remove(child)
+        if len(self.ids.sidebox.children) > 0:
+            for child in self.ids.sidebox.children:
+                self.ids.sidebox.remove(child)
         # Set new side panel
-        self._side_boxlayout.add_widget(widget)
+        self.ids.sidebox.add_widget(widget)
         self.side_panel = widget
 
     def set_main_panel(self, widget):
@@ -456,11 +413,11 @@ class NavigationDrawer(StencilView):
         argument `widget`.
         '''
         # Clear existing side panel entries
-        if len(self._main_boxlayout.children) > 0:
-            for child in self._main_boxlayout.children:
-                self._main_boxlayout.remove(child)
+        if len(self.ids.mainbox.children) > 0:
+            for child in self.ids.mainbox.children:
+                self.ids.mainbox.remove(child)
         # Set new side panel
-        self._main_boxlayout.add_widget(widget)
+        self.ids.mainbox.add_widget(widget)
         self.main_panel = widget
 
     def on__anim_progress(self, *args):
@@ -517,28 +474,28 @@ class NavigationDrawer(StencilView):
 
     def on_touch_down(self, touch):
         col_self = self.collide_point(*touch.pos)
-        col_side = self._side_boxlayout.collide_point(*touch.pos)
-        col_main = self._main_boxlayout.collide_point(*touch.pos)
+        col_side = self.ids.sidebox.collide_point(*touch.pos)
+        col_main = self.ids.mainbox.collide_point(*touch.pos)
 
         if self._anim_progress < 0.001:  # i.e. closed
             valid_region = (self.x <= touch.x <= (self.x + self.touch_accept_width))
-            self._main_boxlayout.on_touch_down(touch)
+            self.ids.mainbox.on_touch_down(touch)
         else:
             if col_side and not self._main_above:
-                self._side_boxlayout.on_touch_down(touch)
+                self.ids.sidebox.on_touch_down(touch)
                 return False
-            valid_region = (self._main_boxlayout.x <= touch.x <= (self._main_boxlayout.x + self._main_boxlayout.width))
+            valid_region = (self.ids.mainbox.x <= touch.x <= (self.ids.mainbox.x + self.ids.mainbox.width))
             if not valid_region:
                 if self._main_above:
                     if col_main:
-                        self._main_boxlayout.on_touch_down(touch)
+                        self.ids.mainbox.on_touch_down(touch)
                     elif col_side:
-                        self._side_boxlayout.on_touch_down(touch)
+                        self.ids.sidebox.on_touch_down(touch)
                 else:
                     if col_side:
-                        self._side_boxlayout.on_touch_down(touch)
+                        self.ids.sidebox.on_touch_down(touch)
                     elif col_main:
-                        self._main_boxlayout.on_touch_down(touch)
+                        self.ids.mainbox.on_touch_down(touch)
                     return False
         Animation.cancel_all(self)
         if valid_region:

@@ -45,8 +45,8 @@ class MainWidget(NavigationDrawer):
     def __init__(self, *a, **kw):
         ##kw['__no_builder'] = False
         super().__init__(*a, **kw)
-        self.add_widget(uix.sidepanel)
-        self.add_widget(uix.screenmgr)
+        self.set_side_panel(uix.sidepanel)
+        self.set_main_panel(uix.screenmgr)
         logger.debug(f'MainWidget created {self}')
         
         
