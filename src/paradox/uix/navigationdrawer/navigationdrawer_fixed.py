@@ -163,8 +163,8 @@ resource_add_path(os.path.dirname(__file__))
 Builder.load_string('''
 <NavigationDrawer>:
     size_hint: (1,1)
-    _side_panel: sidepanel
-    _main_panel: mainpanel
+    _side_boxlayout: sidepanel
+    _main_boxlayout: mainpanel
     _join_image: joinimage
     side_panel_width: min(dp(250), 0.5*self.width)
     BoxLayout:
@@ -216,7 +216,7 @@ Builder.load_string('''
         source: root._choose_image(root._main_above, root.separator_image)
         mipmap: False
         width: root.separator_image_width
-        height: root._side_panel.height
+        height: root._side_boxlayout.height
         x: (mainpanel.x - self.width + 1) if root._main_above \
            else (sidepanel.x + sidepanel.width - 1)
         y: root.y
@@ -243,8 +243,8 @@ class NavigationDrawer(StencilView):
     size = ReferenceListProperty(width, height)
 
     # Internal references for side, main and image widgets
-    _side_panel = ObjectProperty()
-    _main_panel = ObjectProperty()
+    _side_boxlayout = ObjectProperty()
+    _main_boxlayout = ObjectProperty()
     _join_image = ObjectProperty()
 
     side_panel = ObjectProperty(None, allownone=True)
@@ -390,8 +390,8 @@ class NavigationDrawer(StencilView):
 
     def on__main_above(self, *args):
         newval = self._main_above
-        main_panel = self._main_panel
-        side_panel = self._side_panel
+        main_panel = self._main_boxlayout
+        side_panel = self._side_boxlayout
         self.canvas.remove(main_panel.canvas)
         self.canvas.remove(side_panel.canvas)
         if newval:
@@ -410,18 +410,18 @@ class NavigationDrawer(StencilView):
     def add_widget(self, widget):
         if len(self.children) == 0:
             super(NavigationDrawer, self).add_widget(widget)
-            self._side_panel = widget
+            self._side_boxlayout = widget
         elif len(self.children) == 1:
             super(NavigationDrawer, self).add_widget(widget)
-            self._main_panel = widget
+            self._main_boxlayout = widget
         elif len(self.children) == 2:
             super(NavigationDrawer, self).add_widget(widget)
             self._join_image = widget
         elif self.side_panel is None:
-            self._side_panel.add_widget(widget)
+            self._side_boxlayout.add_widget(widget)
             self.side_panel = widget
         elif self.main_panel is None:
-            self._main_panel.add_widget(widget)
+            self._main_boxlayout.add_widget(widget)
             self.main_panel = widget
         else:
             raise NavigationDrawerException(
@@ -430,10 +430,10 @@ class NavigationDrawer(StencilView):
 
     def remove_widget(self, widget):
         if widget is self.side_panel:
-            self._side_panel.remove_widget(widget)
+            self._side_boxlayout.remove_widget(widget)
             self.side_panel = None
         elif widget is self.main_panel:
-            self._main_panel.remove_widget(widget)
+            self._main_boxlayout.remove_widget(widget)
             self.main_panel = None
         else:
             raise NavigationDrawerException(
@@ -444,11 +444,11 @@ class NavigationDrawer(StencilView):
         argument `widget`.
         '''
         # Clear existing side panel entries
-        if len(self._side_panel.children) > 0:
-            for child in self._side_panel.children:
-                self._side_panel.remove(child)
+        if len(self._side_boxlayout.children) > 0:
+            for child in self._side_boxlayout.children:
+                self._side_boxlayout.remove(child)
         # Set new side panel
-        self._side_panel.add_widget(widget)
+        self._side_boxlayout.add_widget(widget)
         self.side_panel = widget
 
     def set_main_panel(self, widget):
@@ -456,11 +456,11 @@ class NavigationDrawer(StencilView):
         argument `widget`.
         '''
         # Clear existing side panel entries
-        if len(self._main_panel.children) > 0:
-            for child in self._main_panel.children:
-                self._main_panel.remove(child)
+        if len(self._main_boxlayout.children) > 0:
+            for child in self._main_boxlayout.children:
+                self._main_boxlayout.remove(child)
         # Set new side panel
-        self._main_panel.add_widget(widget)
+        self._main_boxlayout.add_widget(widget)
         self.main_panel = widget
 
     def on__anim_progress(self, *args):
@@ -517,28 +517,28 @@ class NavigationDrawer(StencilView):
 
     def on_touch_down(self, touch):
         col_self = self.collide_point(*touch.pos)
-        col_side = self._side_panel.collide_point(*touch.pos)
-        col_main = self._main_panel.collide_point(*touch.pos)
+        col_side = self._side_boxlayout.collide_point(*touch.pos)
+        col_main = self._main_boxlayout.collide_point(*touch.pos)
 
         if self._anim_progress < 0.001:  # i.e. closed
             valid_region = (self.x <= touch.x <= (self.x + self.touch_accept_width))
-            self._main_panel.on_touch_down(touch)
+            self._main_boxlayout.on_touch_down(touch)
         else:
             if col_side and not self._main_above:
-                self._side_panel.on_touch_down(touch)
+                self._side_boxlayout.on_touch_down(touch)
                 return False
-            valid_region = (self._main_panel.x <= touch.x <= (self._main_panel.x + self._main_panel.width))
+            valid_region = (self._main_boxlayout.x <= touch.x <= (self._main_boxlayout.x + self._main_boxlayout.width))
             if not valid_region:
                 if self._main_above:
                     if col_main:
-                        self._main_panel.on_touch_down(touch)
+                        self._main_boxlayout.on_touch_down(touch)
                     elif col_side:
-                        self._side_panel.on_touch_down(touch)
+                        self._side_boxlayout.on_touch_down(touch)
                 else:
                     if col_side:
-                        self._side_panel.on_touch_down(touch)
+                        self._side_boxlayout.on_touch_down(touch)
                     elif col_main:
-                        self._main_panel.on_touch_down(touch)
+                        self._main_boxlayout.on_touch_down(touch)
                     return False
         Animation.cancel_all(self)
         if valid_region:
