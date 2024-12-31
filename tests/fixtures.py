@@ -6,6 +6,7 @@ import time
 import os.path
 import asyncio
 import logging
+from asyncio import sleep
 from datetime import date
 from os.path import dirname
 #from kivy.tests import async_sleep
@@ -18,7 +19,8 @@ from loguru import logger
 import pytest_asyncio
 import respx
 
-from asyncio import sleep
+from app_state import state, on
+
 #__all__ = ('kivy_app', )
 
 # keep track of all the kivy app fixtures so that we can check that it
@@ -111,6 +113,15 @@ async def mocked_api():
         # print('all mocked')
         yield respx_mock
 
+
+@pytest.fixture(autouse=True)
+def clean_state():
+    # Stop autopersist
+    for handler in list(on.handlers['state.']):
+        if handler.__qualname__ == 'State.autopersist.<locals>.persist':
+            on.handlers['state.'].remove(handler)
+
+    state.reset()
 
 
 @pytest_asyncio.fixture
