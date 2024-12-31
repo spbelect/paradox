@@ -591,7 +591,8 @@ class ComplaintScreen(Screen):
             # Если роль была Видеонаблюдатель - он не может подавать жалобу.
             # В примерах текстов будем использовать текущую роль.
             role = roles[state.profile.role]
-        return dict(
+
+        result = dict(
             answer = self.answer,
             date = self.answer.time_created.strftime('%d.%m.%Y'),
             profile = state.profile,
@@ -600,8 +601,15 @@ class ComplaintScreen(Screen):
             kogo = kogo[self.answer.refuse_person], 
             komu = komu[self.answer.refuse_person],
             role = role.format(answer=self.answer),
-            region = state.regions.get(self.answer.region).name
         )
+
+        if self.answer.region in state.regions:
+            result['region'] = state.regions.get(self.answer.region).name
+        else:
+            result['region'] = '<регион>'
+
+        return result
+
     
     @on('state.profile')
     def build_tik_text(self):
