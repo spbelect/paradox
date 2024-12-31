@@ -284,4 +284,4 @@ class PositionScreen(Screen):
         
 
 
-position = PositionScreen(name='position')
+screen = PositionScreen(name='position')

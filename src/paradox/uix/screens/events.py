@@ -126,4 +126,4 @@ class EventsScreen(Screen):
         self.manager.show_handbook(item.question.label, item.question.fz67_text)
 
 
-events = EventsScreen(name='events')
+screen = EventsScreen(name='events')

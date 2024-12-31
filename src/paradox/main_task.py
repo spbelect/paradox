@@ -171,14 +171,14 @@ async def init(app: kivy.app.App) -> None:
         state.server = config.SERVER_ADDRESS
     elif not state.server:
         await client.rotate_server()
-    logger.info(f'Server: {state.server}')
+    logger.info(f'{state.server=}')
     
     await sleep(0.01)
     
     asyncio.create_task(client.check_new_version_loop())
     
-    uix.screens.home.home.build_topics()
-    uix.screens.events.events.restore_past_events()
+    uix.screens.home.screen.build_topics()
+    uix.screens.events.screen.restore_past_events()
     logger.info('Restored past events.')
     
     
@@ -201,7 +201,7 @@ async def init(app: kivy.app.App) -> None:
         except Exception as e:
             logger.error(repr(e))
             uix.float_message.show('Ошибка при обновлении анкет')
-            uix.screens.home.home.ids.messages.add_widget(Label(
+            uix.screens.home.screen.ids.messages.add_widget(Label(
                 text='Ошибка при обновлении анкет. Возможно вы используете старую версию программы.'    
             ))
             paradox.exception_handler.send_debug_message(e)
@@ -224,7 +224,7 @@ async def init(app: kivy.app.App) -> None:
     # Update topics for current country.
     if not state.quiz_topics.get(state.country) == quiz_topics:
         state.quiz_topics[state.country] = quiz_topics
-        uix.screens.home.home.build_topics()
+        uix.screens.home.screen.build_topics()
     
     #regions = mock_regions
     regions = (await client.recv_loop(f'{state.country}/regions/')).json()
@@ -232,14 +232,14 @@ async def init(app: kivy.app.App) -> None:
         
     state.regions.update(regions)
     logger.info('Regions updated.')
-    logger.debug(f'{state.regions=}')
+    logger.debug(f'state.regions = \n{state.regions}')
 
     if state.region.get('id'):
         if not state.region == state.regions.get(state.region.id):
             logger.debug(f'Setting region to {state.region.id}')
             state.region = state.regions.get(state.region.id)
     
-    uix.screens.events.events.restore_past_events()
+    uix.screens.events.screen.restore_past_events()
     logger.info('Restored past events (fin).')
     
     asyncio.create_task(client.answer_send_loop())

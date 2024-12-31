@@ -134,3 +134,5 @@ class CommunicationScreen(Screen):
 
                 break
 
+
+screen = CommunicationScreen(name='communication')

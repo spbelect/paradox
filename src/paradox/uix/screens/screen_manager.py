@@ -77,28 +77,18 @@ class ScreenManager(kivy.uix.screenmanager.ScreenManager):
     about_to_exit = BooleanProperty(False)
 
     def __init__(self, *args, **kwargs):
-
-        # import ipdb; ipdb.sset_trace()
         super().__init__(*args, **kwargs)
-        #Clock.schedule_once(self.build_screens)
-        #Window.bind(on_keyboard=self.hook_keyboard2)
-            #self.init()
-            
-        #def init(self):
-        self.add_widget(uix.screens.home.home)
-        self.add_widget(uix.screens.handbook.HandBookScreen(name='handbook'))
-        #uix.screens.position.position = PositionScreen(name='position')
-        self.add_widget(uix.screens.position.position)
-        self.add_widget(uix.screens.organizations.organizations)
-        self.add_widget(uix.screens.events.events)
-        self.add_widget(uix.screens.complaint.complaint)
-        self.add_widget(uix.screens.about.AboutScreen(name='about'))
-        self.add_widget(uix.screens.communication.CommunicationScreen(name='communication'))
-        self.add_widget(uix.screens.userprofile.userprofile)
+        self.add_widget(uix.screens.home.screen)
+        self.add_widget(uix.screens.handbook.screen)
+        self.add_widget(uix.screens.position.screen)
+        self.add_widget(uix.screens.organizations.screen)
+        self.add_widget(uix.screens.events.screen)
+        self.add_widget(uix.screens.complaint.screen)
+        self.add_widget(uix.screens.about.screen)
+        self.add_widget(uix.screens.communication.screen)
+        self.add_widget(uix.screens.userprofile.screen)
         self.push_screen('home')
-        #self.push_screen('position')
-        #schedule('core.screens_initialized')
-
+        # self.push_screen('position')
 
     def push_screen(self, name):
         if self.current == 'error':

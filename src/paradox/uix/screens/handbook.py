@@ -105,3 +105,6 @@ class HandBookScreen(Screen):
         #help_text = question['help_text'] or imput_help_stub
         self.ids['text'].text = f'{title.upper()}\n\n{text}'
         self.ids['scrollview'].scroll_y = 1
+
+
+screen = HandBookScreen(name='handbook')

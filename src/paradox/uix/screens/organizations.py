@@ -179,7 +179,7 @@ class OrganizationsScreen(Screen):
     
 
 
-screen = organizations = OrganizationsScreen(name='organizations')
+screen = OrganizationsScreen(name='organizations')
 
 
 def show_loader(f):

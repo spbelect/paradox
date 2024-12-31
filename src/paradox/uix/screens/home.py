@@ -98,7 +98,7 @@ Builder.load_string('''
     text: self.json['name']
 
 
-''')
+''', filename=__name__)
 
 
 class QuizTopicButton(ButtonBehavior, Label):
@@ -133,7 +133,7 @@ class HomeScreen(Screen):
 
 
 
-home = screen = HomeScreen(name='home')
+screen = HomeScreen(name='home')
 
 
 def show_loader(f):

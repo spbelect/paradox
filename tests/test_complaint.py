@@ -28,14 +28,10 @@ async def test_complaint(mocked_api, app):
     )
     # Подождать пока кампании будут получены с сервера.
     await sleep(2)
-    
 
-    # await sleep(2000)
     ### Главный экран.
     # Кликнуть на тематический раздел анкеты.
     await app.click(await wait_listitem(uix.screens.home.screen.ids.topics.children, id='1'))
-
-
 
     ### Экран вопросов (тематический раздел анкеты).
     # Кликнуть на ответ "Нет".
@@ -145,26 +141,3 @@ async def test_complaint(mocked_api, app):
     #from фынтсшщ import sleep
     #sleep(10)
     #self.assertTrue(button.test_released)
-
-
-
-@skip
-def test_respx():
-    pass
-    # import httpx
-    # import respx
-    # with respx.mock(
-    #     # base_url="http://127.0.0.1:8000/api/v3/",
-    #     assert_all_mocked=True,
-    #     assert_all_called=False
-    #       ) as respx_mock:
-    #
-    #     # print('mock ru/questions/')
-    #     respx_mock.get("http://127.0.0.1:8000/api/v3/ru/questions/").respond(json=[])
-    #     # # respx_mock.get("http://127.0.0.1:8000/api/v3/ru/questions/").mock(side_effect=httpx.ConnectError)
-    #
-    #     # import ipdb; ipdb.sset_trace()
-    #     httpxclient = httpx.AsyncClient()
-    #     result = await httpxclient.get('http://127.0.0.1:8000/api/v3/ru/questions/')
-    #     print("AAAAAA")
-    #     return

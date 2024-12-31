@@ -99,3 +99,5 @@ Builder.load_string('''
 
 class AboutScreen(Screen):
     pass
+
+screen = AboutScreen(name='about')

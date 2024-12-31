@@ -126,26 +126,46 @@ def clean_state():
 
 @pytest_asyncio.fixture
 async def app():
-    
-    # import ipdb; ipdb.sset_trace()
-    from app_state import state
+
     state._raise_all = True
     
     from django.conf import settings
+
+    import django.db
     import os
     from os.path import exists
     db = settings.DATABASES['default']['NAME']
     if exists(db):
         print('removing db')
         os.remove(db)
-    
+    django.db.close_old_connections()
     
     import main
+
+    # Recreate all module-level singletons
+    from paradox import uix
+    from paradox.uix import main_widget
+    from paradox.uix import side_panel
+    from paradox.uix import screens
+    from paradox.uix.screens import (
+        home, communication, position, quiztopic, userprofile,
+        handbook, organizations, events, complaint, about, error, screen_manager
+    )
+    home.screen = home.HomeScreen(name='home')
+    handbook.screen = handbook.HandBookScreen(name='handbook')
+    about.screen = about.AboutScreen(name='about')
+    communication.screen = communication.CommunicationScreen(name='communication')
+    userprofile.screen = userprofile.UserProfileScreen(name='userprofile')
+    position.screen = position.PositionScreen(name='position')
+    complaint.screen = complaint.ComplaintScreen(name='complaint')
+    events.screen = events.EventsScreen(name='events')
+    organizations.screen = organizations.OrganizationsScreen(name='organizations')
+    uix.screenmgr = screen_manager.ScreenManager()
+    uix.sidepanel = side_panel.SidePanel()
 
     #from paradox import client
     #patch('paradox.client.client', Mock(request=AsyncMock(side_effect=request))).start()
     def mock_rotate_server():
-        from app_state import state
         state.server = 'http://127.0.0.1:8000/'
         logging.info(f'Setting mock server address to {state.server}')
         state._server_ping_success.set()
@@ -179,19 +199,19 @@ async def app():
     from kivy.lang.builder import BuilderBase, Builder
     from kivy.base import stopTouchApp
     from kivy import kivy_data_dir
+    #
+    # context = Context(init=False)
+    # context['Clock'] = ClockBase()
+    # context['Factory'] = FactoryBase.create_from(Factory)
+    # context['Builder'] = BuilderBase.create_from(Builder)
+    # context.push()
 
     from kivy.clock import Clock
     Clock.init_async_lib('asyncio')
-    #context = Context(init=False)
-    #context['Clock'] = ClockBase(async_lib='asyncio')
-    #context['Factory'] = FactoryBase.create_from(Factory)
-    #context['Builder'] = BuilderBase.create_from(Builder)
-    #context.push()
-
-    #Window.create_window()
-    #Window.register()
-    #Window.initialized = True
-    #Window.canvas.clear()
+    # Window.create_window()
+    # Window.register()
+    # Window.initialized = True
+    # Window.canvas.clear()
 
 
     def aexc_handler(loop, context):
@@ -298,14 +318,8 @@ async def app():
     # from kivy.clock import Clock
     # Clock.schedule_interval(_force_refresh, 1)
 
-    #Window.create_window()
-    #Window.register()
-    #Window.initialized = True
-    #Window.canvas.clear()
-
     app = App()
-    #app = App()
-
+    app.set_async_lib('asyncio')
     #import ipdb; ipdb.sset_trace()
     loop = asyncio.get_event_loop()
     loop.create_task(app.async_run())
@@ -324,26 +338,14 @@ async def app():
 
     await app.wait_clock_frames(3)
     
-
-    #import ipdb; ipdb.sset_trace()
     yield app
 
     stopTouchApp()
     
-    #ts = time.perf_counter()
-    #while not app.app_has_stopped:
-        #await async_sleep(.1)
-        #if time.perf_counter() - ts >= 10:
-            #raise TimeoutError()
-
     for child in Window.children[:]:
         Window.remove_widget(child)
-    #context.pop()
 
-    # release all the resources
-    #del context
-    #apps.append((weakref.ref(app), request))
-    #del app
     patch.stopall()
+    del app
     
     gc.collect()

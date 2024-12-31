@@ -160,4 +160,4 @@ class UserProfileScreen(Screen):
         #schedule('core.userprofile_next', data)
 
 
-userprofile = UserProfileScreen(name='userprofile')
+screen = UserProfileScreen(name='userprofile')

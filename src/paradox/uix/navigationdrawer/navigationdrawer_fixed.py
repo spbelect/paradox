@@ -333,7 +333,7 @@ class NavigationDrawer(StencilView):
     '''
 
     def __init__(self, **kwargs):
-        super(NavigationDrawer, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         Clock.schedule_once(self.on__main_above, 0)
 
     def on_anim_type(self, *args):
@@ -404,6 +404,7 @@ class NavigationDrawer(StencilView):
         if len(self.ids.sidebox.children) > 0:
             for child in self.ids.sidebox.children:
                 self.ids.sidebox.remove(child)
+
         # Set new side panel
         self.ids.sidebox.add_widget(widget)
         self.side_panel = widget
@@ -416,6 +417,7 @@ class NavigationDrawer(StencilView):
         if len(self.ids.mainbox.children) > 0:
             for child in self.ids.mainbox.children:
                 self.ids.mainbox.remove(child)
+
         # Set new side panel
         self.ids.mainbox.add_widget(widget)
         self.main_panel = widget
