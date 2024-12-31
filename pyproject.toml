@@ -6,7 +6,7 @@ authors = [
     {name = "Evstifeev Roman", email = "someuniquename@gmail.com"},
 ]
 dependencies = [
-    "app-state>=0.5",
+    "app-state>=0.7",
     "colorama==0.4.1",
     "httpx==0.27.*",  # Wait for https://github.com/lundberg/respx/pull/278
     "Kivy==2.3.*",
@@ -38,9 +38,6 @@ test = [
 ]
 debug = [
     "ipdb>=0.13.13",
-]
-dev = [
-    "-e file:///${PROJECT_ROOT}/../app_state#egg=app_state"
 ]
 build = [
     "django-environ>=0.11.2",
