@@ -4,7 +4,7 @@ from .screens.screen_manager import ScreenManager
 
 screenmgr = ScreenManager()
 
-from .sidepanel import SidePanel
+from .side_panel import SidePanel
 sidepanel = SidePanel()
 
 from .quiz_widgets.base import QuizWidget
