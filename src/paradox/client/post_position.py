@@ -16,7 +16,7 @@ async def post_position():
         
         prev = (state.uik, state.region.id, state.country, state.role)
         if not all(prev):
-            logger.debug(f'Skip sending incomplete position {prev}')
+            logger.info(f'Skip sending incomplete position {prev}')
             return
         
         try:
