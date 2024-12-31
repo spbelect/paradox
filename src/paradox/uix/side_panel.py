@@ -9,7 +9,7 @@ from kivy.uix.boxlayout import BoxLayout
 
 
 #from .navigationdrawer.navigationdrawer import NavigationDrawer
-from paradox.uix import screenmgr
+from paradox import uix
 
 from paradox.uix.button import Button
 
@@ -83,7 +83,7 @@ class SidePanel(BoxLayout):
         #if 'region' in state:
             #self.region = state.region.name
             
-    def on_screen_click(self, screen):
+    def on_screen_click(self, screen: str):
         main_widget = self.parent.parent
-        screenmgr.push_screen(screen)
+        uix.screenmgr.push_screen(screen)
         main_widget.state = 'closed'
