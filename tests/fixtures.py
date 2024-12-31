@@ -104,9 +104,9 @@ async def mocked_api():
             },
         ])
                     
-        respx_mock.post("position/").respond(json=[])
+        respx_mock.post("position/", name="post_position").respond(json=[])
         
-        respx_mock.post("userprofile/").respond(json=[])
+        respx_mock.post("userprofile/", name="post_profile").respond(json=[])
         #respx_mock.post("quiz_answers/").respond(json=[])
         respx_mock.post("answers/").respond(json=[])
         
