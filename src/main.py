@@ -228,7 +228,7 @@ class ParadoxApp(App):
             #state._nursery = nursery
         #Clock.init_async_lib('asyncio')
         self._run_prepare()
-        
+
         await async_runTouchApp()
         
         logger.info('App about to exit')
@@ -237,7 +237,6 @@ class ParadoxApp(App):
         
         # TODO: https://bugs.python.org/issue36709
         # Asyncio SSL keep-alive connections raise errors after loop close.
-        asyncio.get_running_loop().stop()
 
 
     def open_settings(self, *largs):
