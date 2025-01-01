@@ -7,6 +7,7 @@ from app_state import state, on
 from kivy.app import App
 from kivy.clock import Clock
 from kivy.lang import Builder
+from kivy.metrics import dp
 from kivy.properties import StringProperty
 from kivy.properties import ObjectProperty
 from kivy.uix.boxlayout import BoxLayout
@@ -55,6 +56,12 @@ Builder.load_string('''
                 on_text: self.color = black
                 height: height1
                 on_new_pick: state.region = state.regions[self.value]
+
+                Label:
+                    id: loader
+                    text: 'регионы загружаются'
+                    on_touch_up: True
+
 
             BoxLayout:
                 height: height1
@@ -176,6 +183,10 @@ class PositionScreen(Screen):
         
     @on('state.regions')
     def build_regions(self):
+
+        self.ids.loader.height = dp(20)
+        self.ids.loader.opacity = 1
+
         if not state.get('regions', None):
             return
         #import ipdb; ipdb.sset_trace()
@@ -206,6 +217,11 @@ class PositionScreen(Screen):
             choice = self.ids.regions.getchoice(state.region.id)
             if choice:
                 self.ids.regions.choice = choice
+
+
+        self.ids.loader.height = dp(0)
+        self.ids.loader.opacity = 0
+
                 
     #@on('state.role')
     #def set_role(self):

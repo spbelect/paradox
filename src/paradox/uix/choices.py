@@ -153,7 +153,8 @@ class ChoicePicker(Button):
     def clear(self):
         self.choice = None
         for child in self.modal.ids.list.children[:]:
-            self.modal.ids.list.remove_widget(child)
+            if isinstance(child, Choice):
+                self.modal.ids.list.remove_widget(child)
 
     def choices(self):
         return self.modal.ids.list.children[:]
@@ -203,6 +204,8 @@ class ChoicePickerModal(ModalView):
             touch.apply_transform_2d(self.ids.scrollview.to_local)
             for child in self.ids.list.children:
                 if child.collide_point(touch.x, touch.y):
+                    if not isinstance(child, Button):
+                        return True
                     self.choicepicker.choice = child
                     self.choicepicker.dispatch('on_new_pick', child.value)
                     self.dismiss()

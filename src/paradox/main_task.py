@@ -230,6 +230,7 @@ async def init(app: kivy.app.App) -> None:
     regions = (await client.recv_loop(f'{state.country}/regions/')).json()
     ###regions = {f'ru_{x["id"]}': dict(x, id=f'ru_{x["id"]}') for x in json.load(open('regions.json'))}
         
+    # await sleep(3)
     state.regions.update(regions)
     logger.info('Regions updated.')
     logger.debug(f'state.regions = \n{state.regions}')
