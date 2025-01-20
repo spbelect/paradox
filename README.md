@@ -1,3 +1,5 @@
+[![Tests](https://github.com/spbelect/paradox/actions/workflows/ci.yml/badge.svg)](https://github.com/spbelect/paradox/actions/workflows/ci.yml)
+
 # Development
 
 ```
