@@ -1,5 +1,7 @@
 [![Tests](https://github.com/spbelect/paradox/actions/workflows/ci.yml/badge.svg)](https://github.com/spbelect/paradox/actions/workflows/ci.yml)
 
+[![codecov](https://codecov.io/gh/spbelect/paradox/graph/badge.svg?token=ZSA1C92XBI)](https://codecov.io/gh/spbelect/paradox)
+
 # Development
 
 ```
