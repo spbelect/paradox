@@ -9,12 +9,24 @@ os.environ.setdefault('KIVY_LOG_MODE', 'PYTHON')
 os.environ.setdefault('LOGURU_AUTOINIT', '0')
 
 
-class LoguruAdapter(logging.Handler):
+class ToLoguru(logging.Handler):
+    """
+    This Handler redirects all stdlib logging to loguru.
+
+    Usage:
+
+    >> import logging
+    >> logging.basicConfig(handlers=[ToLoguru()], level=0, force=True)
+
+    """
+
     def emit(self, record: logging.LogRecord) -> None:
+        import loguru
+
         # Get corresponding Loguru level if it exists.
         level: str | int
         try:
-            level = logger.level(record.levelname).name
+            level = loguru.logger.level(record.levelname).name
         except ValueError:
             level = record.levelno
 
@@ -24,11 +36,11 @@ class LoguruAdapter(logging.Handler):
             frame = frame.f_back
             depth += 1
 
-        logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
+        loguru.logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
 
 
 # Redirect all stdlib logging to loguru
-logging.basicConfig(handlers=[LoguruAdapter()], level=0, force=True)
+logging.basicConfig(handlers=[ToLoguru()], level=0, force=True)
 
 
 # Loguru settings
